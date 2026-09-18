@@ -7,6 +7,7 @@ import {
   type CommandResult,
   type DefaultSearchProvider,
   type NavodeSettings,
+  type Workspace,
 } from '@navode/core';
 import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -22,17 +23,12 @@ import {
   Toggle,
   Tooltip,
 } from './primitives';
+import { OrganizationManager, type OrganizationScreen } from './organization-manager';
 
 const searchProviders: Record<DefaultSearchProvider, { alias: string; label: string }> = {
   google: { alias: 'g', label: 'Google' },
   youtube: { alias: 'yt', label: 'YouTube' },
 };
-
-const safeQuickLinks = [
-  { label: 'Google', url: 'https://www.google.com' },
-  { label: 'YouTube', url: 'https://www.youtube.com' },
-  { label: 'GitHub', url: 'https://github.com' },
-];
 
 interface ShellCommandResult {
   action?: CommandAction;
@@ -47,6 +43,7 @@ interface ShellCommandResult {
 export interface NavodeShellProps {
   onCommand?: (command: string) => void;
   onCommandResult?: (result: CommandResult) => void;
+  onWorkspaceLaunch?: (workspace: Workspace) => void;
   resolveCommandResults?: (input: string) => readonly CommandResult[];
   onSettingsChange?: (settings: NavodeSettings) => void;
   settings?: NavodeSettings;
@@ -55,6 +52,7 @@ export interface NavodeShellProps {
 export function NavodeShell({
   onCommand,
   onCommandResult,
+  onWorkspaceLaunch,
   resolveCommandResults,
   onSettingsChange,
   settings = DEFAULT_NAVODE_SETTINGS,
@@ -70,6 +68,8 @@ export function NavodeShell({
   const [aliasError, setAliasError] = useState('');
   const [editingAliasId, setEditingAliasId] = useState<string | null>(null);
   const [commandFeedback, setCommandFeedback] = useState('');
+  const [organizationScreen, setOrganizationScreen] = useState<OrganizationScreen | null>(null);
+  const [workspaceToLaunch, setWorkspaceToLaunch] = useState<Workspace | null>(null);
   const commandInput = useRef<HTMLInputElement>(null);
   const provider = searchProviders[settings.defaultSearchProvider];
   const results = useMemo(() => {
@@ -147,6 +147,17 @@ export function NavodeShell({
         return;
       }
       if (result.action.type === 'open-view' && result.action.view === 'settings') setIsSettingsOpen(true);
+      if (
+        result.action.type === 'open-view' &&
+        (result.action.view === 'links' || result.action.view === 'projects' || result.action.view === 'workspaces')
+      ) {
+        setOrganizationScreen(result.action.view);
+      }
+      if (result.action.type === 'launch-workspace') {
+        const workspace = settings.workspaces.find((candidate) => candidate.id === result.action.workspaceId);
+        if (workspace) setWorkspaceToLaunch(workspace);
+        return;
+      }
       if (result.resolved) onCommandResult?.(result.resolved);
       return;
     }
@@ -264,15 +275,17 @@ export function NavodeShell({
               <p className="section-kicker">START HERE</p>
               <h2 id="quick-access-title">Quick access</h2>
             </div>
-            <span className="muted">Safe defaults</span>
+            <Button onClick={() => setOrganizationScreen('links')} variant="quiet">Manage</Button>
           </div>
           <div className="quick-actions">
-            {safeQuickLinks.map((link) => (
-              <a className="quick-link" href={link.url} key={link.url} rel="noreferrer" target="_blank">
-                {link.label}
+            {settings.quickLinks.filter((link) => link.enabled && link.showOnHome).slice(0, 6).map((link) => (
+              <a className="quick-link" href={link.url} key={link.id} rel="noreferrer" target="_blank">
+                <span className="link-initials" aria-hidden="true">{link.icon ?? initials(link.name)}</span>
+                {link.name}
               </a>
             ))}
           </div>
+          {!settings.quickLinks.some((link) => link.enabled && link.showOnHome) && <p className="muted">Add the destinations you use most.</p>}
         </Card>
 
         <Card aria-labelledby="projects-title">
@@ -281,12 +294,34 @@ export function NavodeShell({
               <p className="section-kicker">YOUR WORK</p>
               <h2 id="projects-title">Projects &amp; workspaces</h2>
             </div>
-            <Button aria-label="Open settings" onClick={() => setIsSettingsOpen(true)} variant="quiet">
-              Settings
-            </Button>
+            <Button onClick={() => setOrganizationScreen('projects')} variant="quiet">Manage</Button>
           </div>
-          <p className="muted">Add projects and group your repeat workflows in one place.</p>
-          <Button onClick={() => setIsSettingsOpen(true)}>Set up your workspace</Button>
+          {settings.projects.filter((project) => project.showOnHome).slice(0, 3).map((project) => (
+            <div className="preview-row" key={project.id}>
+              <span className="link-initials" aria-hidden="true">{project.icon ?? initials(project.name)}</span>
+              <span><strong>{project.name}</strong><small>{project.actions.length} actions</small></span>
+            </div>
+          ))}
+          {!settings.projects.some((project) => project.showOnHome) && <p className="muted">Group related destinations into a project.</p>}
+          <Button onClick={() => setOrganizationScreen('projects')}>Manage projects</Button>
+        </Card>
+
+        <Card aria-labelledby="workspaces-title">
+          <div className="section-heading">
+            <div>
+              <p className="section-kicker">REPEATABLE ROUTINES</p>
+              <h2 id="workspaces-title">Workspaces</h2>
+            </div>
+            <Button onClick={() => setOrganizationScreen('workspaces')} variant="quiet">Manage</Button>
+          </div>
+          {settings.workspaces.filter((workspace) => workspace.showOnHome).slice(0, 3).map((workspace) => (
+            <div className="preview-row" key={workspace.id}>
+              <span><strong>{workspace.name}</strong><small>{workspace.items.length} destinations</small></span>
+              <Button disabled={!workspace.items.length} onClick={() => setWorkspaceToLaunch(workspace)} variant="quiet">Launch</Button>
+            </div>
+          ))}
+          {!settings.workspaces.some((workspace) => workspace.showOnHome) && <p className="muted">Launch intentional groups of browser destinations.</p>}
+          <Button onClick={() => setOrganizationScreen('workspaces')}>Manage workspaces</Button>
         </Card>
 
         <Card aria-labelledby="productivity-title">
@@ -422,6 +457,39 @@ export function NavodeShell({
           <Button onClick={() => setIsSettingsOpen(false)} variant="primary">Done</Button>
         </div>
       </Dialog>
+
+      <OrganizationManager
+        onClose={() => setOrganizationScreen(null)}
+        onRequestWorkspaceLaunch={setWorkspaceToLaunch}
+        onSettingsChange={(next) => onSettingsChange?.(next)}
+        screen={organizationScreen}
+        settings={settings}
+      />
+
+      <Dialog
+        label="Launch workspace"
+        onClose={() => setWorkspaceToLaunch(null)}
+        open={workspaceToLaunch !== null}
+      >
+        <p className="eyebrow">CONFIRM LAUNCH</p>
+        <h2>Open {workspaceToLaunch?.name}?</h2>
+        <p className="muted">
+          This will open {workspaceToLaunch?.items.length ?? 0} {workspaceToLaunch?.items.length === 1 ? 'tab' : 'tabs'} in your browser.
+        </p>
+        <div className="dialog-actions">
+          <Button onClick={() => setWorkspaceToLaunch(null)} variant="quiet">Cancel</Button>
+          <Button
+            disabled={!workspaceToLaunch?.items.length}
+            onClick={() => {
+              if (workspaceToLaunch) onWorkspaceLaunch?.(workspaceToLaunch);
+              setWorkspaceToLaunch(null);
+            }}
+            variant="primary"
+          >
+            Open workspace
+          </Button>
+        </div>
+      </Dialog>
     </main>
   );
 }
@@ -469,4 +537,14 @@ function formatDate(date: Date) {
 
 function formatTime(date: Date) {
   return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(date);
+}
+
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase() || 'N';
 }

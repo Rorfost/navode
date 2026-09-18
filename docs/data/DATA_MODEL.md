@@ -15,4 +15,4 @@ This is a client-side conceptual model, not a database schema.
 | `HealthTarget` | A user-configured status destination. |
 | `RecentAction` | Local, bounded history for convenience. |
 
-All IDs should be stable opaque strings. Data introduced later must carry a schema version where migration is necessary.
+Quick links carry an enabled state, display order, optional grouping/alias/icon, and a home-preview choice. Projects own editable typed URL actions; workspaces own ordered URL destinations and require a launch confirmation. All IDs should be stable opaque strings. The persisted settings root is currently schema v2 and migrates v1 data deterministically.

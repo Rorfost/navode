@@ -1,8 +1,20 @@
 import { createCommandAlias, MAX_RECENT_EXECUTIONS, type CommandAlias, type RecentExecution } from './command-engine';
+import {
+  createProject,
+  createProjectAction,
+  createQuickLink,
+  createStarterQuickLinks,
+  createWorkspace,
+  createWorkspaceItem,
+  type Project,
+  type ProjectActionKind,
+  type QuickLink,
+  type Workspace,
+} from './organization';
 
 export type CommandKind = 'url' | 'search' | 'project' | 'focus';
 
-export const NAVODE_STORAGE_SCHEMA_VERSION = 1;
+export const NAVODE_STORAGE_SCHEMA_VERSION = 2;
 export const NAVODE_SETTINGS_STORAGE_KEY = 'navode.settings';
 
 export type ThemePreference = 'dark' | 'light' | 'system';
@@ -18,7 +30,10 @@ export interface NavodeSettings extends StoredSettings {
   defaultSearchProvider: DefaultSearchProvider;
   initialQuickLinks: boolean;
   customAliases: CommandAlias[];
+  projects: Project[];
+  quickLinks: QuickLink[];
   recentExecutions: RecentExecution[];
+  workspaces: Workspace[];
 }
 
 export const DEFAULT_NAVODE_SETTINGS: NavodeSettings = {
@@ -28,14 +43,17 @@ export const DEFAULT_NAVODE_SETTINGS: NavodeSettings = {
   defaultSearchProvider: 'google',
   initialQuickLinks: true,
   customAliases: [],
+  projects: [],
+  quickLinks: createStarterQuickLinks(),
   recentExecutions: [],
+  workspaces: [],
 };
 
-/** Returns safe defaults when locally persisted settings are incomplete or from another schema. */
+/** Migrates supported local schemas and returns safe defaults for malformed or unknown data. */
 export function parseNavodeSettings(value: unknown): NavodeSettings {
-  if (!isRecord(value) || value.schemaVersion !== NAVODE_STORAGE_SCHEMA_VERSION) {
-    return DEFAULT_NAVODE_SETTINGS;
-  }
+  if (!isRecord(value)) return DEFAULT_NAVODE_SETTINGS;
+  if (value.schemaVersion === 1) return migrateV1Settings(value);
+  if (value.schemaVersion !== NAVODE_STORAGE_SCHEMA_VERSION) return DEFAULT_NAVODE_SETTINGS;
 
   return {
     schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
@@ -52,7 +70,33 @@ export function parseNavodeSettings(value: unknown): NavodeSettings {
         ? value.initialQuickLinks
         : DEFAULT_NAVODE_SETTINGS.initialQuickLinks,
     customAliases: parseCustomAliases(value.customAliases),
+    projects: parseProjects(value.projects),
+    quickLinks: parseQuickLinks(value.quickLinks),
     recentExecutions: parseRecentExecutions(value.recentExecutions),
+    workspaces: parseWorkspaces(value.workspaces),
+  };
+}
+
+export function migrateV1Settings(value: Record<string, unknown>): NavodeSettings {
+  return {
+    schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
+    theme: isThemePreference(value.theme) ? value.theme : DEFAULT_NAVODE_SETTINGS.theme,
+    onboardingCompleted:
+      typeof value.onboardingCompleted === 'boolean'
+        ? value.onboardingCompleted
+        : DEFAULT_NAVODE_SETTINGS.onboardingCompleted,
+    defaultSearchProvider: isDefaultSearchProvider(value.defaultSearchProvider)
+      ? value.defaultSearchProvider
+      : DEFAULT_NAVODE_SETTINGS.defaultSearchProvider,
+    initialQuickLinks:
+      typeof value.initialQuickLinks === 'boolean'
+        ? value.initialQuickLinks
+        : DEFAULT_NAVODE_SETTINGS.initialQuickLinks,
+    customAliases: parseCustomAliases(value.customAliases),
+    projects: [],
+    quickLinks: value.initialQuickLinks === false ? [] : createStarterQuickLinks(),
+    recentExecutions: parseRecentExecutions(value.recentExecutions),
+    workspaces: [],
   };
 }
 
@@ -88,7 +132,7 @@ function parseCustomAliases(value: unknown): CommandAlias[] {
 
 function parseRecentExecutions(value: unknown): RecentExecution[] {
   if (!Array.isArray(value)) return [];
-  const validActionTypes = new Set(['open-url', 'open-view', 'run-snippet', 'start-focus', 'export-data', 'show-help']);
+  const validActionTypes = new Set(['open-url', 'open-view', 'run-snippet', 'launch-workspace', 'start-focus', 'export-data', 'show-help']);
   return value
     .filter(
       (candidate): candidate is Record<string, unknown> =>
@@ -106,6 +150,108 @@ function parseRecentExecutions(value: unknown): RecentExecution[] {
       performedAt: candidate.performedAt,
       actionType: candidate.actionType as RecentExecution['actionType'],
     }));
+}
+
+function parseQuickLinks(value: unknown): QuickLink[] {
+  if (!Array.isArray(value)) return createStarterQuickLinks();
+  const aliases = new Set<string>();
+  return value
+    .filter(isRecord)
+    .sort((left, right) => numericValue(left.order) - numericValue(right.order))
+    .flatMap((candidate, order) => {
+      if (typeof candidate.id !== 'string') return [];
+      const link = createQuickLink(
+        {
+          alias: typeof candidate.alias === 'string' ? candidate.alias : undefined,
+          enabled: typeof candidate.enabled === 'boolean' ? candidate.enabled : true,
+          group: typeof candidate.group === 'string' ? candidate.group : undefined,
+          icon: typeof candidate.icon === 'string' ? candidate.icon : undefined,
+          name: typeof candidate.name === 'string' ? candidate.name : '',
+          showOnHome: typeof candidate.showOnHome === 'boolean' ? candidate.showOnHome : true,
+          url: typeof candidate.url === 'string' ? candidate.url : '',
+        },
+        candidate.id,
+        order,
+      );
+      if (!link || (link.alias && aliases.has(link.alias))) return [];
+      if (link.alias) aliases.add(link.alias);
+      return [link];
+    });
+}
+
+function parseProjects(value: unknown): Project[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((candidate) => {
+    if (!isRecord(candidate) || typeof candidate.id !== 'string') return [];
+    const project = createProject(
+      {
+        description: typeof candidate.description === 'string' ? candidate.description : undefined,
+        icon: typeof candidate.icon === 'string' ? candidate.icon : undefined,
+        name: typeof candidate.name === 'string' ? candidate.name : '',
+        showOnHome: typeof candidate.showOnHome === 'boolean' ? candidate.showOnHome : false,
+      },
+      candidate.id,
+    );
+    if (!project) return [];
+    const actions = Array.isArray(candidate.actions)
+      ? candidate.actions.flatMap((action) => {
+          if (!isRecord(action) || typeof action.id !== 'string' || !isProjectActionKind(action.kind)) return [];
+          const parsed = createProjectAction(
+            {
+              icon: typeof action.icon === 'string' ? action.icon : undefined,
+              kind: action.kind,
+              label: typeof action.label === 'string' ? action.label : '',
+              url: typeof action.url === 'string' ? action.url : '',
+            },
+            action.id,
+          );
+          return parsed ? [parsed] : [];
+        })
+      : [];
+    return [{ ...project, actions }];
+  });
+}
+
+function parseWorkspaces(value: unknown): Workspace[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(isRecord)
+    .sort((left, right) => numericValue(left.order) - numericValue(right.order))
+    .flatMap((candidate, order) => {
+      if (typeof candidate.id !== 'string') return [];
+      const workspace = createWorkspace(
+        {
+          description: typeof candidate.description === 'string' ? candidate.description : undefined,
+          name: typeof candidate.name === 'string' ? candidate.name : '',
+          showOnHome: typeof candidate.showOnHome === 'boolean' ? candidate.showOnHome : false,
+        },
+        candidate.id,
+        order,
+      );
+      if (!workspace) return [];
+      const items = Array.isArray(candidate.items)
+        ? candidate.items.flatMap((item) => {
+            if (!isRecord(item) || typeof item.id !== 'string') return [];
+            const parsed = createWorkspaceItem(
+              {
+                label: typeof item.label === 'string' ? item.label : '',
+                url: typeof item.url === 'string' ? item.url : '',
+              },
+              item.id,
+            );
+            return parsed ? [parsed] : [];
+          })
+        : [];
+      return [{ ...workspace, items }];
+    });
+}
+
+function numericValue(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : Number.MAX_SAFE_INTEGER;
+}
+
+function isProjectActionKind(value: unknown): value is ProjectActionKind {
+  return value === 'repository' || value === 'frontend' || value === 'backend' || value === 'deployment' || value === 'database' || value === 'docs' || value === 'custom';
 }
 
 export interface Command {
@@ -161,3 +307,36 @@ export {
   type SearchProvider,
   type SearchProviderId,
 } from './command-engine';
+
+export {
+  createProject,
+  createProjectAction,
+  createQuickLink,
+  createStarterQuickLinks,
+  createWorkspace,
+  createWorkspaceItem,
+  createWorkspaceLaunchPlan,
+  removeProject,
+  removeProjectAction,
+  removeQuickLink,
+  removeWorkspace,
+  removeWorkspaceItem,
+  reorderQuickLinks,
+  saveProjectAction,
+  saveWorkspaceItem,
+  updateProject,
+  updateQuickLink,
+  updateWorkspace,
+  type Project,
+  type ProjectAction,
+  type ProjectActionKind,
+  type ProjectActionInput,
+  type ProjectInput,
+  type QuickLink,
+  type QuickLinkInput,
+  type Workspace,
+  type WorkspaceInput,
+  type WorkspaceItem,
+  type WorkspaceItemInput,
+  type WorkspaceLaunchPlan,
+} from './organization';

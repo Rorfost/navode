@@ -64,8 +64,8 @@ describe('command engine safety and matching', () => {
   it('resolves quick links, workspaces, and snippets without guessing', () => {
     expect(resolveCommand('docs', { quickLinks: [{ id: 'docs', label: 'Docs', url: 'https://example.com/docs' }] }).source).toBe('quick-link');
     expect(resolveCommand('writing', { workspaces: [{ id: 'write', label: 'Writing' }] }).action).toEqual({
-      type: 'open-view',
-      view: 'workspaces',
+      type: 'launch-workspace',
+      workspaceId: 'write',
     });
     expect(resolveCommand('signature', { snippets: [{ id: 'sign', label: 'Signature' }] }).action).toEqual({
       type: 'run-snippet',

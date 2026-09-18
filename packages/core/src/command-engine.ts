@@ -54,6 +54,7 @@ export type CommandAction =
   | { type: 'open-url'; url: string }
   | { type: 'open-view'; view: InternalCommandView }
   | { type: 'run-snippet'; snippetId: string }
+  | { type: 'launch-workspace'; workspaceId: string }
   | { type: 'start-focus' }
   | { type: 'export-data' }
   | { type: 'show-help' }
@@ -320,7 +321,18 @@ function getPredictableMatches(input: string, catalog: CommandCatalog): CommandR
     addViewMatch(matches, normalized, input, project, 'project', 'projects');
   }
   for (const workspace of catalog.workspaces ?? []) {
-    addViewMatch(matches, normalized, input, workspace, 'workspace', 'workspaces');
+    const score = scoreMatch(normalized, [workspace.label, ...(workspace.aliases ?? [])]);
+    if (score) {
+      matches.push(createResult({
+        action: { type: 'launch-workspace', workspaceId: workspace.id },
+        command: input,
+        description: `Launch ${workspace.label}`,
+        id: `workspace:${workspace.id}`,
+        label: workspace.label,
+        score,
+        source: 'workspace',
+      }));
+    }
   }
   for (const snippet of catalog.snippets ?? []) {
     const score = scoreMatch(normalized, [snippet.label, ...(snippet.aliases ?? [])]);

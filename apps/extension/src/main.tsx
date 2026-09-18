@@ -2,12 +2,14 @@ import { StrictMode, useCallback, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   DEFAULT_NAVODE_SETTINGS,
+  createWorkspaceLaunchPlan,
   getCommandResults,
   recordRecentExecution,
   type CommandAction,
   type CommandCatalog,
   type CommandResult,
   type NavodeSettings,
+  type Workspace,
 } from '@navode/core';
 import { NavodeShell } from '@navode/ui';
 import { loadExtensionSettings, saveExtensionSettings } from './settings';
@@ -23,13 +25,13 @@ function NavodeExtensionApp() {
     () => ({
       customAliases: settings.customAliases,
       defaultSearchProvider: settings.defaultSearchProvider,
-      quickLinks: [
-        { id: 'google', label: 'Google', url: 'https://www.google.com' },
-        { id: 'youtube', label: 'YouTube', url: 'https://www.youtube.com' },
-        { id: 'github', label: 'GitHub', url: 'https://github.com' },
-      ],
+      projects: settings.projects.map((project) => ({ id: project.id, label: project.name })),
+      quickLinks: settings.quickLinks
+        .filter((link) => link.enabled)
+        .map((link) => ({ id: link.id, label: link.name, url: link.url, ...(link.alias ? { aliases: [link.alias] } : {}) })),
+      workspaces: settings.workspaces.map((workspace) => ({ id: workspace.id, label: workspace.name })),
     }),
-    [settings.customAliases, settings.defaultSearchProvider],
+    [settings.customAliases, settings.defaultSearchProvider, settings.projects, settings.quickLinks, settings.workspaces],
   );
 
   useEffect(() => {
@@ -63,10 +65,27 @@ function NavodeExtensionApp() {
     }));
   }
 
+  function launchWorkspace(workspace: Workspace) {
+    const plan = createWorkspaceLaunchPlan(workspace);
+    if (!plan) return;
+    plan.urls.forEach((url) => window.open(url, '_blank', 'noopener,noreferrer'));
+    const result: CommandResult = {
+      action: { type: 'launch-workspace', workspaceId: workspace.id },
+      command: workspace.name,
+      description: `Launch ${workspace.name}`,
+      id: `workspace:${workspace.id}`,
+      label: `Launch ${workspace.name}`,
+      score: 100,
+      source: 'workspace',
+    };
+    setSettings((current) => ({ ...current, recentExecutions: recordRecentExecution(current.recentExecutions, result) }));
+  }
+
   return (
     <NavodeShell
       onCommandResult={handleCommandResult}
       onSettingsChange={updateSettings}
+      onWorkspaceLaunch={launchWorkspace}
       resolveCommandResults={resolveResults}
       settings={settings}
     />

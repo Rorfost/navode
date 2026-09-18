@@ -8,7 +8,7 @@ Opening a new tab should be the fastest path from intent to action—not a detou
 
 ## Status
 
-The web app and Chrome extension share a polished local-first command shell with first-run onboarding, theme preference, accessible dialogs, keyboard navigation, and a validated command engine with public search aliases. The API exposes only health and version metadata; workflow features are being added incrementally.
+The web app and Chrome extension share a polished local-first command shell with onboarding, theme preference, accessible dialogs, keyboard navigation, validated command actions, and user-managed quick links, projects, and workspaces. The API exposes only health and version metadata; workflow features are being added incrementally.
 
 ## Architecture
 

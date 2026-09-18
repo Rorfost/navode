@@ -6,8 +6,8 @@ The extension owns its settings in `chrome.storage.local`. The web app may use b
 
 ## Versioning and migration
 
-Persisted root data must include a schema version. The current Navode shell validates its versioned theme and onboarding settings before use and falls back to safe defaults for malformed or unknown data. Migrations are deterministic, tested, and run before data is used. Failed migrations must retain the original data long enough to offer export or reset rather than silently discarding it.
+Persisted root data must include a schema version. The current Navode shell validates its versioned settings before use, migrating schema v1 to v2 with generic removable starter links and empty project/workspace collections. Malformed or unknown data falls back to safe defaults. Migrations are deterministic, tested, and run before data is used. Failed migrations must retain the original data long enough to offer export or reset rather than silently discarding it.
 
 ## Limits and privacy
 
-Storage quotas vary by browser. Command history is bounded to 20 entries and stores action labels and timestamps only, not submitted queries, URLs, or snippet content. Custom aliases accept only public http/https URL templates. Avoid storing secrets in plain text, and never assume local storage is a secure credential vault. Optional sync must be explicit and separately designed.
+Storage quotas vary by browser. Command history is bounded to 20 entries and stores action labels and timestamps only, not submitted queries, URLs, or snippet content. Custom aliases, quick links, project actions, and workspace items accept only public http/https URLs. Avoid storing secrets in plain text, and never assume local storage is a secure credential vault. Optional sync must be explicit and separately designed.

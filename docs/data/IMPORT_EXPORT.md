@@ -4,7 +4,7 @@ Exports are JSON with an explicit schema version:
 
 ```json
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "exportedAt": "2026-09-19T00:00:00.000Z",
   "settings": {},
   "commands": [],

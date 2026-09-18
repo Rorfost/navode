@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { DEFAULT_NAVODE_SETTINGS, type NavodeSettings } from '@navode/core';
 import { NavodeShell } from '@navode/ui';
 import { describe, expect, it, vi } from 'vitest';
@@ -6,8 +6,16 @@ import { describe, expect, it, vi } from 'vitest';
 function renderShell(settings: NavodeSettings = { ...DEFAULT_NAVODE_SETTINGS, onboardingCompleted: true }) {
   const onCommand = vi.fn();
   const onSettingsChange = vi.fn();
-  render(<NavodeShell onCommand={onCommand} onSettingsChange={onSettingsChange} settings={settings} />);
-  return { onCommand, onSettingsChange };
+  const onWorkspaceLaunch = vi.fn();
+  render(
+    <NavodeShell
+      onCommand={onCommand}
+      onSettingsChange={onSettingsChange}
+      onWorkspaceLaunch={onWorkspaceLaunch}
+      settings={settings}
+    />,
+  );
+  return { onCommand, onSettingsChange, onWorkspaceLaunch };
 }
 
 describe('Navode shell', () => {
@@ -72,5 +80,35 @@ describe('Navode shell', () => {
     fireEvent.keyDown(dialog, { key: 'Escape' });
 
     expect(screen.queryByRole('dialog', { name: 'Navode settings' })).not.toBeInTheDocument();
+  });
+
+  it('adds a validated quick link through the management dialog', () => {
+    const settings = { ...DEFAULT_NAVODE_SETTINGS, onboardingCompleted: true, quickLinks: [] };
+    const { onSettingsChange } = renderShell(settings);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Manage' })[0]!);
+    const dialog = screen.getByRole('dialog', { name: 'Quick links' });
+    fireEvent.change(within(dialog).getByLabelText('Name'), { target: { value: 'Docs' } });
+    fireEvent.change(within(dialog).getByLabelText('URL'), { target: { value: 'https://example.com/docs' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Add link' }));
+
+    expect(onSettingsChange).toHaveBeenCalledWith(expect.objectContaining({
+      quickLinks: [expect.objectContaining({ name: 'Docs', url: 'https://example.com/docs' })],
+    }));
+  });
+
+  it('confirms the number of tabs before launching a workspace', () => {
+    const settings = {
+      ...DEFAULT_NAVODE_SETTINGS,
+      onboardingCompleted: true,
+      workspaces: [{ id: 'morning', name: 'Morning', order: 0, showOnHome: true, items: [{ id: 'docs', label: 'Docs', url: 'https://example.com/docs' }] }],
+    };
+    const { onWorkspaceLaunch } = renderShell(settings);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Launch' }));
+    expect(screen.getByRole('dialog', { name: 'Launch workspace' })).toHaveTextContent('This will open 1 tab');
+    fireEvent.click(screen.getByRole('button', { name: 'Open workspace' }));
+
+    expect(onWorkspaceLaunch).toHaveBeenCalledWith(settings.workspaces[0]);
   });
 });
