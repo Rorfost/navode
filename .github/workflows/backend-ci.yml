@@ -1,0 +1,24 @@
+name: Backend CI
+
+on:
+  pull_request:
+    paths: ["apps/api/**", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "eslint.config.mjs", "tsconfig.base.json"]
+  push:
+    branches: [main]
+    paths: ["apps/api/**", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "eslint.config.mjs", "tsconfig.base.json"]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.12.1 }
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm --filter @navode/api typecheck
+      - run: pnpm --filter @navode/api test
+      - run: pnpm build:api
+      - run: pnpm --filter @navode/api exec wrangler deploy --dry-run

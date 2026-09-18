@@ -1,0 +1,21 @@
+name: Infrastructure CI
+
+on:
+  pull_request:
+    paths: ["infrastructure/**", "apps/api/wrangler.jsonc", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"]
+  push:
+    branches: [main]
+    paths: ["infrastructure/**", "apps/api/wrangler.jsonc", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.12.1 }
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @navode/api exec wrangler deploy --dry-run
+      - run: git diff --check
