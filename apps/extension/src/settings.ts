@@ -9,6 +9,9 @@ export async function loadExtensionSettings(storage: LocalStorageAdapter): Promi
   return parseNavodeSettings(await storage.get<unknown>(NAVODE_SETTINGS_STORAGE_KEY));
 }
 
-export function saveExtensionSettings(storage: LocalStorageAdapter, settings: NavodeSettings): Promise<void> {
+export function saveExtensionSettings(
+  storage: LocalStorageAdapter,
+  settings: NavodeSettings,
+): Promise<void> {
   return storage.set(NAVODE_SETTINGS_STORAGE_KEY, settings);
 }

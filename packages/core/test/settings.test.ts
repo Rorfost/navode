@@ -4,6 +4,8 @@ import {
   parseNavodeSettings,
 } from '../src/index';
 
+import { describe, expect, it } from 'vitest';
+
 describe('parseNavodeSettings', () => {
   it('keeps valid persisted preferences', () => {
     expect(
@@ -14,7 +16,11 @@ describe('parseNavodeSettings', () => {
         defaultSearchProvider: 'youtube',
         initialQuickLinks: false,
       }),
-    ).toMatchObject({ theme: 'light', onboardingCompleted: true, defaultSearchProvider: 'youtube' });
+    ).toMatchObject({
+      theme: 'light',
+      onboardingCompleted: true,
+      defaultSearchProvider: 'youtube',
+    });
   });
 
   it('uses safe defaults for an unknown schema', () => {
@@ -31,7 +37,12 @@ describe('parseNavodeSettings', () => {
       customAliases: [],
       recentExecutions: [],
     });
-    expect(settings).toMatchObject({ schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION, scratchpad: { content: '' }, snippets: [], todayItems: [] });
+    expect(settings).toMatchObject({
+      schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
+      scratchpad: { content: '' },
+      snippets: [],
+      todayItems: [],
+    });
   });
 
   it('migrates v3 productivity settings to v4 personalization defaults', () => {

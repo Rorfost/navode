@@ -16,7 +16,12 @@ describe('public web pages', () => {
     render(<PublicSite page="privacy" />);
 
     expect(screen.getByRole('heading', { name: /your navode data stays local/i })).toBeVisible();
-    expect(screen.getByText(/no analytics, telemetry, advertising identifiers, user accounts/i)).toBeVisible();
-    expect(screen.getByRole('link', { name: 'support@rorfost.com' })).toHaveAttribute('href', 'mailto:support@rorfost.com');
+    expect(
+      screen.getByText(/no analytics, telemetry, advertising identifiers, user accounts/i),
+    ).toBeVisible();
+    expect(screen.getByRole('link', { name: 'support@rorfost.com' })).toHaveAttribute(
+      'href',
+      'mailto:support@rorfost.com',
+    );
   });
 });

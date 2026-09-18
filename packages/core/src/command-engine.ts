@@ -1,6 +1,21 @@
 export type SearchProviderId = 'google' | 'youtube' | 'github' | 'codeforces' | 'leetcode';
-export type InternalCommandView = 'settings' | 'links' | 'projects' | 'workspaces' | 'snippets' | 'note' | 'today';
-export type CommandSource = 'alias' | 'direct-url' | 'fallback-search' | 'internal' | 'quick-link' | 'project' | 'workspace' | 'snippet';
+export type InternalCommandView =
+  | 'settings'
+  | 'links'
+  | 'projects'
+  | 'workspaces'
+  | 'snippets'
+  | 'note'
+  | 'today';
+export type CommandSource =
+  | 'alias'
+  | 'direct-url'
+  | 'fallback-search'
+  | 'internal'
+  | 'quick-link'
+  | 'project'
+  | 'workspace'
+  | 'snippet';
 
 export interface SearchProvider {
   id: SearchProviderId;
@@ -96,7 +111,8 @@ export const BUILT_IN_SEARCH_PROVIDERS: readonly SearchProvider[] = [
     id: 'youtube',
     label: 'YouTube',
     aliases: ['yt', 'youtube'],
-    searchUrl: (query) => `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
+    searchUrl: (query) =>
+      `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
   },
   {
     id: 'github',
@@ -216,7 +232,8 @@ export function createCommandAlias(input: NewCommandAlias, id: string): CommandA
   const alias = input.alias.trim().toLowerCase();
   const label = input.label.trim();
   const urlTemplate = input.urlTemplate.trim();
-  if (!/^[a-z0-9][a-z0-9-]{0,31}$/.test(alias) || !label || !isSafeUrlTemplate(urlTemplate)) return null;
+  if (!/^[a-z0-9][a-z0-9-]{0,31}$/.test(alias) || !label || !isSafeUrlTemplate(urlTemplate))
+    return null;
   if (isReservedAlias(alias)) return null;
   return { id, alias, label, urlTemplate };
 }
@@ -280,13 +297,20 @@ function resolveDirectUrl(input: string): CommandResult | null {
   });
 }
 
-function resolveAlias(name: string, argument: string, command: string, catalog: CommandCatalog): CommandResult | null {
+function resolveAlias(
+  name: string,
+  argument: string,
+  command: string,
+  catalog: CommandCatalog,
+): CommandResult | null {
   const provider = BUILT_IN_SEARCH_PROVIDERS.find((candidate) => candidate.aliases.includes(name));
   if (provider) {
     return createResult({
       action: { type: 'open-url', url: provider.searchUrl(argument) },
       command,
-      description: argument ? `Search ${provider.label} for “${argument}”` : `Open ${provider.label}`,
+      description: argument
+        ? `Search ${provider.label} for “${argument}”`
+        : `Open ${provider.label}`,
       id: `search:${provider.id}:${argument.toLowerCase()}`,
       label: argument ? `Search ${provider.label}` : `Open ${provider.label}`,
       score: 100,
@@ -316,30 +340,34 @@ function getPredictableMatches(input: string, catalog: CommandCatalog): CommandR
   for (const [name, command] of Object.entries(internalCommands)) {
     const score = scoreMatch(normalized, [name, command.label]);
     if (score) {
-      matches.push(createResult({
-        action: command.action,
-        command: input,
-        description: command.label,
-        id: `internal:${name}`,
-        label: command.label,
-        score,
-        source: 'internal',
-      }));
+      matches.push(
+        createResult({
+          action: command.action,
+          command: input,
+          description: command.label,
+          id: `internal:${name}`,
+          label: command.label,
+          score,
+          source: 'internal',
+        }),
+      );
     }
   }
 
   for (const quickLink of catalog.quickLinks ?? []) {
     const score = scoreMatch(normalized, [quickLink.label, ...(quickLink.aliases ?? [])]);
     if (score && isSafeExternalUrl(quickLink.url)) {
-      matches.push(createResult({
-        action: { type: 'open-url', url: quickLink.url },
-        command: input,
-        description: `Open ${quickLink.label}`,
-        id: `quick-link:${quickLink.id}`,
-        label: quickLink.label,
-        score,
-        source: 'quick-link',
-      }));
+      matches.push(
+        createResult({
+          action: { type: 'open-url', url: quickLink.url },
+          command: input,
+          description: `Open ${quickLink.label}`,
+          id: `quick-link:${quickLink.id}`,
+          label: quickLink.label,
+          score,
+          source: 'quick-link',
+        }),
+      );
     }
   }
 
@@ -349,29 +377,33 @@ function getPredictableMatches(input: string, catalog: CommandCatalog): CommandR
   for (const workspace of catalog.workspaces ?? []) {
     const score = scoreMatch(normalized, [workspace.label, ...(workspace.aliases ?? [])]);
     if (score) {
-      matches.push(createResult({
-        action: { type: 'launch-workspace', workspaceId: workspace.id },
-        command: input,
-        description: `Launch ${workspace.label}`,
-        id: `workspace:${workspace.id}`,
-        label: workspace.label,
-        score,
-        source: 'workspace',
-      }));
+      matches.push(
+        createResult({
+          action: { type: 'launch-workspace', workspaceId: workspace.id },
+          command: input,
+          description: `Launch ${workspace.label}`,
+          id: `workspace:${workspace.id}`,
+          label: workspace.label,
+          score,
+          source: 'workspace',
+        }),
+      );
     }
   }
   for (const snippet of catalog.snippets ?? []) {
     const score = scoreMatch(normalized, [snippet.label, ...(snippet.aliases ?? [])]);
     if (score) {
-      matches.push(createResult({
-        action: { type: 'run-snippet', snippetId: snippet.id },
-        command: input,
-        description: `Use snippet ${snippet.label}`,
-        id: `snippet:${snippet.id}`,
-        label: snippet.label,
-        score,
-        source: 'snippet',
-      }));
+      matches.push(
+        createResult({
+          action: { type: 'run-snippet', snippetId: snippet.id },
+          command: input,
+          description: `Use snippet ${snippet.label}`,
+          id: `snippet:${snippet.id}`,
+          label: snippet.label,
+          score,
+          source: 'snippet',
+        }),
+      );
     }
   }
 
@@ -388,20 +420,24 @@ function addViewMatch(
 ) {
   const score = scoreMatch(input, [target.label, ...(target.aliases ?? [])]);
   if (score) {
-    results.push(createResult({
-      action: { type: 'open-view', view },
-      command,
-      description: `Open ${target.label}`,
-      id: `${source}:${target.id}`,
-      label: target.label,
-      score,
-      source,
-    }));
+    results.push(
+      createResult({
+        action: { type: 'open-view', view },
+        command,
+        description: `Open ${target.label}`,
+        id: `${source}:${target.id}`,
+        label: target.label,
+        score,
+        source,
+      }),
+    );
   }
 }
 
 function createFallbackSearchResult(query: string, providerId: SearchProviderId): CommandResult {
-  const provider = BUILT_IN_SEARCH_PROVIDERS.find((candidate) => candidate.id === providerId) ?? BUILT_IN_SEARCH_PROVIDERS[0]!;
+  const provider =
+    BUILT_IN_SEARCH_PROVIDERS.find((candidate) => candidate.id === providerId) ??
+    BUILT_IN_SEARCH_PROVIDERS[0]!;
   return createResult({
     action: { type: 'open-url', url: provider.searchUrl(query) },
     command: query,
@@ -457,7 +493,9 @@ function hasExplicitScheme(input: string): boolean {
 }
 
 function looksLikeDomain(input: string): boolean {
-  return /^(?:www\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+(?:[/?#][^\s]*)?$/i.test(input);
+  return /^(?:www\.)?[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+(?:[/?#][^\s]*)?$/i.test(
+    input,
+  );
 }
 
 function normalizeMatch(value: string): string {

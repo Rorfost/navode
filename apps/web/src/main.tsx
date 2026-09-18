@@ -24,15 +24,30 @@ function NavodeWebApp() {
       projects: settings.projects.map((project) => ({ id: project.id, label: project.name })),
       quickLinks: settings.quickLinks
         .filter((link) => link.enabled)
-        .map((link) => ({ id: link.id, label: link.name, url: link.url, ...(link.alias ? { aliases: [link.alias] } : {}) })),
+        .map((link) => ({
+          id: link.id,
+          label: link.name,
+          url: link.url,
+          ...(link.alias ? { aliases: [link.alias] } : {}),
+        })),
       snippets: settings.snippets.map((snippet) => ({
         id: snippet.id,
         label: snippet.title,
         ...(snippet.alias ? { aliases: [snippet.alias] } : {}),
       })),
-      workspaces: settings.workspaces.map((workspace) => ({ id: workspace.id, label: workspace.name })),
+      workspaces: settings.workspaces.map((workspace) => ({
+        id: workspace.id,
+        label: workspace.name,
+      })),
     }),
-    [settings.customAliases, settings.defaultSearchProvider, settings.projects, settings.quickLinks, settings.snippets, settings.workspaces],
+    [
+      settings.customAliases,
+      settings.defaultSearchProvider,
+      settings.projects,
+      settings.quickLinks,
+      settings.snippets,
+      settings.workspaces,
+    ],
   );
 
   useEffect(() => {
@@ -45,7 +60,10 @@ function NavodeWebApp() {
     setSettings(next);
   }
 
-  const resolveResults = useCallback((input: string) => getCommandResults(input, catalog), [catalog]);
+  const resolveResults = useCallback(
+    (input: string) => getCommandResults(input, catalog),
+    [catalog],
+  );
 
   function executeAction(action: CommandAction) {
     if (action.type === 'open-url') window.open(action.url, '_blank', 'noopener,noreferrer');
@@ -95,12 +113,15 @@ function NavodeWebApp() {
 function WebRoot() {
   const path = window.location.pathname;
   if (path === '/app') return <NavodeWebApp />;
-  const page: PublicPage = path === '/privacy' ? 'privacy' : path === '/support' ? 'support' : 'home';
+  const page: PublicPage =
+    path === '/privacy' ? 'privacy' : path === '/support' ? 'support' : 'home';
   return <PublicSite page={page} />;
 }
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ErrorBoundary><WebRoot /></ErrorBoundary>
+    <ErrorBoundary>
+      <WebRoot />
+    </ErrorBoundary>
   </StrictMode>,
 );

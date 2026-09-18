@@ -6,7 +6,11 @@ type Bindings = { APP_ENV?: string; APP_VERSION?: string };
 const app = new Hono<{ Bindings: Bindings }>();
 
 app.get('/health', (context) =>
-  context.json({ status: 'ok', service: 'navode-api', environment: context.env.APP_ENV ?? 'development' }),
+  context.json({
+    status: 'ok',
+    service: 'navode-api',
+    environment: context.env.APP_ENV ?? 'development',
+  }),
 );
 
 app.get('/version', (context) =>

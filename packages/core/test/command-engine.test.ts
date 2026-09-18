@@ -10,6 +10,8 @@ import {
   type RecentExecution,
 } from '../src/index';
 
+import { describe, expect, it } from 'vitest';
+
 describe('command engine parsing and search aliases', () => {
   it('parses predictable command name and argument boundaries', () => {
     expect(parseCommandInput('  GH navode command center  ')).toEqual({
@@ -51,8 +53,14 @@ describe('command engine parsing and search aliases', () => {
 
 describe('command engine safety and matching', () => {
   it('opens direct http URLs and rejects unsafe schemes', () => {
-    expect(resolveCommand('navode.dev/path').action).toEqual({ type: 'open-url', url: 'https://navode.dev/path' });
-    expect(resolveCommand('https://example.com/work').action).toEqual({ type: 'open-url', url: 'https://example.com/work' });
+    expect(resolveCommand('navode.dev/path').action).toEqual({
+      type: 'open-url',
+      url: 'https://navode.dev/path',
+    });
+    expect(resolveCommand('https://example.com/work').action).toEqual({
+      type: 'open-url',
+      url: 'https://example.com/work',
+    });
     expect(resolveCommand('javascript:alert(1)').action).toMatchObject({ type: 'error' });
     expect(resolveCommand('data:text/html,unsafe').action).toMatchObject({ type: 'error' });
   });
@@ -68,12 +76,20 @@ describe('command engine safety and matching', () => {
   });
 
   it('resolves quick links, workspaces, and snippets without guessing', () => {
-    expect(resolveCommand('docs', { quickLinks: [{ id: 'docs', label: 'Docs', url: 'https://example.com/docs' }] }).source).toBe('quick-link');
-    expect(resolveCommand('writing', { workspaces: [{ id: 'write', label: 'Writing' }] }).action).toEqual({
+    expect(
+      resolveCommand('docs', {
+        quickLinks: [{ id: 'docs', label: 'Docs', url: 'https://example.com/docs' }],
+      }).source,
+    ).toBe('quick-link');
+    expect(
+      resolveCommand('writing', { workspaces: [{ id: 'write', label: 'Writing' }] }).action,
+    ).toEqual({
       type: 'launch-workspace',
       workspaceId: 'write',
     });
-    expect(resolveCommand('signature', { snippets: [{ id: 'sign', label: 'Signature' }] }).action).toEqual({
+    expect(
+      resolveCommand('signature', { snippets: [{ id: 'sign', label: 'Signature' }] }).action,
+    ).toEqual({
       type: 'run-snippet',
       snippetId: 'sign',
     });
@@ -92,11 +108,24 @@ describe('custom aliases and recent execution history', () => {
       label: 'Search docs',
       urlTemplate: 'https://docs.example.com/?q={query}',
     });
-    expect(createCommandAlias({ alias: 'g', label: 'Override', urlTemplate: 'https://example.com' }, 'bad')).toBeNull();
-    expect(createCommandAlias({ alias: 'bad', label: 'Unsafe', urlTemplate: 'javascript:alert(1)' }, 'bad')).toBeNull();
+    expect(
+      createCommandAlias(
+        { alias: 'g', label: 'Override', urlTemplate: 'https://example.com' },
+        'bad',
+      ),
+    ).toBeNull();
+    expect(
+      createCommandAlias(
+        { alias: 'bad', label: 'Unsafe', urlTemplate: 'javascript:alert(1)' },
+        'bad',
+      ),
+    ).toBeNull();
 
     const result = resolveCommand('docs browser storage', { customAliases: [alias!] });
-    expect(result.action).toEqual({ type: 'open-url', url: 'https://docs.example.com/?q=browser%20storage' });
+    expect(result.action).toEqual({
+      type: 'open-url',
+      url: 'https://docs.example.com/?q=browser%20storage',
+    });
     expect(removeCommandAlias([alias!], alias!.id)).toEqual([]);
   });
 
@@ -104,7 +133,11 @@ describe('custom aliases and recent execution history', () => {
     const result = resolveCommand('g private search text');
     let history: RecentExecution[] = [];
     for (let index = 0; index < MAX_RECENT_EXECUTIONS + 2; index += 1) {
-      history = recordRecentExecution(history, result, `2026-01-01T00:00:${String(index).padStart(2, '0')}.000Z`);
+      history = recordRecentExecution(
+        history,
+        result,
+        `2026-01-01T00:00:${String(index).padStart(2, '0')}.000Z`,
+      );
     }
 
     expect(history).toHaveLength(MAX_RECENT_EXECUTIONS);

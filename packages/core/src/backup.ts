@@ -24,7 +24,14 @@ const settingsDataSchema = z
     defaultSearchProvider: z.enum(['google', 'youtube']).optional(),
     initialQuickLinks: z.boolean().optional(),
     customAliases: z
-      .array(z.object({ id: z.string().min(1), alias: z.string(), label: z.string(), urlTemplate: safeUrl }))
+      .array(
+        z.object({
+          id: z.string().min(1),
+          alias: z.string(),
+          label: z.string(),
+          urlTemplate: safeUrl,
+        }),
+      )
       .optional(),
     quickLinks: z
       .array(
@@ -55,7 +62,15 @@ const settingsDataSchema = z
                 id: z.string().min(1),
                 label: z.string(),
                 url: safeUrl,
-                kind: z.enum(['repository', 'frontend', 'backend', 'deployment', 'database', 'docs', 'custom']),
+                kind: z.enum([
+                  'repository',
+                  'frontend',
+                  'backend',
+                  'deployment',
+                  'database',
+                  'docs',
+                  'custom',
+                ]),
                 icon: z.string().optional(),
               }),
             )
@@ -71,14 +86,33 @@ const settingsDataSchema = z
           order: z.number().finite().optional(),
           description: z.string().optional(),
           showOnHome: z.boolean().optional(),
-          items: z.array(z.object({ id: z.string().min(1), label: z.string(), url: safeUrl })).optional(),
+          items: z
+            .array(z.object({ id: z.string().min(1), label: z.string(), url: safeUrl }))
+            .optional(),
         }),
       )
       .optional(),
-    recentExecutions: z.array(z.object({ id: z.string(), label: z.string(), performedAt: z.string(), actionType: z.string() })).optional(),
+    recentExecutions: z
+      .array(
+        z.object({
+          id: z.string(),
+          label: z.string(),
+          performedAt: z.string(),
+          actionType: z.string(),
+        }),
+      )
+      .optional(),
     scratchpad: z.object({ content: z.string().max(20_000) }).optional(),
     snippets: z
-      .array(z.object({ id: z.string().min(1), title: z.string(), content: z.string(), tags: z.array(z.string()).optional(), alias: z.string().optional() }))
+      .array(
+        z.object({
+          id: z.string().min(1),
+          title: z.string(),
+          content: z.string(),
+          tags: z.array(z.string()).optional(),
+          alias: z.string().optional(),
+        }),
+      )
       .optional(),
     focusTimer: z
       .object({
@@ -88,8 +122,18 @@ const settingsDataSchema = z
         endsAt: z.string().datetime().optional(),
       })
       .optional(),
-    todayItems: z.array(z.object({ id: z.string().min(1), title: z.string(), completed: z.boolean() })).max(3).optional(),
-    homeSections: z.object({ quickAccess: z.boolean(), projects: z.boolean(), workspaces: z.boolean(), productivity: z.boolean() }).optional(),
+    todayItems: z
+      .array(z.object({ id: z.string().min(1), title: z.string(), completed: z.boolean() }))
+      .max(3)
+      .optional(),
+    homeSections: z
+      .object({
+        quickAccess: z.boolean(),
+        projects: z.boolean(),
+        workspaces: z.boolean(),
+        productivity: z.boolean(),
+      })
+      .optional(),
     focusPresets: z.array(z.number().int().min(1).max(180)).max(5).optional(),
     reducedMotion: z.enum(['system', 'reduce']).optional(),
     recordRecentActions: z.boolean().optional(),
@@ -104,11 +148,17 @@ const backupSchema = z
   })
   .strict();
 
-export function createNavodeBackup(settings: NavodeSettings, exportedAt = new Date().toISOString()): NavodeBackup {
+export function createNavodeBackup(
+  settings: NavodeSettings,
+  exportedAt = new Date().toISOString(),
+): NavodeBackup {
   return { data: settings, exportedAt, schemaVersion: NAVODE_BACKUP_SCHEMA_VERSION };
 }
 
-export function serializeNavodeBackup(settings: NavodeSettings, exportedAt = new Date().toISOString()): string {
+export function serializeNavodeBackup(
+  settings: NavodeSettings,
+  exportedAt = new Date().toISOString(),
+): string {
   return JSON.stringify(createNavodeBackup(settings, exportedAt), null, 2);
 }
 
@@ -127,7 +177,9 @@ export function parseNavodeBackup(value: string): BackupImportResult {
   const validated = backupSchema.safeParse(parsed);
   if (!validated.success) {
     return {
-      errors: validated.error.issues.map((issue) => `${issue.path.join('.') || 'backup'}: ${issue.message}`),
+      errors: validated.error.issues.map(
+        (issue) => `${issue.path.join('.') || 'backup'}: ${issue.message}`,
+      ),
       success: false,
     };
   }

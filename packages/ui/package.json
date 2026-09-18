@@ -3,8 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "peerDependencies": { "react": "^19.1.0" },
-  "scripts": { "typecheck": "tsc --noEmit -p tsconfig.json" },
-  "devDependencies": { "@types/react": "19.1.8" }
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "peerDependencies": {
+    "react": "^19.1.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/react": "19.1.8"
+  }
 }

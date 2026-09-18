@@ -15,16 +15,22 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
 }
 
-export function Button({ className = '', type = 'button', variant = 'secondary', ...props }: ButtonProps) {
-  return <button className={`button button-${variant} ${className}`.trim()} type={type} {...props} />;
+export function Button({
+  className = '',
+  type = 'button',
+  variant = 'secondary',
+  ...props
+}: ButtonProps) {
+  return (
+    <button className={`button button-${variant} ${className}`.trim()} type={type} {...props} />
+  );
 }
 
-export const TextInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function TextInput(
-  { className = '', ...props },
-  ref,
-) {
-  return <input className={`text-input ${className}`.trim()} ref={ref} {...props} />;
-});
+export const TextInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
+  function TextInput({ className = '', ...props }, ref) {
+    return <input className={`text-input ${className}`.trim()} ref={ref} {...props} />;
+  },
+);
 
 export function Card({ className = '', ...props }: HTMLAttributes<HTMLElement>) {
   return <section className={`card ${className}`.trim()} {...props} />;
@@ -48,7 +54,12 @@ export function Toggle({
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & { pressed: boolean; children: ReactNode }) {
   return (
-    <Button className="toggle" aria-pressed={pressed} variant={pressed ? 'primary' : 'secondary'} {...props}>
+    <Button
+      className="toggle"
+      aria-pressed={pressed}
+      variant={pressed ? 'primary' : 'secondary'}
+      {...props}
+    >
       {children}
     </Button>
   );
@@ -62,7 +73,11 @@ export function Tabs({ children, label = 'Options' }: { children: ReactNode; lab
   );
 }
 
-export function Tab({ active, children, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { active: boolean }) {
+export function Tab({
+  active,
+  children,
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & { active: boolean }) {
   return (
     <Button className="tab" role="tab" aria-selected={active} variant="quiet" {...props}>
       {children}
@@ -84,7 +99,13 @@ export function CommandResult({
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & { active: boolean }) {
   return (
-    <button className="command-result" role="option" aria-selected={active} type="button" {...props}>
+    <button
+      className="command-result"
+      role="option"
+      aria-selected={active}
+      type="button"
+      {...props}
+    >
       {children}
     </button>
   );
@@ -103,7 +124,8 @@ export function Dialog({ children, label, onClose, open }: DialogProps) {
 
   useEffect(() => {
     if (!open) return undefined;
-    const returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const returnFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     dialogRef.current?.focus();
     return () => {
       returnFocus?.focus();

@@ -67,17 +67,27 @@ export function searchSnippets(snippets: readonly Snippet[], query: string): Sni
   const normalized = query.trim().toLowerCase();
   if (!normalized) return [...snippets];
   return snippets.filter((snippet) =>
-    [snippet.title, snippet.alias ?? '', snippet.content, ...snippet.tags].some((value) => value.toLowerCase().includes(normalized)),
+    [snippet.title, snippet.alias ?? '', snippet.content, ...snippet.tags].some((value) =>
+      value.toLowerCase().includes(normalized),
+    ),
   );
 }
 
-export function addTodayItem(items: readonly TodayItem[], title: string, id: string): TodayItem[] | null {
+export function addTodayItem(
+  items: readonly TodayItem[],
+  title: string,
+  id: string,
+): TodayItem[] | null {
   const normalized = title.trim();
   if (!normalized || items.length >= MAX_TODAY_ITEMS) return null;
   return [...items, { completed: false, id, title: normalized }];
 }
 
-export function updateTodayItem(items: readonly TodayItem[], id: string, title: string): TodayItem[] | null {
+export function updateTodayItem(
+  items: readonly TodayItem[],
+  id: string,
+  title: string,
+): TodayItem[] | null {
   const normalized = title.trim();
   if (!normalized || !items.some((item) => item.id === id)) return null;
   return items.map((item) => (item.id === id ? { ...item, title: normalized } : item));
@@ -92,7 +102,8 @@ export function clearTodayItems(): TodayItem[] {
 }
 
 export function startFocusTimer(durationMinutes: number, now = new Date()): FocusTimer | null {
-  if (!Number.isInteger(durationMinutes) || durationMinutes < 1 || durationMinutes > 180) return null;
+  if (!Number.isInteger(durationMinutes) || durationMinutes < 1 || durationMinutes > 180)
+    return null;
   const remainingSeconds = durationMinutes * 60;
   return {
     durationMinutes,
@@ -103,24 +114,42 @@ export function startFocusTimer(durationMinutes: number, now = new Date()): Focu
 }
 
 export function getFocusTimerSnapshot(timer: FocusTimer, now = new Date()): FocusTimerSnapshot {
-  if (timer.status !== 'running' || !timer.endsAt) return { remainingSeconds: timer.remainingSeconds, status: timer.status };
-  const remainingSeconds = Math.max(0, Math.ceil((new Date(timer.endsAt).getTime() - now.getTime()) / 1000));
+  if (timer.status !== 'running' || !timer.endsAt)
+    return { remainingSeconds: timer.remainingSeconds, status: timer.status };
+  const remainingSeconds = Math.max(
+    0,
+    Math.ceil((new Date(timer.endsAt).getTime() - now.getTime()) / 1000),
+  );
   return { remainingSeconds, status: remainingSeconds === 0 ? 'completed' : 'running' };
 }
 
 export function pauseFocusTimer(timer: FocusTimer, now = new Date()): FocusTimer {
   const snapshot = getFocusTimerSnapshot(timer, now);
-  if (snapshot.status === 'completed') return { ...timer, endsAt: undefined, remainingSeconds: 0, status: 'completed' };
-  return { ...timer, endsAt: undefined, remainingSeconds: snapshot.remainingSeconds, status: 'paused' };
+  if (snapshot.status === 'completed')
+    return { ...timer, endsAt: undefined, remainingSeconds: 0, status: 'completed' };
+  return {
+    ...timer,
+    endsAt: undefined,
+    remainingSeconds: snapshot.remainingSeconds,
+    status: 'paused',
+  };
 }
 
 export function resumeFocusTimer(timer: FocusTimer, now = new Date()): FocusTimer | null {
   if (timer.status !== 'paused' || timer.remainingSeconds < 1) return null;
-  return { ...timer, endsAt: new Date(now.getTime() + timer.remainingSeconds * 1000).toISOString(), status: 'running' };
+  return {
+    ...timer,
+    endsAt: new Date(now.getTime() + timer.remainingSeconds * 1000).toISOString(),
+    status: 'running',
+  };
 }
 
 export function resetFocusTimer(timer: FocusTimer): FocusTimer {
-  return { durationMinutes: timer.durationMinutes, remainingSeconds: timer.durationMinutes * 60, status: 'idle' };
+  return {
+    durationMinutes: timer.durationMinutes,
+    remainingSeconds: timer.durationMinutes * 60,
+    status: 'idle',
+  };
 }
 
 function normalizeTags(tags: readonly string[] | undefined): string[] {

@@ -2,10 +2,24 @@ name: Infrastructure CI
 
 on:
   pull_request:
-    paths: ["infrastructure/**", "apps/api/wrangler.jsonc", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"]
+    paths:
+      [
+        'infrastructure/**',
+        'apps/api/wrangler.jsonc',
+        'package.json',
+        'pnpm-lock.yaml',
+        'pnpm-workspace.yaml',
+      ]
   push:
     branches: [main]
-    paths: ["infrastructure/**", "apps/api/wrangler.jsonc", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"]
+    paths:
+      [
+        'infrastructure/**',
+        'apps/api/wrangler.jsonc',
+        'package.json',
+        'pnpm-lock.yaml',
+        'pnpm-workspace.yaml',
+      ]
 
 jobs:
   validate:

@@ -3,7 +3,9 @@ import { DEFAULT_NAVODE_SETTINGS, type NavodeSettings } from '@navode/core';
 import { NavodeShell } from '@navode/ui';
 import { describe, expect, it, vi } from 'vitest';
 
-function renderShell(settings: NavodeSettings = { ...DEFAULT_NAVODE_SETTINGS, onboardingCompleted: true }) {
+function renderShell(
+  settings: NavodeSettings = { ...DEFAULT_NAVODE_SETTINGS, onboardingCompleted: true },
+) {
   const onCommand = vi.fn();
   const onSettingsChange = vi.fn();
   const onWorkspaceLaunch = vi.fn();
@@ -51,7 +53,10 @@ describe('Navode shell', () => {
       ...DEFAULT_NAVODE_SETTINGS,
       defaultSearchProvider: 'youtube',
     });
-    expect(onSettingsChange).toHaveBeenLastCalledWith({ ...DEFAULT_NAVODE_SETTINGS, onboardingCompleted: true });
+    expect(onSettingsChange).toHaveBeenLastCalledWith({
+      ...DEFAULT_NAVODE_SETTINGS,
+      onboardingCompleted: true,
+    });
     expect(screen.queryByRole('dialog', { name: 'Welcome to Navode' })).not.toBeInTheDocument();
   });
 
@@ -65,7 +70,10 @@ describe('Navode shell', () => {
 
     fireEvent.change(commandInput, { target: { value: 'graph theory' } });
     fireEvent.keyDown(commandInput, { key: 'ArrowDown' });
-    expect(screen.getByRole('option', { name: /search youtube/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('option', { name: /search youtube/i })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
     fireEvent.keyDown(commandInput, { key: 'Enter' });
 
     expect(onCommand).toHaveBeenCalledWith('yt graph theory');
@@ -104,24 +112,38 @@ describe('Navode shell', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Manage' })[0]!);
     const dialog = await screen.findByRole('dialog', { name: 'Quick links' });
     fireEvent.change(within(dialog).getByLabelText('Name'), { target: { value: 'Docs' } });
-    fireEvent.change(within(dialog).getByLabelText('URL'), { target: { value: 'https://example.com/docs' } });
+    fireEvent.change(within(dialog).getByLabelText('URL'), {
+      target: { value: 'https://example.com/docs' },
+    });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Add link' }));
 
-    expect(onSettingsChange).toHaveBeenCalledWith(expect.objectContaining({
-      quickLinks: [expect.objectContaining({ name: 'Docs', url: 'https://example.com/docs' })],
-    }));
+    expect(onSettingsChange).toHaveBeenCalledWith(
+      expect.objectContaining({
+        quickLinks: [expect.objectContaining({ name: 'Docs', url: 'https://example.com/docs' })],
+      }),
+    );
   });
 
   it('confirms the number of tabs before launching a workspace', () => {
     const settings = {
       ...DEFAULT_NAVODE_SETTINGS,
       onboardingCompleted: true,
-      workspaces: [{ id: 'morning', name: 'Morning', order: 0, showOnHome: true, items: [{ id: 'docs', label: 'Docs', url: 'https://example.com/docs' }] }],
+      workspaces: [
+        {
+          id: 'morning',
+          name: 'Morning',
+          order: 0,
+          showOnHome: true,
+          items: [{ id: 'docs', label: 'Docs', url: 'https://example.com/docs' }],
+        },
+      ],
     };
     const { onWorkspaceLaunch } = renderShell(settings);
 
     fireEvent.click(screen.getByRole('button', { name: 'Launch' }));
-    expect(screen.getByRole('dialog', { name: 'Launch workspace' })).toHaveTextContent('This will open 1 tab');
+    expect(screen.getByRole('dialog', { name: 'Launch workspace' })).toHaveTextContent(
+      'This will open 1 tab',
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Open workspace' }));
 
     expect(onWorkspaceLaunch).toHaveBeenCalledWith(settings.workspaces[0]);
@@ -132,7 +154,9 @@ describe('Navode shell', () => {
     const { onSettingsChange } = renderShell(settings);
 
     fireEvent.click(screen.getByRole('button', { name: 'Note' }));
-    fireEvent.change(await screen.findByLabelText('Note'), { target: { value: 'Call the project team.' } });
+    fireEvent.change(await screen.findByLabelText('Note'), {
+      target: { value: 'Call the project team.' },
+    });
 
     expect(onSettingsChange).toHaveBeenLastCalledWith({
       ...settings,
@@ -146,12 +170,16 @@ describe('Navode shell', () => {
     const settings = {
       ...DEFAULT_NAVODE_SETTINGS,
       onboardingCompleted: true,
-      snippets: [{ id: 'reply', title: 'Reply', content: 'Thank you!', tags: ['email'], alias: 'thanks' }],
+      snippets: [
+        { id: 'reply', title: 'Reply', content: 'Thank you!', tags: ['email'], alias: 'thanks' },
+      ],
     };
     renderShell(settings);
 
     fireEvent.click(screen.getByRole('button', { name: 'Snippets' }));
-    fireEvent.change(await screen.findByLabelText('Search snippets'), { target: { value: 'email' } });
+    fireEvent.change(await screen.findByLabelText('Search snippets'), {
+      target: { value: 'email' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Copy Reply' }));
 
     await waitFor(() => expect(writeText).toHaveBeenCalledWith('Thank you!'));

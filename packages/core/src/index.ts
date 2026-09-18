@@ -1,4 +1,9 @@
-import { createCommandAlias, MAX_RECENT_EXECUTIONS, type CommandAlias, type RecentExecution } from './command-engine';
+import {
+  createCommandAlias,
+  MAX_RECENT_EXECUTIONS,
+  type CommandAlias,
+  type RecentExecution,
+} from './command-engine';
 import {
   createProject,
   createProjectAction,
@@ -122,7 +127,8 @@ export function parseNavodeSettings(value: unknown): NavodeSettings {
     focusTimer: parseFocusTimer(value.focusTimer),
     focusPresets: parseFocusPresets(value.focusPresets),
     homeSections: parseHomeSections(value.homeSections),
-    recordRecentActions: typeof value.recordRecentActions === 'boolean' ? value.recordRecentActions : true,
+    recordRecentActions:
+      typeof value.recordRecentActions === 'boolean' ? value.recordRecentActions : true,
     reducedMotion: isReducedMotionPreference(value.reducedMotion) ? value.reducedMotion : 'system',
     todayItems: parseTodayItems(value.todayItems),
     workspaces: parseWorkspaces(value.workspaces),
@@ -186,12 +192,33 @@ export function migrateV3Settings(value: Record<string, unknown>): NavodeSetting
   };
 }
 
-function parseV2Base(value: Record<string, unknown>): Omit<NavodeSettings, 'schemaVersion' | 'scratchpad' | 'snippets' | 'focusTimer' | 'focusPresets' | 'homeSections' | 'recordRecentActions' | 'reducedMotion' | 'todayItems'> {
+function parseV2Base(
+  value: Record<string, unknown>,
+): Omit<
+  NavodeSettings,
+  | 'schemaVersion'
+  | 'scratchpad'
+  | 'snippets'
+  | 'focusTimer'
+  | 'focusPresets'
+  | 'homeSections'
+  | 'recordRecentActions'
+  | 'reducedMotion'
+  | 'todayItems'
+> {
   return {
     theme: isThemePreference(value.theme) ? value.theme : DEFAULT_NAVODE_SETTINGS.theme,
-    onboardingCompleted: typeof value.onboardingCompleted === 'boolean' ? value.onboardingCompleted : DEFAULT_NAVODE_SETTINGS.onboardingCompleted,
-    defaultSearchProvider: isDefaultSearchProvider(value.defaultSearchProvider) ? value.defaultSearchProvider : DEFAULT_NAVODE_SETTINGS.defaultSearchProvider,
-    initialQuickLinks: typeof value.initialQuickLinks === 'boolean' ? value.initialQuickLinks : DEFAULT_NAVODE_SETTINGS.initialQuickLinks,
+    onboardingCompleted:
+      typeof value.onboardingCompleted === 'boolean'
+        ? value.onboardingCompleted
+        : DEFAULT_NAVODE_SETTINGS.onboardingCompleted,
+    defaultSearchProvider: isDefaultSearchProvider(value.defaultSearchProvider)
+      ? value.defaultSearchProvider
+      : DEFAULT_NAVODE_SETTINGS.defaultSearchProvider,
+    initialQuickLinks:
+      typeof value.initialQuickLinks === 'boolean'
+        ? value.initialQuickLinks
+        : DEFAULT_NAVODE_SETTINGS.initialQuickLinks,
     customAliases: parseCustomAliases(value.customAliases),
     projects: parseProjects(value.projects),
     quickLinks: parseQuickLinks(value.quickLinks),
@@ -200,12 +227,25 @@ function parseV2Base(value: Record<string, unknown>): Omit<NavodeSettings, 'sche
   };
 }
 
-function parseV3Base(value: Record<string, unknown>): Omit<NavodeSettings, 'schemaVersion' | 'focusPresets' | 'homeSections' | 'recordRecentActions' | 'reducedMotion'> {
+function parseV3Base(
+  value: Record<string, unknown>,
+): Omit<
+  NavodeSettings,
+  'schemaVersion' | 'focusPresets' | 'homeSections' | 'recordRecentActions' | 'reducedMotion'
+> {
   return {
     theme: isThemePreference(value.theme) ? value.theme : DEFAULT_NAVODE_SETTINGS.theme,
-    onboardingCompleted: typeof value.onboardingCompleted === 'boolean' ? value.onboardingCompleted : DEFAULT_NAVODE_SETTINGS.onboardingCompleted,
-    defaultSearchProvider: isDefaultSearchProvider(value.defaultSearchProvider) ? value.defaultSearchProvider : DEFAULT_NAVODE_SETTINGS.defaultSearchProvider,
-    initialQuickLinks: typeof value.initialQuickLinks === 'boolean' ? value.initialQuickLinks : DEFAULT_NAVODE_SETTINGS.initialQuickLinks,
+    onboardingCompleted:
+      typeof value.onboardingCompleted === 'boolean'
+        ? value.onboardingCompleted
+        : DEFAULT_NAVODE_SETTINGS.onboardingCompleted,
+    defaultSearchProvider: isDefaultSearchProvider(value.defaultSearchProvider)
+      ? value.defaultSearchProvider
+      : DEFAULT_NAVODE_SETTINGS.defaultSearchProvider,
+    initialQuickLinks:
+      typeof value.initialQuickLinks === 'boolean'
+        ? value.initialQuickLinks
+        : DEFAULT_NAVODE_SETTINGS.initialQuickLinks,
     customAliases: parseCustomAliases(value.customAliases),
     projects: parseProjects(value.projects),
     quickLinks: parseQuickLinks(value.quickLinks),
@@ -254,7 +294,15 @@ function parseCustomAliases(value: unknown): CommandAlias[] {
 
 function parseRecentExecutions(value: unknown): RecentExecution[] {
   if (!Array.isArray(value)) return [];
-  const validActionTypes = new Set(['open-url', 'open-view', 'run-snippet', 'launch-workspace', 'start-focus', 'export-data', 'show-help']);
+  const validActionTypes = new Set([
+    'open-url',
+    'open-view',
+    'run-snippet',
+    'launch-workspace',
+    'start-focus',
+    'export-data',
+    'show-help',
+  ]);
   return value
     .filter(
       (candidate): candidate is Record<string, unknown> =>
@@ -317,7 +365,12 @@ function parseProjects(value: unknown): Project[] {
     if (!project) return [];
     const actions = Array.isArray(candidate.actions)
       ? candidate.actions.flatMap((action) => {
-          if (!isRecord(action) || typeof action.id !== 'string' || !isProjectActionKind(action.kind)) return [];
+          if (
+            !isRecord(action) ||
+            typeof action.id !== 'string' ||
+            !isProjectActionKind(action.kind)
+          )
+            return [];
           const parsed = createProjectAction(
             {
               icon: typeof action.icon === 'string' ? action.icon : undefined,
@@ -343,7 +396,8 @@ function parseWorkspaces(value: unknown): Workspace[] {
       if (typeof candidate.id !== 'string') return [];
       const workspace = createWorkspace(
         {
-          description: typeof candidate.description === 'string' ? candidate.description : undefined,
+          description:
+            typeof candidate.description === 'string' ? candidate.description : undefined,
           name: typeof candidate.name === 'string' ? candidate.name : '',
           showOnHome: typeof candidate.showOnHome === 'boolean' ? candidate.showOnHome : false,
         },
@@ -369,7 +423,9 @@ function parseWorkspaces(value: unknown): Workspace[] {
 }
 
 function parseScratchpad(value: unknown): Scratchpad {
-  return isRecord(value) && typeof value.content === 'string' ? { content: value.content.slice(0, 20_000) } : DEFAULT_SCRATCHPAD;
+  return isRecord(value) && typeof value.content === 'string'
+    ? { content: value.content.slice(0, 20_000) }
+    : DEFAULT_SCRATCHPAD;
 }
 
 function parseSnippets(value: unknown): Snippet[] {
@@ -377,12 +433,17 @@ function parseSnippets(value: unknown): Snippet[] {
   const aliases = new Set<string>();
   return value.flatMap((candidate) => {
     if (!isRecord(candidate) || typeof candidate.id !== 'string') return [];
-    const snippet = createSnippet({
-      alias: typeof candidate.alias === 'string' ? candidate.alias : undefined,
-      content: typeof candidate.content === 'string' ? candidate.content : '',
-      tags: Array.isArray(candidate.tags) ? candidate.tags.filter((tag): tag is string => typeof tag === 'string') : [],
-      title: typeof candidate.title === 'string' ? candidate.title : '',
-    }, candidate.id);
+    const snippet = createSnippet(
+      {
+        alias: typeof candidate.alias === 'string' ? candidate.alias : undefined,
+        content: typeof candidate.content === 'string' ? candidate.content : '',
+        tags: Array.isArray(candidate.tags)
+          ? candidate.tags.filter((tag): tag is string => typeof tag === 'string')
+          : [],
+        title: typeof candidate.title === 'string' ? candidate.title : '',
+      },
+      candidate.id,
+    );
     if (!snippet || (snippet.alias && aliases.has(snippet.alias))) return [];
     if (snippet.alias) aliases.add(snippet.alias);
     return [snippet];
@@ -390,17 +451,46 @@ function parseSnippets(value: unknown): Snippet[] {
 }
 
 function parseFocusTimer(value: unknown): FocusTimer {
-  if (!isRecord(value) || !Number.isInteger(value.durationMinutes) || value.durationMinutes < 1 || value.durationMinutes > 180 || !Number.isInteger(value.remainingSeconds) || value.remainingSeconds < 0) return DEFAULT_FOCUS_TIMER;
+  if (
+    !isRecord(value) ||
+    !Number.isInteger(value.durationMinutes) ||
+    value.durationMinutes < 1 ||
+    value.durationMinutes > 180 ||
+    !Number.isInteger(value.remainingSeconds) ||
+    value.remainingSeconds < 0
+  )
+    return DEFAULT_FOCUS_TIMER;
   const status = value.status;
-  if (status !== 'idle' && status !== 'running' && status !== 'paused' && status !== 'completed') return DEFAULT_FOCUS_TIMER;
-  const endsAt = typeof value.endsAt === 'string' && Number.isFinite(new Date(value.endsAt).getTime()) ? value.endsAt : undefined;
-  if (status === 'running' && !endsAt) return { ...DEFAULT_FOCUS_TIMER, durationMinutes: value.durationMinutes, remainingSeconds: value.durationMinutes * 60 };
-  return { durationMinutes: value.durationMinutes, ...(endsAt ? { endsAt } : {}), remainingSeconds: value.remainingSeconds, status };
+  if (status !== 'idle' && status !== 'running' && status !== 'paused' && status !== 'completed')
+    return DEFAULT_FOCUS_TIMER;
+  const endsAt =
+    typeof value.endsAt === 'string' && Number.isFinite(new Date(value.endsAt).getTime())
+      ? value.endsAt
+      : undefined;
+  if (status === 'running' && !endsAt)
+    return {
+      ...DEFAULT_FOCUS_TIMER,
+      durationMinutes: value.durationMinutes,
+      remainingSeconds: value.durationMinutes * 60,
+    };
+  return {
+    durationMinutes: value.durationMinutes,
+    ...(endsAt ? { endsAt } : {}),
+    remainingSeconds: value.remainingSeconds,
+    status,
+  };
 }
 
 function parseFocusPresets(value: unknown): number[] {
   if (!Array.isArray(value)) return DEFAULT_FOCUS_PRESETS;
-  const presets = [...new Set(value.filter((duration): duration is number => Number.isInteger(duration) && duration >= 1 && duration <= 180))].slice(0, 5);
+  const presets = [
+    ...new Set(
+      value.filter(
+        (duration): duration is number =>
+          Number.isInteger(duration) && duration >= 1 && duration <= 180,
+      ),
+    ),
+  ].slice(0, 5);
   return presets.length ? presets : DEFAULT_FOCUS_PRESETS;
 }
 
@@ -421,7 +511,13 @@ function parseTodayItems(value: unknown): TodayItem[] {
     typeof candidate.id === 'string' &&
     typeof candidate.title === 'string' &&
     candidate.title.trim().length > 0
-      ? [{ completed: candidate.completed === true, id: candidate.id, title: candidate.title.trim() }]
+      ? [
+          {
+            completed: candidate.completed === true,
+            id: candidate.id,
+            title: candidate.title.trim(),
+          },
+        ]
       : [],
   );
 }
@@ -431,7 +527,15 @@ function numericValue(value: unknown): number {
 }
 
 function isProjectActionKind(value: unknown): value is ProjectActionKind {
-  return value === 'repository' || value === 'frontend' || value === 'backend' || value === 'deployment' || value === 'database' || value === 'docs' || value === 'custom';
+  return (
+    value === 'repository' ||
+    value === 'frontend' ||
+    value === 'backend' ||
+    value === 'deployment' ||
+    value === 'database' ||
+    value === 'docs' ||
+    value === 'custom'
+  );
 }
 
 export interface Command {

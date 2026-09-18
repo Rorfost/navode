@@ -30,15 +30,30 @@ function NavodeExtensionApp() {
       projects: settings.projects.map((project) => ({ id: project.id, label: project.name })),
       quickLinks: settings.quickLinks
         .filter((link) => link.enabled)
-        .map((link) => ({ id: link.id, label: link.name, url: link.url, ...(link.alias ? { aliases: [link.alias] } : {}) })),
+        .map((link) => ({
+          id: link.id,
+          label: link.name,
+          url: link.url,
+          ...(link.alias ? { aliases: [link.alias] } : {}),
+        })),
       snippets: settings.snippets.map((snippet) => ({
         id: snippet.id,
         label: snippet.title,
         ...(snippet.alias ? { aliases: [snippet.alias] } : {}),
       })),
-      workspaces: settings.workspaces.map((workspace) => ({ id: workspace.id, label: workspace.name })),
+      workspaces: settings.workspaces.map((workspace) => ({
+        id: workspace.id,
+        label: workspace.name,
+      })),
     }),
-    [settings.customAliases, settings.defaultSearchProvider, settings.projects, settings.quickLinks, settings.snippets, settings.workspaces],
+    [
+      settings.customAliases,
+      settings.defaultSearchProvider,
+      settings.projects,
+      settings.quickLinks,
+      settings.snippets,
+      settings.workspaces,
+    ],
   );
 
   useEffect(() => {
@@ -49,7 +64,9 @@ function NavodeExtensionApp() {
       })
       .catch(() => {
         setSettings(DEFAULT_NAVODE_SETTINGS);
-        setStorageNotice('Navode could not load local settings, so it is using safe defaults. Your existing data was not overwritten.');
+        setStorageNotice(
+          'Navode could not load local settings, so it is using safe defaults. Your existing data was not overwritten.',
+        );
       })
       .finally(() => setHasLoadedSettings(true));
   }, []);
@@ -59,7 +76,9 @@ function NavodeExtensionApp() {
     document.documentElement.dataset.reducedMotion = settings.reducedMotion;
     if (hasLoadedSettings && canPersist) {
       void saveExtensionSettings(storage, settings).catch(() => {
-        setStorageNotice('Navode could not save a recent change. Check browser storage availability before closing this tab.');
+        setStorageNotice(
+          'Navode could not save a recent change. Check browser storage availability before closing this tab.',
+        );
       });
     }
   }, [canPersist, hasLoadedSettings, settings]);
@@ -68,7 +87,10 @@ function NavodeExtensionApp() {
     setSettings(next);
   }
 
-  const resolveResults = useCallback((input: string) => getCommandResults(input, catalog), [catalog]);
+  const resolveResults = useCallback(
+    (input: string) => getCommandResults(input, catalog),
+    [catalog],
+  );
 
   function executeAction(action: CommandAction) {
     if (action.type === 'open-url') window.open(action.url, '_blank', 'noopener,noreferrer');
@@ -118,6 +140,8 @@ function NavodeExtensionApp() {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <ErrorBoundary><NavodeExtensionApp /></ErrorBoundary>
+    <ErrorBoundary>
+      <NavodeExtensionApp />
+    </ErrorBoundary>
   </StrictMode>,
 );

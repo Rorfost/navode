@@ -27,7 +27,12 @@ export interface ProductivityManagerProps {
   settings: NavodeSettings;
 }
 
-export function ProductivityManager({ onClose, onSettingsChange, screen, settings }: ProductivityManagerProps) {
+export function ProductivityManager({
+  onClose,
+  onSettingsChange,
+  screen,
+  settings,
+}: ProductivityManagerProps) {
   const [now, setNow] = useState(() => new Date());
   const [snippetQuery, setSnippetQuery] = useState('');
   const [snippetTitle, setSnippetTitle] = useState('');
@@ -48,7 +53,10 @@ export function ProductivityManager({ onClose, onSettingsChange, screen, setting
   }, [screen]);
 
   const timer = getFocusTimerSnapshot(settings.focusTimer, now);
-  const snippets = useMemo(() => searchSnippets(settings.snippets, snippetQuery), [settings.snippets, snippetQuery]);
+  const snippets = useMemo(
+    () => searchSnippets(settings.snippets, snippetQuery),
+    [settings.snippets, snippetQuery],
+  );
 
   function update(next: Partial<NavodeSettings>) {
     onSettingsChange({ ...settings, ...next });
@@ -66,14 +74,22 @@ export function ProductivityManager({ onClose, onSettingsChange, screen, setting
   function submitSnippet(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const id = editingSnippetId ?? `snippet-${Date.now()}`;
-    const snippet = createSnippet({
-      alias: snippetAlias,
-      content: snippetContent,
-      tags: snippetTags.split(','),
-      title: snippetTitle,
-    }, id);
-    if (!snippet || settings.snippets.some((item) => item.id !== id && item.alias && item.alias === snippet.alias)) {
-      setSnippetError('Add a title and content; aliases must use letters, numbers, or hyphens and be unique.');
+    const snippet = createSnippet(
+      {
+        alias: snippetAlias,
+        content: snippetContent,
+        tags: snippetTags.split(','),
+        title: snippetTitle,
+      },
+      id,
+    );
+    if (
+      !snippet ||
+      settings.snippets.some((item) => item.id !== id && item.alias && item.alias === snippet.alias)
+    ) {
+      setSnippetError(
+        'Add a title and content; aliases must use letters, numbers, or hyphens and be unique.',
+      );
       return;
     }
     update({ snippets: saveSnippet(settings.snippets, snippet) });
@@ -95,14 +111,18 @@ export function ProductivityManager({ onClose, onSettingsChange, screen, setting
     const snippet = settings.snippets.find((item) => item.id === id);
     if (!snippet) return;
     if (!navigator.clipboard) {
-      setCopyFeedback('Clipboard access was unavailable. Select and copy the snippet content manually.');
+      setCopyFeedback(
+        'Clipboard access was unavailable. Select and copy the snippet content manually.',
+      );
       return;
     }
     try {
       await navigator.clipboard.writeText(snippet.content);
       setCopyFeedback(`Copied ${snippet.title}.`);
     } catch {
-      setCopyFeedback('Clipboard access was unavailable. Select and copy the snippet content manually.');
+      setCopyFeedback(
+        'Clipboard access was unavailable. Select and copy the snippet content manually.',
+      );
     }
   }
 
@@ -140,7 +160,9 @@ export function ProductivityManager({ onClose, onSettingsChange, screen, setting
           <textarea
             className="text-input textarea-input"
             id="scratchpad-content"
-            onChange={(event) => update({ scratchpad: { content: event.target.value.slice(0, 20_000) } })}
+            onChange={(event) =>
+              update({ scratchpad: { content: event.target.value.slice(0, 20_000) } })
+            }
             placeholder="Capture a thought…"
             value={settings.scratchpad.content}
           />
@@ -149,32 +171,71 @@ export function ProductivityManager({ onClose, onSettingsChange, screen, setting
           <Button
             disabled={!settings.scratchpad.content}
             onClick={() => {
-              if (window.confirm('Clear the scratchpad? This cannot be undone.')) update({ scratchpad: { content: '' } });
+              if (window.confirm('Clear the scratchpad? This cannot be undone.'))
+                update({ scratchpad: { content: '' } });
             }}
             variant="quiet"
           >
             Clear note
           </Button>
-          <Button onClick={onClose} variant="primary">Done</Button>
+          <Button onClick={onClose} variant="primary">
+            Done
+          </Button>
         </div>
       </Dialog>
 
       <Dialog label="Snippets" onClose={onClose} open={screen === 'snippets'}>
         <p className="eyebrow">REUSABLE TEXT</p>
         <h2>Snippets</h2>
-        <p className="muted">Snippets stay on this device. Navode is not a password vault—do not store passwords, tokens, or other secrets here.</p>
-        <label className="editor-field" htmlFor="snippet-search">Search snippets
-          <TextInput id="snippet-search" onChange={(event) => setSnippetQuery(event.target.value)} placeholder="Title, tag, or content" value={snippetQuery} />
+        <p className="muted">
+          Snippets stay on this device. Navode is not a password vault—do not store passwords,
+          tokens, or other secrets here.
+        </p>
+        <label className="editor-field" htmlFor="snippet-search">
+          Search snippets
+          <TextInput
+            id="snippet-search"
+            onChange={(event) => setSnippetQuery(event.target.value)}
+            placeholder="Title, tag, or content"
+            value={snippetQuery}
+          />
         </label>
-        {copyFeedback && <p className="command-feedback" role="status">{copyFeedback}</p>}
+        {copyFeedback && (
+          <p className="command-feedback" role="status">
+            {copyFeedback}
+          </p>
+        )}
         <ul className="manager-list" aria-label="Snippets">
           {snippets.map((snippet) => (
             <li key={snippet.id}>
-              <span className="manager-item-copy"><strong>{snippet.title}</strong><small>{[snippet.alias, ...snippet.tags].filter(Boolean).join(' · ') || 'No tags'}</small></span>
+              <span className="manager-item-copy">
+                <strong>{snippet.title}</strong>
+                <small>
+                  {[snippet.alias, ...snippet.tags].filter(Boolean).join(' · ') || 'No tags'}
+                </small>
+              </span>
               <span className="manager-actions">
-                <Button aria-label={`Copy ${snippet.title}`} onClick={() => void copySnippet(snippet.id)} variant="quiet">Copy</Button>
-                <Button aria-label={`Edit ${snippet.title}`} onClick={() => editSnippet(snippet.id)} variant="quiet">Edit</Button>
-                <Button aria-label={`Delete ${snippet.title}`} onClick={() => update({ snippets: removeSnippet(settings.snippets, snippet.id) })} variant="quiet">Delete</Button>
+                <Button
+                  aria-label={`Copy ${snippet.title}`}
+                  onClick={() => void copySnippet(snippet.id)}
+                  variant="quiet"
+                >
+                  Copy
+                </Button>
+                <Button
+                  aria-label={`Edit ${snippet.title}`}
+                  onClick={() => editSnippet(snippet.id)}
+                  variant="quiet"
+                >
+                  Edit
+                </Button>
+                <Button
+                  aria-label={`Delete ${snippet.title}`}
+                  onClick={() => update({ snippets: removeSnippet(settings.snippets, snippet.id) })}
+                  variant="quiet"
+                >
+                  Delete
+                </Button>
               </span>
             </li>
           ))}
@@ -182,13 +243,50 @@ export function ProductivityManager({ onClose, onSettingsChange, screen, setting
         {!snippets.length && <p className="muted">No matching snippets yet.</p>}
         <form className="editor-form" onSubmit={submitSnippet}>
           <h3>{editingSnippetId ? 'Edit snippet' : 'New snippet'}</h3>
-          <label className="editor-field">Title<TextInput onChange={(event) => setSnippetTitle(event.target.value)} required value={snippetTitle} /></label>
-          <label className="editor-field">Content<textarea className="text-input textarea-input" onChange={(event) => setSnippetContent(event.target.value)} required value={snippetContent} /></label>
-          <label className="editor-field">Tags (comma separated)<TextInput onChange={(event) => setSnippetTags(event.target.value)} placeholder="email, work" value={snippetTags} /></label>
-          <label className="editor-field">Shortcut / alias (optional)<TextInput onChange={(event) => setSnippetAlias(event.target.value)} placeholder="reply" value={snippetAlias} /></label>
-          {snippetError && <p className="form-error" role="alert">{snippetError}</p>}
+          <label className="editor-field">
+            Title
+            <TextInput
+              onChange={(event) => setSnippetTitle(event.target.value)}
+              required
+              value={snippetTitle}
+            />
+          </label>
+          <label className="editor-field">
+            Content
+            <textarea
+              className="text-input textarea-input"
+              onChange={(event) => setSnippetContent(event.target.value)}
+              required
+              value={snippetContent}
+            />
+          </label>
+          <label className="editor-field">
+            Tags (comma separated)
+            <TextInput
+              onChange={(event) => setSnippetTags(event.target.value)}
+              placeholder="email, work"
+              value={snippetTags}
+            />
+          </label>
+          <label className="editor-field">
+            Shortcut / alias (optional)
+            <TextInput
+              onChange={(event) => setSnippetAlias(event.target.value)}
+              placeholder="reply"
+              value={snippetAlias}
+            />
+          </label>
+          {snippetError && (
+            <p className="form-error" role="alert">
+              {snippetError}
+            </p>
+          )}
           <div className="form-actions">
-            {editingSnippetId && <Button onClick={resetSnippetForm} variant="quiet">Cancel</Button>}
+            {editingSnippetId && (
+              <Button onClick={resetSnippetForm} variant="quiet">
+                Cancel
+              </Button>
+            )}
             <Button type="submit">{editingSnippetId ? 'Save snippet' : 'Add snippet'}</Button>
           </div>
         </form>
@@ -197,7 +295,11 @@ export function ProductivityManager({ onClose, onSettingsChange, screen, setting
       <Dialog label="Focus timer" onClose={onClose} open={screen === 'focus'}>
         <p className="eyebrow">FOCUS SESSION</p>
         <h2>{formatTimer(timer.remainingSeconds)}</h2>
-        <p className="muted" role="status">{timer.status === 'completed' ? 'Session complete.' : `${timer.status[0]?.toUpperCase()}${timer.status.slice(1)} session`}</p>
+        <p className="muted" role="status">
+          {timer.status === 'completed'
+            ? 'Session complete.'
+            : `${timer.status[0]?.toUpperCase()}${timer.status.slice(1)} session`}
+        </p>
         <fieldset className="provider-options">
           <legend>Duration</legend>
           {settings.focusPresets.map((preset) => (
@@ -214,14 +316,49 @@ export function ProductivityManager({ onClose, onSettingsChange, screen, setting
             </Button>
           ))}
         </fieldset>
-        <label className="editor-field" htmlFor="focus-duration">Custom minutes (1–180)
-          <TextInput id="focus-duration" inputMode="numeric" max="180" min="1" onChange={(event) => setDuration(event.target.value)} type="number" value={duration} />
+        <label className="editor-field" htmlFor="focus-duration">
+          Custom minutes (1–180)
+          <TextInput
+            id="focus-duration"
+            inputMode="numeric"
+            max="180"
+            min="1"
+            onChange={(event) => setDuration(event.target.value)}
+            type="number"
+            value={duration}
+          />
         </label>
         <div className="dialog-actions">
-          {(timer.status === 'idle' || timer.status === 'completed') && <Button onClick={startTimer} variant="primary">Start</Button>}
-          {timer.status === 'running' && <Button onClick={() => update({ focusTimer: pauseFocusTimer(settings.focusTimer) })} variant="primary">Pause</Button>}
-          {timer.status === 'paused' && <Button onClick={() => { const next = resumeFocusTimer(settings.focusTimer); if (next) update({ focusTimer: next }); }} variant="primary">Resume</Button>}
-          <Button onClick={() => update({ focusTimer: resetFocusTimer(settings.focusTimer) })} variant="quiet">Reset</Button>
+          {(timer.status === 'idle' || timer.status === 'completed') && (
+            <Button onClick={startTimer} variant="primary">
+              Start
+            </Button>
+          )}
+          {timer.status === 'running' && (
+            <Button
+              onClick={() => update({ focusTimer: pauseFocusTimer(settings.focusTimer) })}
+              variant="primary"
+            >
+              Pause
+            </Button>
+          )}
+          {timer.status === 'paused' && (
+            <Button
+              onClick={() => {
+                const next = resumeFocusTimer(settings.focusTimer);
+                if (next) update({ focusTimer: next });
+              }}
+              variant="primary"
+            >
+              Resume
+            </Button>
+          )}
+          <Button
+            onClick={() => update({ focusTimer: resetFocusTimer(settings.focusTimer) })}
+            variant="quiet"
+          >
+            Reset
+          </Button>
         </div>
       </Dialog>
 
@@ -232,21 +369,72 @@ export function ProductivityManager({ onClose, onSettingsChange, screen, setting
         <ul className="manager-list" aria-label="Today priorities">
           {settings.todayItems.map((item) => (
             <li key={item.id}>
-              <label className="today-item"><input checked={item.completed} onChange={() => update({ todayItems: toggleTodayItem(settings.todayItems, item.id) })} type="checkbox" /> <span>{item.title}</span></label>
-              <span className="manager-actions"><Button aria-label={`Edit ${item.title}`} onClick={() => editToday(item.id)} variant="quiet">Edit</Button></span>
+              <label className="today-item">
+                <input
+                  checked={item.completed}
+                  onChange={() =>
+                    update({ todayItems: toggleTodayItem(settings.todayItems, item.id) })
+                  }
+                  type="checkbox"
+                />{' '}
+                <span>{item.title}</span>
+              </label>
+              <span className="manager-actions">
+                <Button
+                  aria-label={`Edit ${item.title}`}
+                  onClick={() => editToday(item.id)}
+                  variant="quiet"
+                >
+                  Edit
+                </Button>
+              </span>
             </li>
           ))}
         </ul>
         <form className="editor-form" onSubmit={submitToday}>
-          <label className="editor-field">Priority<TextInput disabled={!editingTodayId && settings.todayItems.length >= MAX_TODAY_ITEMS} onChange={(event) => setTodayText(event.target.value)} required value={todayText} /></label>
+          <label className="editor-field">
+            Priority
+            <TextInput
+              disabled={!editingTodayId && settings.todayItems.length >= MAX_TODAY_ITEMS}
+              onChange={(event) => setTodayText(event.target.value)}
+              required
+              value={todayText}
+            />
+          </label>
           <div className="form-actions">
-            {editingTodayId && <Button onClick={() => { setEditingTodayId(null); setTodayText(''); }} variant="quiet">Cancel</Button>}
-            <Button disabled={!editingTodayId && settings.todayItems.length >= MAX_TODAY_ITEMS} type="submit">{editingTodayId ? 'Save priority' : 'Add priority'}</Button>
+            {editingTodayId && (
+              <Button
+                onClick={() => {
+                  setEditingTodayId(null);
+                  setTodayText('');
+                }}
+                variant="quiet"
+              >
+                Cancel
+              </Button>
+            )}
+            <Button
+              disabled={!editingTodayId && settings.todayItems.length >= MAX_TODAY_ITEMS}
+              type="submit"
+            >
+              {editingTodayId ? 'Save priority' : 'Add priority'}
+            </Button>
           </div>
         </form>
         <div className="dialog-actions">
-          <Button disabled={!settings.todayItems.length} onClick={() => { if (window.confirm('Clear all today priorities?')) update({ todayItems: clearTodayItems() }); }} variant="quiet">Clear today</Button>
-          <Button onClick={onClose} variant="primary">Done</Button>
+          <Button
+            disabled={!settings.todayItems.length}
+            onClick={() => {
+              if (window.confirm('Clear all today priorities?'))
+                update({ todayItems: clearTodayItems() });
+            }}
+            variant="quiet"
+          >
+            Clear today
+          </Button>
+          <Button onClick={onClose} variant="primary">
+            Done
+          </Button>
         </div>
       </Dialog>
     </>
@@ -254,5 +442,7 @@ export function ProductivityManager({ onClose, onSettingsChange, screen, setting
 }
 
 function formatTimer(totalSeconds: number): string {
-  return `${Math.floor(totalSeconds / 60).toString().padStart(2, '0')}:${(totalSeconds % 60).toString().padStart(2, '0')}`;
+  return `${Math.floor(totalSeconds / 60)
+    .toString()
+    .padStart(2, '0')}:${(totalSeconds % 60).toString().padStart(2, '0')}`;
 }

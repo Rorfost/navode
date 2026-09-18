@@ -2,10 +2,26 @@ name: Extension CI
 
 on:
   pull_request:
-    paths: ["apps/extension/**", "packages/**", "scripts/check-extension.mjs", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"]
+    paths:
+      [
+        'apps/extension/**',
+        'packages/**',
+        'scripts/check-extension.mjs',
+        'package.json',
+        'pnpm-lock.yaml',
+        'pnpm-workspace.yaml',
+      ]
   push:
     branches: [main]
-    paths: ["apps/extension/**", "packages/**", "scripts/check-extension.mjs", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml"]
+    paths:
+      [
+        'apps/extension/**',
+        'packages/**',
+        'scripts/check-extension.mjs',
+        'package.json',
+        'pnpm-lock.yaml',
+        'pnpm-workspace.yaml',
+      ]
 
 jobs:
   validate:

@@ -10,6 +10,8 @@ describe('extension manifest policy', () => {
     expect(manifest.host_permissions).toBeUndefined();
     expect(manifest.optional_host_permissions).toBeUndefined();
     expect(manifest.content_scripts).toBeUndefined();
-    expect(manifest.content_security_policy.extension_pages).toBe("script-src 'self'; object-src 'self'");
+    expect(manifest.content_security_policy.extension_pages).toBe(
+      "script-src 'self'; object-src 'self'",
+    );
   });
 });

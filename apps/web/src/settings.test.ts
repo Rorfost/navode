@@ -12,7 +12,12 @@ describe('web settings persistence', () => {
   });
 
   it('persists scratchpad content locally', () => {
-    expect(saveWebSettings({ ...DEFAULT_NAVODE_SETTINGS, scratchpad: { content: 'Review the release notes.' } })).toBe(true);
+    expect(
+      saveWebSettings({
+        ...DEFAULT_NAVODE_SETTINGS,
+        scratchpad: { content: 'Review the release notes.' },
+      }),
+    ).toBe(true);
 
     expect(loadWebSettings().scratchpad.content).toBe('Review the release notes.');
   });

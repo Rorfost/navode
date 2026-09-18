@@ -4,7 +4,9 @@ export interface LocalStorageAdapter {
   remove(key: string): Promise<void>;
 }
 
-export function createChromeLocalStorageAdapter(storageArea: chrome.storage.StorageArea): LocalStorageAdapter {
+export function createChromeLocalStorageAdapter(
+  storageArea: chrome.storage.StorageArea,
+): LocalStorageAdapter {
   return {
     async get<T>(key: string): Promise<T | undefined> {
       const values = await storageArea.get(key);

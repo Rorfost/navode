@@ -10,7 +10,16 @@ import {
   type NavodeSettings,
   type Workspace,
 } from '@navode/core';
-import { lazy, Suspense, type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  lazy,
+  Suspense,
+  type FormEvent,
+  type KeyboardEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   Button,
   Card,
@@ -26,9 +35,15 @@ import {
 import type { OrganizationScreen } from './organization-manager';
 import type { ProductivityScreen } from './productivity-manager';
 
-const OrganizationManager = lazy(() => import('./organization-manager').then((module) => ({ default: module.OrganizationManager })));
-const ProductivityManager = lazy(() => import('./productivity-manager').then((module) => ({ default: module.ProductivityManager })));
-const SettingsDataControls = lazy(() => import('./settings-data-controls').then((module) => ({ default: module.SettingsDataControls })));
+const OrganizationManager = lazy(() =>
+  import('./organization-manager').then((module) => ({ default: module.OrganizationManager })),
+);
+const ProductivityManager = lazy(() =>
+  import('./productivity-manager').then((module) => ({ default: module.ProductivityManager })),
+);
+const SettingsDataControls = lazy(() =>
+  import('./settings-data-controls').then((module) => ({ default: module.SettingsDataControls })),
+);
 
 const searchProviders: Record<DefaultSearchProvider, { alias: string; label: string }> = {
   google: { alias: 'g', label: 'Google' },
@@ -82,7 +97,9 @@ export function NavodeShell({
   const provider = searchProviders[settings.defaultSearchProvider];
   const results = useMemo(() => {
     const resolved = resolveCommandResults?.(command);
-    return resolved ? resolved.map(toShellResult) : createCommandResults(command, settings.defaultSearchProvider);
+    return resolved
+      ? resolved.map(toShellResult)
+      : createCommandResults(command, settings.defaultSearchProvider);
   }, [command, resolveCommandResults, settings.defaultSearchProvider]);
 
   useEffect(() => {
@@ -154,18 +171,28 @@ export function NavodeShell({
         setCommandFeedback(result.action.message);
         return;
       }
-      if (result.action.type === 'open-view' && result.action.view === 'settings') setIsSettingsOpen(true);
+      if (result.action.type === 'open-view' && result.action.view === 'settings')
+        setIsSettingsOpen(true);
       if (
         result.action.type === 'open-view' &&
-        (result.action.view === 'links' || result.action.view === 'projects' || result.action.view === 'workspaces')
+        (result.action.view === 'links' ||
+          result.action.view === 'projects' ||
+          result.action.view === 'workspaces')
       ) {
         setOrganizationScreen(result.action.view);
       }
-      if (result.action.type === 'open-view' && (result.action.view === 'snippets' || result.action.view === 'note' || result.action.view === 'today')) {
+      if (
+        result.action.type === 'open-view' &&
+        (result.action.view === 'snippets' ||
+          result.action.view === 'note' ||
+          result.action.view === 'today')
+      ) {
         setProductivityScreen(result.action.view);
       }
       if (result.action.type === 'start-focus') {
-        const timer = startFocusTimer(result.action.durationMinutes ?? settings.focusTimer.durationMinutes);
+        const timer = startFocusTimer(
+          result.action.durationMinutes ?? settings.focusTimer.durationMinutes,
+        );
         if (timer) updateSettings({ focusTimer: timer });
         setProductivityScreen('focus');
       }
@@ -174,9 +201,12 @@ export function NavodeShell({
         setCommandFeedback('Use Backup and recovery in Settings to export your data.');
       }
       if (result.action.type === 'run-snippet') {
-        const snippet = settings.snippets.find((candidate) => candidate.id === result.action.snippetId);
+        const snippet = settings.snippets.find(
+          (candidate) => candidate.id === result.action.snippetId,
+        );
         if (snippet && navigator.clipboard) {
-          void navigator.clipboard.writeText(snippet.content)
+          void navigator.clipboard
+            .writeText(snippet.content)
             .then(() => setCommandFeedback(`Copied ${snippet.title}.`))
             .catch(() => setCommandFeedback('Clipboard access was unavailable.'));
         } else if (snippet) {
@@ -184,7 +214,9 @@ export function NavodeShell({
         }
       }
       if (result.action.type === 'launch-workspace') {
-        const workspace = settings.workspaces.find((candidate) => candidate.id === result.action.workspaceId);
+        const workspace = settings.workspaces.find(
+          (candidate) => candidate.id === result.action.workspaceId,
+        );
         if (workspace) setWorkspaceToLaunch(workspace);
         return;
       }
@@ -203,8 +235,16 @@ export function NavodeShell({
   function saveCustomAlias(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const id = editingAliasId ?? `alias-${Date.now()}`;
-    const alias = createCommandAlias({ alias: aliasName, label: aliasLabel, urlTemplate: aliasUrlTemplate }, id);
-    if (!alias || settings.customAliases.some((existing) => existing.id !== id && existing.alias === alias.alias)) {
+    const alias = createCommandAlias(
+      { alias: aliasName, label: aliasLabel, urlTemplate: aliasUrlTemplate },
+      id,
+    );
+    if (
+      !alias ||
+      settings.customAliases.some(
+        (existing) => existing.id !== id && existing.alias === alias.alias,
+      )
+    ) {
       setAliasError('Use a unique alias with a safe http or https URL template.');
       return;
     }
@@ -248,13 +288,19 @@ export function NavodeShell({
       </header>
 
       <section className="command-area" aria-labelledby="command-title">
-        <h2 className="sr-only" id="command-title">Command bar</h2>
+        <h2 className="sr-only" id="command-title">
+          Command bar
+        </h2>
         <form aria-label="Run a Navode command" onSubmit={submit}>
-          <label className="sr-only" htmlFor="command">What do you want to do?</label>
+          <label className="sr-only" htmlFor="command">
+            What do you want to do?
+          </label>
           <div className="command-row">
             <TextInput
               aria-autocomplete="list"
-              aria-activedescendant={results[selectedResult] ? `command-result-${results[selectedResult].id}` : undefined}
+              aria-activedescendant={
+                results[selectedResult] ? `command-result-${results[selectedResult].id}` : undefined
+              }
               aria-controls="command-results"
               aria-expanded={results.length > 0}
               autoComplete="off"
@@ -279,15 +325,25 @@ export function NavodeShell({
             </Tooltip>
           </div>
           <p className="command-help">
-            Press <KeyboardShortcutHint>/</KeyboardShortcutHint> to focus, then use arrows to choose.
+            Press <KeyboardShortcutHint>/</KeyboardShortcutHint> to focus, then use arrows to
+            choose.
           </p>
         </form>
-        {startupNotice && <p className="startup-notice" role="alert">{startupNotice}</p>}
+        {startupNotice && (
+          <p className="startup-notice" role="alert">
+            {startupNotice}
+          </p>
+        )}
         {results.length > 0 && (
           <div className="menu">
             <div id="command-results" role="listbox" aria-label="Command suggestions">
               {results.map((result, index) => (
-                <CommandResult active={selectedResult === index} id={`command-result-${result.id}`} key={result.id} onClick={() => chooseResult(index)}>
+                <CommandResult
+                  active={selectedResult === index}
+                  id={`command-result-${result.id}`}
+                  key={result.id}
+                  onClick={() => chooseResult(index)}
+                >
                   <span>
                     <strong>{result.label}</strong>
                     <small>{result.description}</small>
@@ -298,83 +354,151 @@ export function NavodeShell({
             </div>
           </div>
         )}
-        {commandFeedback && <p className="command-feedback" role="status">{commandFeedback}</p>}
+        {commandFeedback && (
+          <p className="command-feedback" role="status">
+            {commandFeedback}
+          </p>
+        )}
       </section>
 
       <div className="content-grid">
-        {settings.homeSections.quickAccess && <Card aria-labelledby="quick-access-title">
-          <div className="section-heading">
-            <div>
-              <p className="section-kicker">START HERE</p>
-              <h2 id="quick-access-title">Quick access</h2>
+        {settings.homeSections.quickAccess && (
+          <Card aria-labelledby="quick-access-title">
+            <div className="section-heading">
+              <div>
+                <p className="section-kicker">START HERE</p>
+                <h2 id="quick-access-title">Quick access</h2>
+              </div>
+              <Button onClick={() => setOrganizationScreen('links')} variant="quiet">
+                Manage
+              </Button>
             </div>
-            <Button onClick={() => setOrganizationScreen('links')} variant="quiet">Manage</Button>
-          </div>
-          <div className="quick-actions">
-            {settings.quickLinks.filter((link) => link.enabled && link.showOnHome).slice(0, 6).map((link) => (
-              <a className="quick-link" href={link.url} key={link.id} rel="noreferrer" target="_blank">
-                <span className="link-initials" aria-hidden="true">{link.icon ?? initials(link.name)}</span>
-                {link.name}
-              </a>
-            ))}
-          </div>
-          {!settings.quickLinks.some((link) => link.enabled && link.showOnHome) && <p className="muted">Add the destinations you use most.</p>}
-        </Card>}
+            <div className="quick-actions">
+              {settings.quickLinks
+                .filter((link) => link.enabled && link.showOnHome)
+                .slice(0, 6)
+                .map((link) => (
+                  <a
+                    className="quick-link"
+                    href={link.url}
+                    key={link.id}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    <span className="link-initials" aria-hidden="true">
+                      {link.icon ?? initials(link.name)}
+                    </span>
+                    {link.name}
+                  </a>
+                ))}
+            </div>
+            {!settings.quickLinks.some((link) => link.enabled && link.showOnHome) && (
+              <p className="muted">Add the destinations you use most.</p>
+            )}
+          </Card>
+        )}
 
-        {settings.homeSections.projects && <Card aria-labelledby="projects-title">
-          <div className="section-heading">
-            <div>
-              <p className="section-kicker">YOUR WORK</p>
-              <h2 id="projects-title">Projects &amp; workspaces</h2>
+        {settings.homeSections.projects && (
+          <Card aria-labelledby="projects-title">
+            <div className="section-heading">
+              <div>
+                <p className="section-kicker">YOUR WORK</p>
+                <h2 id="projects-title">Projects &amp; workspaces</h2>
+              </div>
+              <Button onClick={() => setOrganizationScreen('projects')} variant="quiet">
+                Manage
+              </Button>
             </div>
-            <Button onClick={() => setOrganizationScreen('projects')} variant="quiet">Manage</Button>
-          </div>
-          {settings.projects.filter((project) => project.showOnHome).slice(0, 3).map((project) => (
-            <div className="preview-row" key={project.id}>
-              <span className="link-initials" aria-hidden="true">{project.icon ?? initials(project.name)}</span>
-              <span><strong>{project.name}</strong><small>{project.actions.length} actions</small></span>
-            </div>
-          ))}
-          {!settings.projects.some((project) => project.showOnHome) && <p className="muted">Group related destinations into a project.</p>}
-          <Button onClick={() => setOrganizationScreen('projects')}>Manage projects</Button>
-        </Card>}
+            {settings.projects
+              .filter((project) => project.showOnHome)
+              .slice(0, 3)
+              .map((project) => (
+                <div className="preview-row" key={project.id}>
+                  <span className="link-initials" aria-hidden="true">
+                    {project.icon ?? initials(project.name)}
+                  </span>
+                  <span>
+                    <strong>{project.name}</strong>
+                    <small>{project.actions.length} actions</small>
+                  </span>
+                </div>
+              ))}
+            {!settings.projects.some((project) => project.showOnHome) && (
+              <p className="muted">Group related destinations into a project.</p>
+            )}
+            <Button onClick={() => setOrganizationScreen('projects')}>Manage projects</Button>
+          </Card>
+        )}
 
-        {settings.homeSections.workspaces && <Card aria-labelledby="workspaces-title">
-          <div className="section-heading">
-            <div>
-              <p className="section-kicker">REPEATABLE ROUTINES</p>
-              <h2 id="workspaces-title">Workspaces</h2>
+        {settings.homeSections.workspaces && (
+          <Card aria-labelledby="workspaces-title">
+            <div className="section-heading">
+              <div>
+                <p className="section-kicker">REPEATABLE ROUTINES</p>
+                <h2 id="workspaces-title">Workspaces</h2>
+              </div>
+              <Button onClick={() => setOrganizationScreen('workspaces')} variant="quiet">
+                Manage
+              </Button>
             </div>
-            <Button onClick={() => setOrganizationScreen('workspaces')} variant="quiet">Manage</Button>
-          </div>
-          {settings.workspaces.filter((workspace) => workspace.showOnHome).slice(0, 3).map((workspace) => (
-            <div className="preview-row" key={workspace.id}>
-              <span><strong>{workspace.name}</strong><small>{workspace.items.length} destinations</small></span>
-              <Button disabled={!workspace.items.length} onClick={() => setWorkspaceToLaunch(workspace)} variant="quiet">Launch</Button>
-            </div>
-          ))}
-          {!settings.workspaces.some((workspace) => workspace.showOnHome) && <p className="muted">Launch intentional groups of browser destinations.</p>}
-          <Button onClick={() => setOrganizationScreen('workspaces')}>Manage workspaces</Button>
-        </Card>}
+            {settings.workspaces
+              .filter((workspace) => workspace.showOnHome)
+              .slice(0, 3)
+              .map((workspace) => (
+                <div className="preview-row" key={workspace.id}>
+                  <span>
+                    <strong>{workspace.name}</strong>
+                    <small>{workspace.items.length} destinations</small>
+                  </span>
+                  <Button
+                    disabled={!workspace.items.length}
+                    onClick={() => setWorkspaceToLaunch(workspace)}
+                    variant="quiet"
+                  >
+                    Launch
+                  </Button>
+                </div>
+              ))}
+            {!settings.workspaces.some((workspace) => workspace.showOnHome) && (
+              <p className="muted">Launch intentional groups of browser destinations.</p>
+            )}
+            <Button onClick={() => setOrganizationScreen('workspaces')}>Manage workspaces</Button>
+          </Card>
+        )}
 
-        {settings.homeSections.productivity && <Card aria-labelledby="productivity-title">
-          <div className="section-heading">
-            <div>
-              <p className="section-kicker">A LITTLE MOMENTUM</p>
-              <h2 id="productivity-title">Productivity</h2>
+        {settings.homeSections.productivity && (
+          <Card aria-labelledby="productivity-title">
+            <div className="section-heading">
+              <div>
+                <p className="section-kicker">A LITTLE MOMENTUM</p>
+                <h2 id="productivity-title">Productivity</h2>
+              </div>
             </div>
-          </div>
-          <p className="muted">{settings.todayItems.filter((item) => !item.completed).length} priorities left today · {settings.snippets.length} snippets</p>
-          <div className="productivity-actions">
-            <Button onClick={() => setProductivityScreen('focus')}>Focus</Button>
-            <Button onClick={() => setProductivityScreen('note')} variant="quiet">Note</Button>
-            <Button onClick={() => setProductivityScreen('snippets')} variant="quiet">Snippets</Button>
-            <Button onClick={() => setProductivityScreen('today')} variant="quiet">Today</Button>
-          </div>
-        </Card>}
+            <p className="muted">
+              {settings.todayItems.filter((item) => !item.completed).length} priorities left today ·{' '}
+              {settings.snippets.length} snippets
+            </p>
+            <div className="productivity-actions">
+              <Button onClick={() => setProductivityScreen('focus')}>Focus</Button>
+              <Button onClick={() => setProductivityScreen('note')} variant="quiet">
+                Note
+              </Button>
+              <Button onClick={() => setProductivityScreen('snippets')} variant="quiet">
+                Snippets
+              </Button>
+              <Button onClick={() => setProductivityScreen('today')} variant="quiet">
+                Today
+              </Button>
+            </div>
+          </Card>
+        )}
       </div>
 
-      <Dialog label="Welcome to Navode" onClose={() => setIsOnboardingOpen(false)} open={isOnboardingOpen}>
+      <Dialog
+        label="Welcome to Navode"
+        onClose={() => setIsOnboardingOpen(false)}
+        open={isOnboardingOpen}
+      >
         <p className="eyebrow">WELCOME</p>
         <h2>Your next tab, pointed somewhere useful.</h2>
         <p className="muted">
@@ -392,19 +516,33 @@ export function NavodeShell({
             </Toggle>
           ))}
         </fieldset>
-        <p className="muted">We added Google, YouTube, and GitHub as safe quick links. You can change them later.</p>
+        <p className="muted">
+          We added Google, YouTube, and GitHub as safe quick links. You can change them later.
+        </p>
         <div className="dialog-actions">
-          <Button onClick={finishOnboarding} variant="quiet">Skip for now</Button>
-          <Button onClick={finishOnboarding} variant="primary">Start using Navode</Button>
+          <Button onClick={finishOnboarding} variant="quiet">
+            Skip for now
+          </Button>
+          <Button onClick={finishOnboarding} variant="primary">
+            Start using Navode
+          </Button>
         </div>
       </Dialog>
 
-      <Dialog label="Navode settings" onClose={() => setIsSettingsOpen(false)} open={isSettingsOpen}>
+      <Dialog
+        label="Navode settings"
+        onClose={() => setIsSettingsOpen(false)}
+        open={isSettingsOpen}
+      >
         <p className="eyebrow">PREFERENCES</p>
         <h2>Make Navode feel like yours.</h2>
         <Tabs label="Theme">
           {(['dark', 'light', 'system'] as const).map((theme) => (
-            <Tab active={settings.theme === theme} key={theme} onClick={() => updateSettings({ theme })}>
+            <Tab
+              active={settings.theme === theme}
+              key={theme}
+              onClick={() => updateSettings({ theme })}
+            >
               {theme[0]?.toUpperCase()}
               {theme.slice(1)}
             </Tab>
@@ -413,7 +551,9 @@ export function NavodeShell({
         <p className="muted">Theme preference is stored only on this device.</p>
         <section className="settings-section" aria-labelledby="aliases-title">
           <h3 id="aliases-title">Custom aliases</h3>
-          <p className="muted">Use an alias followed by a query. Only public http and https URLs are accepted.</p>
+          <p className="muted">
+            Use an alias followed by a query. Only public http and https URLs are accepted.
+          </p>
           {settings.customAliases.length > 0 && (
             <ul className="alias-list" aria-label="Custom aliases">
               {settings.customAliases.map((alias) => (
@@ -422,9 +562,15 @@ export function NavodeShell({
                     <strong>{alias.alias}</strong> · {alias.label}
                   </span>
                   <span>
-                    <Button onClick={() => editCustomAlias(alias.id)} variant="quiet">Edit</Button>
+                    <Button onClick={() => editCustomAlias(alias.id)} variant="quiet">
+                      Edit
+                    </Button>
                     <Button
-                      onClick={() => updateSettings({ customAliases: removeCommandAlias(settings.customAliases, alias.id) })}
+                      onClick={() =>
+                        updateSettings({
+                          customAliases: removeCommandAlias(settings.customAliases, alias.id),
+                        })
+                      }
                       variant="quiet"
                     >
                       Delete
@@ -463,9 +609,17 @@ export function NavodeShell({
                 value={aliasUrlTemplate}
               />
             </label>
-            {aliasError && <p className="form-error" role="alert">{aliasError}</p>}
+            {aliasError && (
+              <p className="form-error" role="alert">
+                {aliasError}
+              </p>
+            )}
             <div className="form-actions">
-              {editingAliasId && <Button onClick={resetAliasForm} variant="quiet">Cancel</Button>}
+              {editingAliasId && (
+                <Button onClick={resetAliasForm} variant="quiet">
+                  Cancel
+                </Button>
+              )}
               <Button type="submit">{editingAliasId ? 'Save alias' : 'Add alias'}</Button>
             </div>
           </form>
@@ -474,7 +628,10 @@ export function NavodeShell({
           <div className="section-heading">
             <h3 id="recent-actions-title">Recent actions</h3>
             {settings.recentExecutions.length > 0 && (
-              <Button onClick={() => updateSettings({ recentExecutions: clearRecentExecutions() })} variant="quiet">
+              <Button
+                onClick={() => updateSettings({ recentExecutions: clearRecentExecutions() })}
+                variant="quiet"
+              >
                 Clear history
               </Button>
             )}
@@ -486,7 +643,9 @@ export function NavodeShell({
               ))}
             </ul>
           ) : (
-            <p className="muted">Executed commands appear here without storing their search terms.</p>
+            <p className="muted">
+              Executed commands appear here without storing their search terms.
+            </p>
           )}
         </section>
         {isSettingsOpen && (
@@ -506,7 +665,9 @@ export function NavodeShell({
           </Suspense>
         )}
         <div className="dialog-actions">
-          <Button onClick={() => setIsSettingsOpen(false)} variant="primary">Done</Button>
+          <Button onClick={() => setIsSettingsOpen(false)} variant="primary">
+            Done
+          </Button>
         </div>
       </Dialog>
 
@@ -541,10 +702,13 @@ export function NavodeShell({
         <p className="eyebrow">CONFIRM LAUNCH</p>
         <h2>Open {workspaceToLaunch?.name}?</h2>
         <p className="muted">
-          This will open {workspaceToLaunch?.items.length ?? 0} {workspaceToLaunch?.items.length === 1 ? 'tab' : 'tabs'} in your browser.
+          This will open {workspaceToLaunch?.items.length ?? 0}{' '}
+          {workspaceToLaunch?.items.length === 1 ? 'tab' : 'tabs'} in your browser.
         </p>
         <div className="dialog-actions">
-          <Button onClick={() => setWorkspaceToLaunch(null)} variant="quiet">Cancel</Button>
+          <Button onClick={() => setWorkspaceToLaunch(null)} variant="quiet">
+            Cancel
+          </Button>
           <Button
             disabled={!workspaceToLaunch?.items.length}
             onClick={() => {
@@ -573,12 +737,16 @@ function toShellResult(result: CommandResult): ShellCommandResult {
   };
 }
 
-function createCommandResults(input: string, defaultProvider: DefaultSearchProvider): ShellCommandResult[] {
+function createCommandResults(
+  input: string,
+  defaultProvider: DefaultSearchProvider,
+): ShellCommandResult[] {
   const query = input.trim();
   if (!query || /^(g|google|yt|youtube|focus)\b/i.test(query)) return [];
 
   const primary = searchProviders[defaultProvider];
-  const secondaryProvider: DefaultSearchProvider = defaultProvider === 'google' ? 'youtube' : 'google';
+  const secondaryProvider: DefaultSearchProvider =
+    defaultProvider === 'google' ? 'youtube' : 'google';
   const secondary = searchProviders[secondaryProvider];
   return [
     {
@@ -607,11 +775,13 @@ function formatTime(date: Date) {
 }
 
 function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase() || 'N';
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase() || 'N'
+  );
 }

@@ -2,10 +2,26 @@ name: Backend CI
 
 on:
   pull_request:
-    paths: ["apps/api/**", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "eslint.config.mjs", "tsconfig.base.json"]
+    paths:
+      [
+        'apps/api/**',
+        'package.json',
+        'pnpm-lock.yaml',
+        'pnpm-workspace.yaml',
+        'eslint.config.mjs',
+        'tsconfig.base.json',
+      ]
   push:
     branches: [main]
-    paths: ["apps/api/**", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "eslint.config.mjs", "tsconfig.base.json"]
+    paths:
+      [
+        'apps/api/**',
+        'package.json',
+        'pnpm-lock.yaml',
+        'pnpm-workspace.yaml',
+        'eslint.config.mjs',
+        'tsconfig.base.json',
+      ]
 
 jobs:
   validate:
