@@ -1,9 +1,17 @@
-import { describe, expect, it } from 'vitest';
-import { findCommand, type Command } from '@navode/core';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { NavodeShell } from '@navode/ui';
 
-describe('web command setup', () => {
-  it('keeps the Google shortcut available', () => {
-    const commands: Command[] = [{ id: 'google', label: 'google', kind: 'search', template: '', aliases: ['g'] }];
-    expect(findCommand(commands, 'g accessibility')?.id).toBe('google');
+describe('Navode shell', () => {
+  it('submits a keyboard-entered command', () => {
+    const onCommand = vi.fn();
+    render(<NavodeShell onCommand={onCommand} />);
+
+    fireEvent.change(screen.getByLabelText('What do you want to do?'), {
+      target: { value: 'yt segment tree' },
+    });
+    fireEvent.submit(screen.getByRole('form', { name: 'Run a Navode command' }));
+
+    expect(onCommand).toHaveBeenCalledWith('yt segment tree');
   });
 });

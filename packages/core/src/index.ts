@@ -1,5 +1,12 @@
 export type CommandKind = 'url' | 'search' | 'project' | 'focus';
 
+export const NAVODE_STORAGE_SCHEMA_VERSION = 1;
+export const NAVODE_SETTINGS_STORAGE_KEY = 'navode.settings';
+
+export interface StoredSettings {
+  schemaVersion: typeof NAVODE_STORAGE_SCHEMA_VERSION;
+}
+
 export interface Command {
   id: string;
   label: string;

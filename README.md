@@ -16,7 +16,7 @@ This pnpm monorepo contains a React/Vite web app, a React Manifest V3 Chrome new
 
 ## Tech stack
 
-- React, TypeScript, Vite, and lightweight client state foundations
+- React, TypeScript, Vite, Tailwind CSS, and lightweight client state foundations
 - Chrome Extension Manifest V3
 - Hono on Cloudflare Workers for the optional API
 - Vitest, Playwright, ESLint, Prettier, and GitHub Actions
@@ -54,7 +54,7 @@ pnpm format:check
 
 ## Chrome extension
 
-Build with `pnpm build:extension`, then load `apps/extension/dist` as an unpacked extension in Chrome. The starter manifest overrides the new-tab page and requests no runtime permissions.
+Build with `pnpm build:extension`, then load `apps/extension/dist` as an unpacked extension in Chrome. The starter manifest overrides the new-tab page and requests only Chrome's `storage` permission for local persistence.
 
 ## Web app and API
 
