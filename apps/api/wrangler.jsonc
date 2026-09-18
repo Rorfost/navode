@@ -1,0 +1,7 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "navode-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-06-17",
+  "vars": { "APP_ENV": "development", "APP_VERSION": "0.1.0" }
+}

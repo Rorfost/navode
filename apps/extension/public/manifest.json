@@ -1,0 +1,9 @@
+{
+  "manifest_version": 3,
+  "name": "Navode",
+  "version": "0.1.0",
+  "description": "A personal browser command center.",
+  "chrome_url_overrides": { "newtab": "index.html" },
+  "permissions": [],
+  "content_security_policy": { "extension_pages": "script-src 'self'; object-src 'self'" }
+}
