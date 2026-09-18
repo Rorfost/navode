@@ -3,6 +3,7 @@ import {
   clearRecentExecutions,
   createCommandAlias,
   removeCommandAlias,
+  startFocusTimer,
   type CommandAction,
   type CommandResult,
   type DefaultSearchProvider,
@@ -24,6 +25,7 @@ import {
   Tooltip,
 } from './primitives';
 import { OrganizationManager, type OrganizationScreen } from './organization-manager';
+import { ProductivityManager, type ProductivityScreen } from './productivity-manager';
 
 const searchProviders: Record<DefaultSearchProvider, { alias: string; label: string }> = {
   google: { alias: 'g', label: 'Google' },
@@ -70,6 +72,7 @@ export function NavodeShell({
   const [commandFeedback, setCommandFeedback] = useState('');
   const [organizationScreen, setOrganizationScreen] = useState<OrganizationScreen | null>(null);
   const [workspaceToLaunch, setWorkspaceToLaunch] = useState<Workspace | null>(null);
+  const [productivityScreen, setProductivityScreen] = useState<ProductivityScreen | null>(null);
   const commandInput = useRef<HTMLInputElement>(null);
   const provider = searchProviders[settings.defaultSearchProvider];
   const results = useMemo(() => {
@@ -152,6 +155,24 @@ export function NavodeShell({
         (result.action.view === 'links' || result.action.view === 'projects' || result.action.view === 'workspaces')
       ) {
         setOrganizationScreen(result.action.view);
+      }
+      if (result.action.type === 'open-view' && (result.action.view === 'snippets' || result.action.view === 'note' || result.action.view === 'today')) {
+        setProductivityScreen(result.action.view);
+      }
+      if (result.action.type === 'start-focus') {
+        const timer = startFocusTimer(result.action.durationMinutes ?? settings.focusTimer.durationMinutes);
+        if (timer) updateSettings({ focusTimer: timer });
+        setProductivityScreen('focus');
+      }
+      if (result.action.type === 'run-snippet') {
+        const snippet = settings.snippets.find((candidate) => candidate.id === result.action.snippetId);
+        if (snippet && navigator.clipboard) {
+          void navigator.clipboard.writeText(snippet.content)
+            .then(() => setCommandFeedback(`Copied ${snippet.title}.`))
+            .catch(() => setCommandFeedback('Clipboard access was unavailable.'));
+        } else if (snippet) {
+          setCommandFeedback('Clipboard access was unavailable.');
+        }
       }
       if (result.action.type === 'launch-workspace') {
         const workspace = settings.workspaces.find((candidate) => candidate.id === result.action.workspaceId);
@@ -331,10 +352,13 @@ export function NavodeShell({
               <h2 id="productivity-title">Productivity</h2>
             </div>
           </div>
-          <p className="muted">
-            Focus sessions, notes, and snippets will appear here as you make Navode yours.
-          </p>
-          <Button onClick={() => onCommand?.('focus')}>Start focus time</Button>
+          <p className="muted">{settings.todayItems.filter((item) => !item.completed).length} priorities left today · {settings.snippets.length} snippets</p>
+          <div className="productivity-actions">
+            <Button onClick={() => setProductivityScreen('focus')}>Focus</Button>
+            <Button onClick={() => setProductivityScreen('note')} variant="quiet">Note</Button>
+            <Button onClick={() => setProductivityScreen('snippets')} variant="quiet">Snippets</Button>
+            <Button onClick={() => setProductivityScreen('today')} variant="quiet">Today</Button>
+          </div>
         </Card>
       </div>
 
@@ -463,6 +487,13 @@ export function NavodeShell({
         onRequestWorkspaceLaunch={setWorkspaceToLaunch}
         onSettingsChange={(next) => onSettingsChange?.(next)}
         screen={organizationScreen}
+        settings={settings}
+      />
+
+      <ProductivityManager
+        onClose={() => setProductivityScreen(null)}
+        onSettingsChange={(next) => onSettingsChange?.(next)}
+        screen={productivityScreen}
         settings={settings}
       />
 

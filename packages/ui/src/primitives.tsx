@@ -116,7 +116,7 @@ export function Dialog({ children, label, onClose, open }: DialogProps) {
     if (event.key !== 'Tab') return;
 
     const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+      'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
     );
     if (!focusable?.length) {
       event.preventDefault();

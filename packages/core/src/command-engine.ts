@@ -1,5 +1,5 @@
 export type SearchProviderId = 'google' | 'youtube' | 'github' | 'codeforces' | 'leetcode';
-export type InternalCommandView = 'settings' | 'links' | 'projects' | 'workspaces' | 'snippets';
+export type InternalCommandView = 'settings' | 'links' | 'projects' | 'workspaces' | 'snippets' | 'note' | 'today';
 export type CommandSource = 'alias' | 'direct-url' | 'fallback-search' | 'internal' | 'quick-link' | 'project' | 'workspace' | 'snippet';
 
 export interface SearchProvider {
@@ -55,7 +55,7 @@ export type CommandAction =
   | { type: 'open-view'; view: InternalCommandView }
   | { type: 'run-snippet'; snippetId: string }
   | { type: 'launch-workspace'; workspaceId: string }
-  | { type: 'start-focus' }
+  | { type: 'start-focus'; durationMinutes?: number }
   | { type: 'export-data' }
   | { type: 'show-help' }
   | { type: 'error'; message: string };
@@ -124,6 +124,8 @@ const internalCommands: Readonly<Record<string, { label: string; action: Command
   projects: { label: 'Open projects', action: { type: 'open-view', view: 'projects' } },
   workspaces: { label: 'Open workspaces', action: { type: 'open-view', view: 'workspaces' } },
   snippets: { label: 'Open snippets', action: { type: 'open-view', view: 'snippets' } },
+  note: { label: 'Open scratchpad', action: { type: 'open-view', view: 'note' } },
+  today: { label: 'Open today priorities', action: { type: 'open-view', view: 'today' } },
   focus: { label: 'Start focus time', action: { type: 'start-focus' } },
   export: { label: 'Export Navode data', action: { type: 'export-data' } },
   help: { label: 'Show command help', action: { type: 'show-help' } },
@@ -148,6 +150,30 @@ export function resolveCommand(input: string, catalog: CommandCatalog = {}): Com
 
   const aliasResult = resolveAlias(parsed.name, parsed.argument, normalized, catalog);
   if (aliasResult) return aliasResult;
+
+  if (parsed.name === 'focus' && parsed.argument) {
+    const durationMinutes = Number(parsed.argument);
+    if (Number.isInteger(durationMinutes) && durationMinutes >= 1 && durationMinutes <= 180) {
+      return createResult({
+        action: { type: 'start-focus', durationMinutes },
+        command: normalized,
+        description: `Start a ${durationMinutes}-minute focus session`,
+        id: `internal:focus:${durationMinutes}`,
+        label: `Start ${durationMinutes}-minute focus`,
+        score: 100,
+        source: 'internal',
+      });
+    }
+    return createResult({
+      action: { type: 'error', message: 'Use focus followed by a whole number from 1 to 180.' },
+      command: normalized,
+      description: 'Focus duration must be between 1 and 180 minutes.',
+      id: 'error:focus-duration',
+      label: 'Invalid focus duration',
+      score: 100,
+      source: 'internal',
+    });
+  }
 
   const internal = internalCommands[parsed.name];
   if (internal && !parsed.argument) {

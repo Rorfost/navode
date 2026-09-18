@@ -20,4 +20,17 @@ describe('parseNavodeSettings', () => {
   it('uses safe defaults for an unknown schema', () => {
     expect(parseNavodeSettings({ schemaVersion: 99 })).toEqual(DEFAULT_NAVODE_SETTINGS);
   });
+
+  it('migrates v2 settings without discarding existing organization data', () => {
+    const settings = parseNavodeSettings({
+      schemaVersion: 2,
+      theme: 'dark',
+      quickLinks: [],
+      projects: [],
+      workspaces: [],
+      customAliases: [],
+      recentExecutions: [],
+    });
+    expect(settings).toMatchObject({ schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION, scratchpad: { content: '' }, snippets: [], todayItems: [] });
+  });
 });

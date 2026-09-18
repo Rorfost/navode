@@ -111,4 +111,35 @@ describe('Navode shell', () => {
 
     expect(onWorkspaceLaunch).toHaveBeenCalledWith(settings.workspaces[0]);
   });
+
+  it('autosaves scratchpad content through the shared settings model', () => {
+    const settings = { ...DEFAULT_NAVODE_SETTINGS, onboardingCompleted: true };
+    const { onSettingsChange } = renderShell(settings);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Note' }));
+    fireEvent.change(screen.getByLabelText('Note'), { target: { value: 'Call the project team.' } });
+
+    expect(onSettingsChange).toHaveBeenLastCalledWith({
+      ...settings,
+      scratchpad: { content: 'Call the project team.' },
+    });
+  });
+
+  it('searches and copies snippets with clear feedback', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    const settings = {
+      ...DEFAULT_NAVODE_SETTINGS,
+      onboardingCompleted: true,
+      snippets: [{ id: 'reply', title: 'Reply', content: 'Thank you!', tags: ['email'], alias: 'thanks' }],
+    };
+    renderShell(settings);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Snippets' }));
+    fireEvent.change(screen.getByLabelText('Search snippets'), { target: { value: 'email' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Copy Reply' }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith('Thank you!'));
+    expect(screen.getByRole('status')).toHaveTextContent('Copied Reply.');
+  });
 });

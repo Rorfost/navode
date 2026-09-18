@@ -29,9 +29,14 @@ function NavodeExtensionApp() {
       quickLinks: settings.quickLinks
         .filter((link) => link.enabled)
         .map((link) => ({ id: link.id, label: link.name, url: link.url, ...(link.alias ? { aliases: [link.alias] } : {}) })),
+      snippets: settings.snippets.map((snippet) => ({
+        id: snippet.id,
+        label: snippet.title,
+        ...(snippet.alias ? { aliases: [snippet.alias] } : {}),
+      })),
       workspaces: settings.workspaces.map((workspace) => ({ id: workspace.id, label: workspace.name })),
     }),
-    [settings.customAliases, settings.defaultSearchProvider, settings.projects, settings.quickLinks, settings.workspaces],
+    [settings.customAliases, settings.defaultSearchProvider, settings.projects, settings.quickLinks, settings.snippets, settings.workspaces],
   );
 
   useEffect(() => {

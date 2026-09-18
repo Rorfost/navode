@@ -11,10 +11,19 @@ import {
   type QuickLink,
   type Workspace,
 } from './organization';
+import {
+  DEFAULT_FOCUS_TIMER,
+  DEFAULT_SCRATCHPAD,
+  type FocusTimer,
+  type Scratchpad,
+  type Snippet,
+  type TodayItem,
+  createSnippet,
+} from './productivity';
 
 export type CommandKind = 'url' | 'search' | 'project' | 'focus';
 
-export const NAVODE_STORAGE_SCHEMA_VERSION = 2;
+export const NAVODE_STORAGE_SCHEMA_VERSION = 3;
 export const NAVODE_SETTINGS_STORAGE_KEY = 'navode.settings';
 
 export type ThemePreference = 'dark' | 'light' | 'system';
@@ -33,6 +42,10 @@ export interface NavodeSettings extends StoredSettings {
   projects: Project[];
   quickLinks: QuickLink[];
   recentExecutions: RecentExecution[];
+  scratchpad: Scratchpad;
+  snippets: Snippet[];
+  focusTimer: FocusTimer;
+  todayItems: TodayItem[];
   workspaces: Workspace[];
 }
 
@@ -46,6 +59,10 @@ export const DEFAULT_NAVODE_SETTINGS: NavodeSettings = {
   projects: [],
   quickLinks: createStarterQuickLinks(),
   recentExecutions: [],
+  scratchpad: DEFAULT_SCRATCHPAD,
+  snippets: [],
+  focusTimer: DEFAULT_FOCUS_TIMER,
+  todayItems: [],
   workspaces: [],
 };
 
@@ -53,6 +70,7 @@ export const DEFAULT_NAVODE_SETTINGS: NavodeSettings = {
 export function parseNavodeSettings(value: unknown): NavodeSettings {
   if (!isRecord(value)) return DEFAULT_NAVODE_SETTINGS;
   if (value.schemaVersion === 1) return migrateV1Settings(value);
+  if (value.schemaVersion === 2) return migrateV2Settings(value);
   if (value.schemaVersion !== NAVODE_STORAGE_SCHEMA_VERSION) return DEFAULT_NAVODE_SETTINGS;
 
   return {
@@ -73,6 +91,10 @@ export function parseNavodeSettings(value: unknown): NavodeSettings {
     projects: parseProjects(value.projects),
     quickLinks: parseQuickLinks(value.quickLinks),
     recentExecutions: parseRecentExecutions(value.recentExecutions),
+    scratchpad: parseScratchpad(value.scratchpad),
+    snippets: parseSnippets(value.snippets),
+    focusTimer: parseFocusTimer(value.focusTimer),
+    todayItems: parseTodayItems(value.todayItems),
     workspaces: parseWorkspaces(value.workspaces),
   };
 }
@@ -96,7 +118,36 @@ export function migrateV1Settings(value: Record<string, unknown>): NavodeSetting
     projects: [],
     quickLinks: value.initialQuickLinks === false ? [] : createStarterQuickLinks(),
     recentExecutions: parseRecentExecutions(value.recentExecutions),
+    scratchpad: DEFAULT_SCRATCHPAD,
+    snippets: [],
+    focusTimer: DEFAULT_FOCUS_TIMER,
+    todayItems: [],
     workspaces: [],
+  };
+}
+
+export function migrateV2Settings(value: Record<string, unknown>): NavodeSettings {
+  return {
+    ...parseV2Base(value),
+    schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
+    scratchpad: DEFAULT_SCRATCHPAD,
+    snippets: [],
+    focusTimer: DEFAULT_FOCUS_TIMER,
+    todayItems: [],
+  };
+}
+
+function parseV2Base(value: Record<string, unknown>): Omit<NavodeSettings, 'schemaVersion' | 'scratchpad' | 'snippets' | 'focusTimer' | 'todayItems'> {
+  return {
+    theme: isThemePreference(value.theme) ? value.theme : DEFAULT_NAVODE_SETTINGS.theme,
+    onboardingCompleted: typeof value.onboardingCompleted === 'boolean' ? value.onboardingCompleted : DEFAULT_NAVODE_SETTINGS.onboardingCompleted,
+    defaultSearchProvider: isDefaultSearchProvider(value.defaultSearchProvider) ? value.defaultSearchProvider : DEFAULT_NAVODE_SETTINGS.defaultSearchProvider,
+    initialQuickLinks: typeof value.initialQuickLinks === 'boolean' ? value.initialQuickLinks : DEFAULT_NAVODE_SETTINGS.initialQuickLinks,
+    customAliases: parseCustomAliases(value.customAliases),
+    projects: parseProjects(value.projects),
+    quickLinks: parseQuickLinks(value.quickLinks),
+    recentExecutions: parseRecentExecutions(value.recentExecutions),
+    workspaces: parseWorkspaces(value.workspaces),
   };
 }
 
@@ -246,6 +297,48 @@ function parseWorkspaces(value: unknown): Workspace[] {
     });
 }
 
+function parseScratchpad(value: unknown): Scratchpad {
+  return isRecord(value) && typeof value.content === 'string' ? { content: value.content.slice(0, 20_000) } : DEFAULT_SCRATCHPAD;
+}
+
+function parseSnippets(value: unknown): Snippet[] {
+  if (!Array.isArray(value)) return [];
+  const aliases = new Set<string>();
+  return value.flatMap((candidate) => {
+    if (!isRecord(candidate) || typeof candidate.id !== 'string') return [];
+    const snippet = createSnippet({
+      alias: typeof candidate.alias === 'string' ? candidate.alias : undefined,
+      content: typeof candidate.content === 'string' ? candidate.content : '',
+      tags: Array.isArray(candidate.tags) ? candidate.tags.filter((tag): tag is string => typeof tag === 'string') : [],
+      title: typeof candidate.title === 'string' ? candidate.title : '',
+    }, candidate.id);
+    if (!snippet || (snippet.alias && aliases.has(snippet.alias))) return [];
+    if (snippet.alias) aliases.add(snippet.alias);
+    return [snippet];
+  });
+}
+
+function parseFocusTimer(value: unknown): FocusTimer {
+  if (!isRecord(value) || !Number.isInteger(value.durationMinutes) || value.durationMinutes < 1 || value.durationMinutes > 180 || !Number.isInteger(value.remainingSeconds) || value.remainingSeconds < 0) return DEFAULT_FOCUS_TIMER;
+  const status = value.status;
+  if (status !== 'idle' && status !== 'running' && status !== 'paused' && status !== 'completed') return DEFAULT_FOCUS_TIMER;
+  const endsAt = typeof value.endsAt === 'string' && Number.isFinite(new Date(value.endsAt).getTime()) ? value.endsAt : undefined;
+  if (status === 'running' && !endsAt) return { ...DEFAULT_FOCUS_TIMER, durationMinutes: value.durationMinutes, remainingSeconds: value.durationMinutes * 60 };
+  return { durationMinutes: value.durationMinutes, ...(endsAt ? { endsAt } : {}), remainingSeconds: value.remainingSeconds, status };
+}
+
+function parseTodayItems(value: unknown): TodayItem[] {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 3).flatMap((candidate) =>
+    isRecord(candidate) &&
+    typeof candidate.id === 'string' &&
+    typeof candidate.title === 'string' &&
+    candidate.title.trim().length > 0
+      ? [{ completed: candidate.completed === true, id: candidate.id, title: candidate.title.trim() }]
+      : [],
+  );
+}
+
 function numericValue(value: unknown): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : Number.MAX_SAFE_INTEGER;
 }
@@ -340,3 +433,28 @@ export {
   type WorkspaceItemInput,
   type WorkspaceLaunchPlan,
 } from './organization';
+
+export {
+  DEFAULT_FOCUS_TIMER,
+  DEFAULT_SCRATCHPAD,
+  MAX_TODAY_ITEMS,
+  addTodayItem,
+  clearTodayItems,
+  createSnippet,
+  getFocusTimerSnapshot,
+  pauseFocusTimer,
+  removeSnippet,
+  resetFocusTimer,
+  resumeFocusTimer,
+  saveSnippet,
+  searchSnippets,
+  startFocusTimer,
+  toggleTodayItem,
+  updateTodayItem,
+  type FocusTimer,
+  type FocusTimerSnapshot,
+  type Scratchpad,
+  type Snippet,
+  type SnippetInput,
+  type TodayItem,
+} from './productivity';

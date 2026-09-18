@@ -49,7 +49,7 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--background); }
-button, input { font: inherit; }
+button, input, textarea { font: inherit; }
 button { cursor: pointer; }
 button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 
@@ -95,6 +95,11 @@ h2 { font-size: 1.08rem; letter-spacing: -.025em; margin-bottom: .5rem; }
 .preview-row > span:not(.link-initials) { display: grid; gap: .1rem; }
 .preview-row small { color: var(--muted); font-size: .75rem; }
 .card > .button { margin-top: .85rem; }
+.productivity-actions { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: 1rem; }
+.textarea-input { line-height: 1.5; min-height: 10rem; resize: vertical; width: 100%; }
+.today-item { align-items: center; display: flex; flex: 1; gap: .5rem; min-width: 0; }
+.today-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.today-item input:checked + span { color: var(--muted); text-decoration: line-through; }
 
 .dialog-backdrop { align-items: center; background: rgb(12 10 8 / .58); display: flex; inset: 0; justify-content: center; padding: 1rem; position: fixed; z-index: 10; }
 .dialog { background: var(--surface); border: 1px solid var(--border); border-radius: 1.2rem; box-shadow: 0 24px 80px rgb(0 0 0 / .35); max-height: calc(100vh - 2rem); max-width: 510px; outline: 0; overflow: auto; padding: 1.5rem; width: 100%; }

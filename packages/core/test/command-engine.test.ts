@@ -41,6 +41,12 @@ describe('command engine parsing and search aliases', () => {
       url: 'https://www.youtube.com/results?search_query=deterministic%20algorithms',
     });
   });
+
+  it('starts a requested focus duration and opens local utility views', () => {
+    expect(resolveCommand('focus 60').action).toEqual({ type: 'start-focus', durationMinutes: 60 });
+    expect(resolveCommand('note').action).toEqual({ type: 'open-view', view: 'note' });
+    expect(resolveCommand('today').action).toEqual({ type: 'open-view', view: 'today' });
+  });
 });
 
 describe('command engine safety and matching', () => {
