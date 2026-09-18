@@ -11,7 +11,7 @@ import {
   type NavodeSettings,
   type Workspace,
 } from '@navode/core';
-import { NavodeShell } from '@navode/ui';
+import { ErrorBoundary, NavodeShell } from '@navode/ui';
 import { loadExtensionSettings, saveExtensionSettings } from './settings';
 import { getExtensionStorage } from './storage';
 import './styles.css';
@@ -21,6 +21,8 @@ const storage = getExtensionStorage();
 function NavodeExtensionApp() {
   const [settings, setSettings] = useState(DEFAULT_NAVODE_SETTINGS);
   const [hasLoadedSettings, setHasLoadedSettings] = useState(false);
+  const [canPersist, setCanPersist] = useState(false);
+  const [storageNotice, setStorageNotice] = useState('');
   const catalog = useMemo<CommandCatalog>(
     () => ({
       customAliases: settings.customAliases,
@@ -41,16 +43,26 @@ function NavodeExtensionApp() {
 
   useEffect(() => {
     void loadExtensionSettings(storage)
-      .then(setSettings)
-      .catch(() => undefined)
+      .then((loadedSettings) => {
+        setSettings(loadedSettings);
+        setCanPersist(true);
+      })
+      .catch(() => {
+        setSettings(DEFAULT_NAVODE_SETTINGS);
+        setStorageNotice('Navode could not load local settings, so it is using safe defaults. Your existing data was not overwritten.');
+      })
       .finally(() => setHasLoadedSettings(true));
   }, []);
 
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
     document.documentElement.dataset.reducedMotion = settings.reducedMotion;
-    if (hasLoadedSettings) void saveExtensionSettings(storage, settings).catch(() => undefined);
-  }, [hasLoadedSettings, settings]);
+    if (hasLoadedSettings && canPersist) {
+      void saveExtensionSettings(storage, settings).catch(() => {
+        setStorageNotice('Navode could not save a recent change. Check browser storage availability before closing this tab.');
+      });
+    }
+  }, [canPersist, hasLoadedSettings, settings]);
 
   function updateSettings(next: NavodeSettings) {
     setSettings(next);
@@ -99,12 +111,13 @@ function NavodeExtensionApp() {
       onWorkspaceLaunch={launchWorkspace}
       resolveCommandResults={resolveResults}
       settings={settings}
+      startupNotice={storageNotice}
     />
   );
 }
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <NavodeExtensionApp />
+    <ErrorBoundary><NavodeExtensionApp /></ErrorBoundary>
   </StrictMode>,
 );

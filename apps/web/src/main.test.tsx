@@ -73,21 +73,36 @@ describe('Navode shell', () => {
 
   it('uses an accessible, focus-managed settings dialog that Escape closes', async () => {
     renderShell();
-    fireEvent.click(screen.getByRole('button', { name: 'Open settings' }));
+    const settingsButton = screen.getByRole('button', { name: 'Open settings' });
+    fireEvent.click(settingsButton);
     const dialog = screen.getByRole('dialog', { name: 'Navode settings' });
 
     await waitFor(() => expect(dialog).toHaveFocus());
     fireEvent.keyDown(dialog, { key: 'Escape' });
 
     expect(screen.queryByRole('dialog', { name: 'Navode settings' })).not.toBeInTheDocument();
+    expect(settingsButton).toHaveFocus();
   });
 
-  it('adds a validated quick link through the management dialog', () => {
+  it('announces a safe recovery notice without preventing keyboard command use', () => {
+    render(
+      <NavodeShell
+        onSettingsChange={vi.fn()}
+        settings={{ ...DEFAULT_NAVODE_SETTINGS, onboardingCompleted: true }}
+        startupNotice="Navode is using safe defaults."
+      />,
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Navode is using safe defaults.');
+    expect(screen.getByRole('combobox', { name: 'What do you want to do?' })).toBeEnabled();
+  });
+
+  it('adds a validated quick link through the management dialog', async () => {
     const settings = { ...DEFAULT_NAVODE_SETTINGS, onboardingCompleted: true, quickLinks: [] };
     const { onSettingsChange } = renderShell(settings);
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Manage' })[0]!);
-    const dialog = screen.getByRole('dialog', { name: 'Quick links' });
+    const dialog = await screen.findByRole('dialog', { name: 'Quick links' });
     fireEvent.change(within(dialog).getByLabelText('Name'), { target: { value: 'Docs' } });
     fireEvent.change(within(dialog).getByLabelText('URL'), { target: { value: 'https://example.com/docs' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Add link' }));
@@ -112,12 +127,12 @@ describe('Navode shell', () => {
     expect(onWorkspaceLaunch).toHaveBeenCalledWith(settings.workspaces[0]);
   });
 
-  it('autosaves scratchpad content through the shared settings model', () => {
+  it('autosaves scratchpad content through the shared settings model', async () => {
     const settings = { ...DEFAULT_NAVODE_SETTINGS, onboardingCompleted: true };
     const { onSettingsChange } = renderShell(settings);
 
     fireEvent.click(screen.getByRole('button', { name: 'Note' }));
-    fireEvent.change(screen.getByLabelText('Note'), { target: { value: 'Call the project team.' } });
+    fireEvent.change(await screen.findByLabelText('Note'), { target: { value: 'Call the project team.' } });
 
     expect(onSettingsChange).toHaveBeenLastCalledWith({
       ...settings,
@@ -136,7 +151,7 @@ describe('Navode shell', () => {
     renderShell(settings);
 
     fireEvent.click(screen.getByRole('button', { name: 'Snippets' }));
-    fireEvent.change(screen.getByLabelText('Search snippets'), { target: { value: 'email' } });
+    fireEvent.change(await screen.findByLabelText('Search snippets'), { target: { value: 'email' } });
     fireEvent.click(screen.getByRole('button', { name: 'Copy Reply' }));
 
     await waitFor(() => expect(writeText).toHaveBeenCalledWith('Thank you!'));

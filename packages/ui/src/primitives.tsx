@@ -102,7 +102,12 @@ export function Dialog({ children, label, onClose, open }: DialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (open) dialogRef.current?.focus();
+    if (!open) return undefined;
+    const returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    dialogRef.current?.focus();
+    return () => {
+      returnFocus?.focus();
+    };
   }, [open]);
 
   if (!open) return null;
@@ -116,7 +121,7 @@ export function Dialog({ children, label, onClose, open }: DialogProps) {
     if (event.key !== 'Tab') return;
 
     const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+      'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [href], [contenteditable="true"], [tabindex]:not([tabindex="-1"])',
     );
     if (!focusable?.length) {
       event.preventDefault();

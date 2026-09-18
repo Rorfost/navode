@@ -3,7 +3,6 @@ import {
   clearRecentExecutions,
   createCommandAlias,
   removeCommandAlias,
-  serializeNavodeBackup,
   startFocusTimer,
   type CommandAction,
   type CommandResult,
@@ -11,23 +10,25 @@ import {
   type NavodeSettings,
   type Workspace,
 } from '@navode/core';
-import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
   Card,
   CommandResult,
   Dialog,
   KeyboardShortcutHint,
-  Menu,
   Tab,
   Tabs,
   TextInput,
   Toggle,
   Tooltip,
 } from './primitives';
-import { OrganizationManager, type OrganizationScreen } from './organization-manager';
-import { ProductivityManager, type ProductivityScreen } from './productivity-manager';
-import { SettingsDataControls } from './settings-data-controls';
+import type { OrganizationScreen } from './organization-manager';
+import type { ProductivityScreen } from './productivity-manager';
+
+const OrganizationManager = lazy(() => import('./organization-manager').then((module) => ({ default: module.OrganizationManager })));
+const ProductivityManager = lazy(() => import('./productivity-manager').then((module) => ({ default: module.ProductivityManager })));
+const SettingsDataControls = lazy(() => import('./settings-data-controls').then((module) => ({ default: module.SettingsDataControls })));
 
 const searchProviders: Record<DefaultSearchProvider, { alias: string; label: string }> = {
   google: { alias: 'g', label: 'Google' },
@@ -51,6 +52,7 @@ export interface NavodeShellProps {
   resolveCommandResults?: (input: string) => readonly CommandResult[];
   onSettingsChange?: (settings: NavodeSettings) => void;
   settings?: NavodeSettings;
+  startupNotice?: string;
 }
 
 export function NavodeShell({
@@ -60,6 +62,7 @@ export function NavodeShell({
   resolveCommandResults,
   onSettingsChange,
   settings = DEFAULT_NAVODE_SETTINGS,
+  startupNotice,
 }: NavodeShellProps) {
   const [command, setCommand] = useState('');
   const [selectedResult, setSelectedResult] = useState(0);
@@ -167,8 +170,8 @@ export function NavodeShell({
         setProductivityScreen('focus');
       }
       if (result.action.type === 'export-data') {
-        downloadBackup(settings);
-        setCommandFeedback('Backup downloaded.');
+        setIsSettingsOpen(true);
+        setCommandFeedback('Use Backup and recovery in Settings to export your data.');
       }
       if (result.action.type === 'run-snippet') {
         const snippet = settings.snippets.find((candidate) => candidate.id === result.action.snippetId);
@@ -251,6 +254,7 @@ export function NavodeShell({
           <div className="command-row">
             <TextInput
               aria-autocomplete="list"
+              aria-activedescendant={results[selectedResult] ? `command-result-${results[selectedResult].id}` : undefined}
               aria-controls="command-results"
               aria-expanded={results.length > 0}
               autoComplete="off"
@@ -265,6 +269,7 @@ export function NavodeShell({
               onKeyDown={handleCommandKeys}
               placeholder={`Search ${provider.label} or run a command…`}
               ref={commandInput}
+              role="combobox"
               value={command}
             />
             <Tooltip label="Run command">
@@ -277,11 +282,12 @@ export function NavodeShell({
             Press <KeyboardShortcutHint>/</KeyboardShortcutHint> to focus, then use arrows to choose.
           </p>
         </form>
+        {startupNotice && <p className="startup-notice" role="alert">{startupNotice}</p>}
         {results.length > 0 && (
-          <Menu label="Command results">
+          <div className="menu">
             <div id="command-results" role="listbox" aria-label="Command suggestions">
               {results.map((result, index) => (
-                <CommandResult active={selectedResult === index} key={result.id} onClick={() => chooseResult(index)}>
+                <CommandResult active={selectedResult === index} id={`command-result-${result.id}`} key={result.id} onClick={() => chooseResult(index)}>
                   <span>
                     <strong>{result.label}</strong>
                     <small>{result.description}</small>
@@ -290,7 +296,7 @@ export function NavodeShell({
                 </CommandResult>
               ))}
             </div>
-          </Menu>
+          </div>
         )}
         {commandFeedback && <p className="command-feedback" role="status">{commandFeedback}</p>}
       </section>
@@ -483,37 +489,49 @@ export function NavodeShell({
             <p className="muted">Executed commands appear here without storing their search terms.</p>
           )}
         </section>
-        <SettingsDataControls
-          onOpenOnboarding={() => {
-            setIsSettingsOpen(false);
-            setIsOnboardingOpen(true);
-          }}
-          onOpenOrganization={(screen) => {
-            setIsSettingsOpen(false);
-            setOrganizationScreen(screen);
-          }}
-          onSettingsChange={(next) => onSettingsChange?.(next)}
-          settings={settings}
-        />
+        {isSettingsOpen && (
+          <Suspense fallback={<p className="muted">Loading recovery controls…</p>}>
+            <SettingsDataControls
+              onOpenOnboarding={() => {
+                setIsSettingsOpen(false);
+                setIsOnboardingOpen(true);
+              }}
+              onOpenOrganization={(screen) => {
+                setIsSettingsOpen(false);
+                setOrganizationScreen(screen);
+              }}
+              onSettingsChange={(next) => onSettingsChange?.(next)}
+              settings={settings}
+            />
+          </Suspense>
+        )}
         <div className="dialog-actions">
           <Button onClick={() => setIsSettingsOpen(false)} variant="primary">Done</Button>
         </div>
       </Dialog>
 
-      <OrganizationManager
-        onClose={() => setOrganizationScreen(null)}
-        onRequestWorkspaceLaunch={setWorkspaceToLaunch}
-        onSettingsChange={(next) => onSettingsChange?.(next)}
-        screen={organizationScreen}
-        settings={settings}
-      />
+      {organizationScreen && (
+        <Suspense fallback={null}>
+          <OrganizationManager
+            onClose={() => setOrganizationScreen(null)}
+            onRequestWorkspaceLaunch={setWorkspaceToLaunch}
+            onSettingsChange={(next) => onSettingsChange?.(next)}
+            screen={organizationScreen}
+            settings={settings}
+          />
+        </Suspense>
+      )}
 
-      <ProductivityManager
-        onClose={() => setProductivityScreen(null)}
-        onSettingsChange={(next) => onSettingsChange?.(next)}
-        screen={productivityScreen}
-        settings={settings}
-      />
+      {productivityScreen && (
+        <Suspense fallback={null}>
+          <ProductivityManager
+            onClose={() => setProductivityScreen(null)}
+            onSettingsChange={(next) => onSettingsChange?.(next)}
+            screen={productivityScreen}
+            settings={settings}
+          />
+        </Suspense>
+      )}
 
       <Dialog
         label="Launch workspace"
@@ -596,14 +614,4 @@ function initials(name: string): string {
     .map((part) => part[0])
     .join('')
     .toUpperCase() || 'N';
-}
-
-function downloadBackup(settings: NavodeSettings) {
-  const blob = new Blob([serializeNavodeBackup(settings)], { type: 'application/json' });
-  const href = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.download = `navode-backup-${new Date().toISOString().slice(0, 10)}.json`;
-  link.href = href;
-  link.click();
-  URL.revokeObjectURL(href);
 }

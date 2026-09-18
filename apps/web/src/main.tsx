@@ -10,7 +10,7 @@ import {
   type NavodeSettings,
   type Workspace,
 } from '@navode/core';
-import { NavodeShell } from '@navode/ui';
+import { ErrorBoundary, NavodeShell } from '@navode/ui';
 import { PublicSite, type PublicPage } from './public-site';
 import { loadWebSettings, saveWebSettings } from './settings';
 import './styles.css';
@@ -101,6 +101,6 @@ function WebRoot() {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <WebRoot />
+    <ErrorBoundary><WebRoot /></ErrorBoundary>
   </StrictMode>,
 );

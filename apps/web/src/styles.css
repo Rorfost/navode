@@ -51,7 +51,7 @@
 body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--background); }
 button, input, textarea { font: inherit; }
 button { cursor: pointer; }
-button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 
 .navode-shell { width: min(1120px, calc(100% - 2rem)); margin: 0 auto; padding: clamp(2rem, 7vh, 5.5rem) 0 4rem; }
 .shell-header { display: flex; justify-content: space-between; gap: 1.5rem; align-items: flex-start; margin-bottom: clamp(2.5rem, 9vh, 6.5rem); }
@@ -75,6 +75,7 @@ h2 { font-size: 1.08rem; letter-spacing: -.025em; margin-bottom: .5rem; }
 .button-quiet:hover { background: transparent; color: var(--text); }
 .command-help { color: var(--faint); font-size: .8rem; margin: .75rem .2rem 0; }
 .command-feedback { color: var(--accent-strong); font-size: .86rem; margin: .75rem .2rem 0; }
+.startup-notice { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); border: 1px solid var(--accent); border-radius: .65rem; color: var(--text); font-size: .86rem; line-height: 1.45; margin: .9rem 0; padding: .7rem .8rem; }
 .keyboard-hint { background: var(--surface-raised); border: 1px solid var(--border); border-radius: .3rem; color: var(--muted); font-family: inherit; font-size: .72rem; padding: .08rem .3rem; }
 .tooltip { display: inline-flex; }
 .menu { background: var(--surface); border: 1px solid var(--border); border-radius: 1rem; box-shadow: 0 20px 48px rgb(0 0 0 / .18); margin-top: .65rem; overflow: hidden; }
@@ -141,6 +142,7 @@ h2 { font-size: 1.08rem; letter-spacing: -.025em; margin-bottom: .5rem; }
 .compact-list li { justify-content: space-between; }
 .compact-list a { color: var(--text); font-size: .86rem; }
 .sr-only { height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; width: 1px; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+.app-recovery { margin: 0 auto; max-width: 640px; padding: 18vh 1.5rem; }
 
 @media (max-width: 760px) {
   .shell-header { margin-bottom: 3rem; }
