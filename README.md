@@ -8,7 +8,7 @@ Opening a new tab should be the fastest path from intent to action—not a detou
 
 ## Status
 
-Repository foundation. The web app and Chrome extension render a small shared shell; the API exposes only health and version metadata. Product features are planned, not yet implemented.
+The web app and Chrome extension share a polished local-first command shell with first-run onboarding, theme preference, accessible dialogs, and keyboard navigation. The API exposes only health and version metadata; workflow features are being added incrementally.
 
 ## Architecture
 

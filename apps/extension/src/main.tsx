@@ -1,15 +1,38 @@
-import { StrictMode } from 'react';
+import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { NAVODE_SETTINGS_STORAGE_KEY } from '@navode/core';
+import { DEFAULT_NAVODE_SETTINGS, type NavodeSettings } from '@navode/core';
 import { NavodeShell } from '@navode/ui';
+import { loadExtensionSettings, saveExtensionSettings } from './settings';
 import { getExtensionStorage } from './storage';
 import './styles.css';
 
-// The adapter centralizes browser storage for upcoming local-first features.
-void getExtensionStorage().get(NAVODE_SETTINGS_STORAGE_KEY).catch(() => undefined);
+const storage = getExtensionStorage();
+
+function NavodeExtensionApp() {
+  const [settings, setSettings] = useState(DEFAULT_NAVODE_SETTINGS);
+  const [hasLoadedSettings, setHasLoadedSettings] = useState(false);
+
+  useEffect(() => {
+    void loadExtensionSettings(storage)
+      .then(setSettings)
+      .catch(() => undefined)
+      .finally(() => setHasLoadedSettings(true));
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = settings.theme;
+    if (hasLoadedSettings) void saveExtensionSettings(storage, settings).catch(() => undefined);
+  }, [hasLoadedSettings, settings]);
+
+  function updateSettings(next: NavodeSettings) {
+    setSettings(next);
+  }
+
+  return <NavodeShell onSettingsChange={updateSettings} settings={settings} />;
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <NavodeShell onCommand={(command) => console.info('Navode command submitted:', command)} />
+    <NavodeExtensionApp />
   </StrictMode>,
 );

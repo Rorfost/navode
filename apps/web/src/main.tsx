@@ -1,7 +1,8 @@
-import { StrictMode } from 'react';
+import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { findCommand, type Command } from '@navode/core';
+import { findCommand, type Command, type NavodeSettings } from '@navode/core';
 import { NavodeShell } from '@navode/ui';
+import { loadWebSettings, saveWebSettings } from './settings';
 import './styles.css';
 
 const starterCommands: Command[] = [
@@ -17,8 +18,23 @@ function runCommand(input: string) {
   window.open(url, '_blank', 'noopener,noreferrer');
 }
 
+function NavodeWebApp() {
+  const [settings, setSettings] = useState(loadWebSettings);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = settings.theme;
+    saveWebSettings(settings);
+  }, [settings]);
+
+  function updateSettings(next: NavodeSettings) {
+    setSettings(next);
+  }
+
+  return <NavodeShell onCommand={runCommand} onSettingsChange={updateSettings} settings={settings} />;
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <NavodeShell onCommand={runCommand} />
+    <NavodeWebApp />
   </StrictMode>,
 );

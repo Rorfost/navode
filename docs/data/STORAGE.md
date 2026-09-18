@@ -6,7 +6,7 @@ The extension owns its settings in `chrome.storage.local`. The web app may use b
 
 ## Versioning and migration
 
-Persisted root data must include a schema version. Migrations are deterministic, tested, and run before data is used. Failed migrations must retain the original data long enough to offer export or reset rather than silently discarding it.
+Persisted root data must include a schema version. The current Navode shell validates its versioned theme and onboarding settings before use and falls back to safe defaults for malformed or unknown data. Migrations are deterministic, tested, and run before data is used. Failed migrations must retain the original data long enough to offer export or reset rather than silently discarding it.
 
 ## Limits and privacy
 
