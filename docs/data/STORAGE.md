@@ -10,4 +10,4 @@ Persisted root data must include a schema version. The current Navode shell vali
 
 ## Limits and privacy
 
-Storage quotas vary by browser. Keep command history bounded, avoid storing secrets in plain text, and never assume local storage is a secure credential vault. Optional sync must be explicit and separately designed.
+Storage quotas vary by browser. Command history is bounded to 20 entries and stores action labels and timestamps only, not submitted queries, URLs, or snippet content. Custom aliases accept only public http/https URL templates. Avoid storing secrets in plain text, and never assume local storage is a secure credential vault. Optional sync must be explicit and separately designed.

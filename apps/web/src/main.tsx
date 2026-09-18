@@ -1,25 +1,31 @@
-import { StrictMode, useEffect, useState } from 'react';
+import { StrictMode, useCallback, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { findCommand, type Command, type NavodeSettings } from '@navode/core';
+import {
+  getCommandResults,
+  recordRecentExecution,
+  type CommandAction,
+  type CommandCatalog,
+  type CommandResult,
+  type NavodeSettings,
+} from '@navode/core';
 import { NavodeShell } from '@navode/ui';
 import { loadWebSettings, saveWebSettings } from './settings';
 import './styles.css';
 
-const starterCommands: Command[] = [
-  { id: 'google', label: 'google', kind: 'search', template: 'https://www.google.com/search?q={query}', aliases: ['g'] },
-  { id: 'youtube', label: 'youtube', kind: 'search', template: 'https://www.youtube.com/results?search_query={query}', aliases: ['yt'] },
-];
-
-function runCommand(input: string) {
-  const command = findCommand(starterCommands, input);
-  if (!command) return;
-  const [, ...argument] = input.trim().split(/\s+/);
-  const url = command.template.replace('{query}', encodeURIComponent(argument.join(' ')));
-  window.open(url, '_blank', 'noopener,noreferrer');
-}
-
 function NavodeWebApp() {
   const [settings, setSettings] = useState(loadWebSettings);
+  const catalog = useMemo<CommandCatalog>(
+    () => ({
+      customAliases: settings.customAliases,
+      defaultSearchProvider: settings.defaultSearchProvider,
+      quickLinks: [
+        { id: 'google', label: 'Google', url: 'https://www.google.com' },
+        { id: 'youtube', label: 'YouTube', url: 'https://www.youtube.com' },
+        { id: 'github', label: 'GitHub', url: 'https://github.com' },
+      ],
+    }),
+    [settings.customAliases, settings.defaultSearchProvider],
+  );
 
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
@@ -30,7 +36,29 @@ function NavodeWebApp() {
     setSettings(next);
   }
 
-  return <NavodeShell onCommand={runCommand} onSettingsChange={updateSettings} settings={settings} />;
+  const resolveResults = useCallback((input: string) => getCommandResults(input, catalog), [catalog]);
+
+  function executeAction(action: CommandAction) {
+    if (action.type === 'open-url') window.open(action.url, '_blank', 'noopener,noreferrer');
+  }
+
+  function handleCommandResult(result: CommandResult) {
+    if (result.action.type === 'error') return;
+    executeAction(result.action);
+    setSettings((current) => ({
+      ...current,
+      recentExecutions: recordRecentExecution(current.recentExecutions, result),
+    }));
+  }
+
+  return (
+    <NavodeShell
+      onCommandResult={handleCommandResult}
+      onSettingsChange={updateSettings}
+      resolveCommandResults={resolveResults}
+      settings={settings}
+    />
+  );
 }
 
 createRoot(document.getElementById('root')!).render(

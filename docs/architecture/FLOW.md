@@ -30,4 +30,4 @@ sequenceDiagram
   UI->>B: Open validated destination
 ```
 
-Unknown commands should produce a useful local error rather than opening an unsafe URL. Project launch, focus, settings persistence, imports/exports, and optional API access follow the same rule: validate input at the boundary and keep the local feature independent of the API.
+The resolver supports public search aliases (`g`, `yt`, `gh`, `cf`, and `lc`), direct http/https URLs, custom aliases, and predictable local matches before using the selected provider as a fallback. Unsafe URL schemes produce a local error rather than navigation. It records only action labels and timestamps, never the input or search query. Project launch, focus, settings persistence, imports/exports, and optional API access follow the same rule: validate input at the boundary and keep the local feature independent of the API.

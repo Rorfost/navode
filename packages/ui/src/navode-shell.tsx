@@ -1,7 +1,12 @@
 import {
   DEFAULT_NAVODE_SETTINGS,
+  clearRecentExecutions,
+  createCommandAlias,
+  removeCommandAlias,
+  type CommandAction,
+  type CommandResult,
+  type DefaultSearchProvider,
   type NavodeSettings,
-  type SearchProvider,
 } from '@navode/core';
 import { type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -18,7 +23,7 @@ import {
   Tooltip,
 } from './primitives';
 
-const searchProviders: Record<SearchProvider, { alias: string; label: string }> = {
+const searchProviders: Record<DefaultSearchProvider, { alias: string; label: string }> = {
   google: { alias: 'g', label: 'Google' },
   youtube: { alias: 'yt', label: 'YouTube' },
 };
@@ -29,14 +34,28 @@ const safeQuickLinks = [
   { label: 'GitHub', url: 'https://github.com' },
 ];
 
+interface ShellCommandResult {
+  action?: CommandAction;
+  command: string;
+  description: string;
+  id: string;
+  label: string;
+  resolved?: CommandResult;
+  shortcut: string;
+}
+
 export interface NavodeShellProps {
   onCommand?: (command: string) => void;
+  onCommandResult?: (result: CommandResult) => void;
+  resolveCommandResults?: (input: string) => readonly CommandResult[];
   onSettingsChange?: (settings: NavodeSettings) => void;
   settings?: NavodeSettings;
 }
 
 export function NavodeShell({
   onCommand,
+  onCommandResult,
+  resolveCommandResults,
   onSettingsChange,
   settings = DEFAULT_NAVODE_SETTINGS,
 }: NavodeShellProps) {
@@ -45,12 +64,18 @@ export function NavodeShell({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isOnboardingOpen, setIsOnboardingOpen] = useState(!settings.onboardingCompleted);
   const [now, setNow] = useState(() => new Date());
+  const [aliasName, setAliasName] = useState('');
+  const [aliasLabel, setAliasLabel] = useState('');
+  const [aliasUrlTemplate, setAliasUrlTemplate] = useState('');
+  const [aliasError, setAliasError] = useState('');
+  const [editingAliasId, setEditingAliasId] = useState<string | null>(null);
+  const [commandFeedback, setCommandFeedback] = useState('');
   const commandInput = useRef<HTMLInputElement>(null);
   const provider = searchProviders[settings.defaultSearchProvider];
-  const results = useMemo(
-    () => createCommandResults(command, settings.defaultSearchProvider),
-    [command, settings.defaultSearchProvider],
-  );
+  const results = useMemo(() => {
+    const resolved = resolveCommandResults?.(command);
+    return resolved ? resolved.map(toShellResult) : createCommandResults(command, settings.defaultSearchProvider);
+  }, [command, resolveCommandResults, settings.defaultSearchProvider]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 30_000);
@@ -88,8 +113,8 @@ export function NavodeShell({
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const selected = results[selectedResult];
-    const value = selected?.command ?? command.trim();
-    if (value) onCommand?.(value);
+    if (selected) executeResult(selected);
+    else if (command.trim()) onCommand?.(command.trim());
   }
 
   function handleCommandKeys(event: KeyboardEvent<HTMLInputElement>) {
@@ -105,20 +130,67 @@ export function NavodeShell({
     if (event.key === 'Enter') {
       event.preventDefault();
       const selected = results[selectedResult];
-      if (selected) onCommand?.(selected.command);
+      if (selected) executeResult(selected);
     }
   }
 
   function chooseResult(index: number) {
     setSelectedResult(index);
     const result = results[index];
-    if (result) onCommand?.(result.command);
+    if (result) executeResult(result);
+  }
+
+  function executeResult(result: ShellCommandResult) {
+    if (result.action) {
+      if (result.action.type === 'error') {
+        setCommandFeedback(result.action.message);
+        return;
+      }
+      if (result.action.type === 'open-view' && result.action.view === 'settings') setIsSettingsOpen(true);
+      if (result.resolved) onCommandResult?.(result.resolved);
+      return;
+    }
+    onCommand?.(result.command);
   }
 
   function finishOnboarding() {
     updateSettings({ onboardingCompleted: true });
     setIsOnboardingOpen(false);
     commandInput.current?.focus();
+  }
+
+  function saveCustomAlias(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const id = editingAliasId ?? `alias-${Date.now()}`;
+    const alias = createCommandAlias({ alias: aliasName, label: aliasLabel, urlTemplate: aliasUrlTemplate }, id);
+    if (!alias || settings.customAliases.some((existing) => existing.id !== id && existing.alias === alias.alias)) {
+      setAliasError('Use a unique alias with a safe http or https URL template.');
+      return;
+    }
+    updateSettings({
+      customAliases: editingAliasId
+        ? settings.customAliases.map((existing) => (existing.id === id ? alias : existing))
+        : [...settings.customAliases, alias],
+    });
+    resetAliasForm();
+  }
+
+  function editCustomAlias(id: string) {
+    const alias = settings.customAliases.find((candidate) => candidate.id === id);
+    if (!alias) return;
+    setEditingAliasId(alias.id);
+    setAliasName(alias.alias);
+    setAliasLabel(alias.label);
+    setAliasUrlTemplate(alias.urlTemplate);
+    setAliasError('');
+  }
+
+  function resetAliasForm() {
+    setAliasName('');
+    setAliasLabel('');
+    setAliasUrlTemplate('');
+    setAliasError('');
+    setEditingAliasId(null);
   }
 
   return (
@@ -150,6 +222,7 @@ export function NavodeShell({
               onChange={(event) => {
                 setCommand(event.target.value);
                 setSelectedResult(0);
+                setCommandFeedback('');
               }}
               onKeyDown={handleCommandKeys}
               placeholder={`Search ${provider.label} or run a command…`}
@@ -171,13 +244,17 @@ export function NavodeShell({
             <div id="command-results" role="listbox" aria-label="Command suggestions">
               {results.map((result, index) => (
                 <CommandResult active={selectedResult === index} key={result.id} onClick={() => chooseResult(index)}>
-                  <span>{result.label}</span>
+                  <span>
+                    <strong>{result.label}</strong>
+                    <small>{result.description}</small>
+                  </span>
                   <KeyboardShortcutHint>{result.shortcut}</KeyboardShortcutHint>
                 </CommandResult>
               ))}
             </div>
           </Menu>
         )}
+        {commandFeedback && <p className="command-feedback" role="status">{commandFeedback}</p>}
       </section>
 
       <div className="content-grid">
@@ -263,6 +340,84 @@ export function NavodeShell({
           ))}
         </Tabs>
         <p className="muted">Theme preference is stored only on this device.</p>
+        <section className="settings-section" aria-labelledby="aliases-title">
+          <h3 id="aliases-title">Custom aliases</h3>
+          <p className="muted">Use an alias followed by a query. Only public http and https URLs are accepted.</p>
+          {settings.customAliases.length > 0 && (
+            <ul className="alias-list" aria-label="Custom aliases">
+              {settings.customAliases.map((alias) => (
+                <li key={alias.id}>
+                  <span>
+                    <strong>{alias.alias}</strong> · {alias.label}
+                  </span>
+                  <span>
+                    <Button onClick={() => editCustomAlias(alias.id)} variant="quiet">Edit</Button>
+                    <Button
+                      onClick={() => updateSettings({ customAliases: removeCommandAlias(settings.customAliases, alias.id) })}
+                      variant="quiet"
+                    >
+                      Delete
+                    </Button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <form className="alias-form" onSubmit={saveCustomAlias}>
+            <label>
+              Alias
+              <TextInput
+                maxLength={32}
+                onChange={(event) => setAliasName(event.target.value)}
+                placeholder="docs"
+                required
+                value={aliasName}
+              />
+            </label>
+            <label>
+              Label
+              <TextInput
+                onChange={(event) => setAliasLabel(event.target.value)}
+                placeholder="Search documentation"
+                required
+                value={aliasLabel}
+              />
+            </label>
+            <label>
+              URL template
+              <TextInput
+                onChange={(event) => setAliasUrlTemplate(event.target.value)}
+                placeholder="https://example.com/search?q={query}"
+                required
+                value={aliasUrlTemplate}
+              />
+            </label>
+            {aliasError && <p className="form-error" role="alert">{aliasError}</p>}
+            <div className="form-actions">
+              {editingAliasId && <Button onClick={resetAliasForm} variant="quiet">Cancel</Button>}
+              <Button type="submit">{editingAliasId ? 'Save alias' : 'Add alias'}</Button>
+            </div>
+          </form>
+        </section>
+        <section className="settings-section" aria-labelledby="recent-actions-title">
+          <div className="section-heading">
+            <h3 id="recent-actions-title">Recent actions</h3>
+            {settings.recentExecutions.length > 0 && (
+              <Button onClick={() => updateSettings({ recentExecutions: clearRecentExecutions() })} variant="quiet">
+                Clear history
+              </Button>
+            )}
+          </div>
+          {settings.recentExecutions.length ? (
+            <ul className="recent-actions">
+              {settings.recentExecutions.slice(0, 5).map((execution) => (
+                <li key={execution.id}>{execution.label}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="muted">Executed commands appear here without storing their search terms.</p>
+          )}
+        </section>
         <div className="dialog-actions">
           <Button onClick={() => setIsSettingsOpen(false)} variant="primary">Done</Button>
         </div>
@@ -271,23 +426,37 @@ export function NavodeShell({
   );
 }
 
-function createCommandResults(input: string, defaultProvider: SearchProvider) {
+function toShellResult(result: CommandResult): ShellCommandResult {
+  return {
+    action: result.action,
+    command: result.command,
+    description: result.description,
+    id: result.id,
+    label: result.label,
+    resolved: result,
+    shortcut: 'Enter',
+  };
+}
+
+function createCommandResults(input: string, defaultProvider: DefaultSearchProvider): ShellCommandResult[] {
   const query = input.trim();
   if (!query || /^(g|google|yt|youtube|focus)\b/i.test(query)) return [];
 
   const primary = searchProviders[defaultProvider];
-  const secondaryProvider: SearchProvider = defaultProvider === 'google' ? 'youtube' : 'google';
+  const secondaryProvider: DefaultSearchProvider = defaultProvider === 'google' ? 'youtube' : 'google';
   const secondary = searchProviders[secondaryProvider];
   return [
     {
       id: primary.alias,
       label: `Search ${primary.label} for “${query}”`,
+      description: `Run ${primary.alias} ${query}`,
       command: `${primary.alias} ${query}`,
       shortcut: 'Enter',
     },
     {
       id: secondary.alias,
       label: `Search ${secondary.label} for “${query}”`,
+      description: `Run ${secondary.alias} ${query}`,
       command: `${secondary.alias} ${query}`,
       shortcut: '↓',
     },
