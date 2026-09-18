@@ -11,6 +11,7 @@ import {
   type Workspace,
 } from '@navode/core';
 import { NavodeShell } from '@navode/ui';
+import { PublicSite, type PublicPage } from './public-site';
 import { loadWebSettings, saveWebSettings } from './settings';
 import './styles.css';
 
@@ -91,8 +92,15 @@ function NavodeWebApp() {
   );
 }
 
+function WebRoot() {
+  const path = window.location.pathname;
+  if (path === '/app') return <NavodeWebApp />;
+  const page: PublicPage = path === '/privacy' ? 'privacy' : path === '/support' ? 'support' : 'home';
+  return <PublicSite page={page} />;
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <NavodeWebApp />
+    <WebRoot />
   </StrictMode>,
 );
