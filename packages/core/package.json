@@ -8,5 +8,5 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run"
   },
-  "devDependencies": { "vitest": "3.2.4" }
+  "devDependencies": { "vitest": "5.0.1" }
 }
