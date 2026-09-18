@@ -10,6 +10,6 @@
     "test": "vitest run",
     "deploy": "wrangler deploy"
   },
-  "dependencies": { "@navode/config": "workspace:*", "hono": "4.8.3", "zod": "3.25.67" },
+  "dependencies": { "@navode/config": "workspace:*", "hono": "4.8.3", "zod": "4.6.5" },
   "devDependencies": { "@cloudflare/workers-types": "4.20250617.0", "vitest": "3.2.4", "wrangler": "4.19.1" }
 }
