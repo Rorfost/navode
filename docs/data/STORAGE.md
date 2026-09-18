@@ -6,7 +6,7 @@ The extension owns its settings in `chrome.storage.local`. The web app may use b
 
 ## Versioning and migration
 
-Persisted root data must include a schema version. The current Navode shell validates its versioned settings before use, migrating schema v1 to v2 with generic removable starter links and empty project/workspace collections, then v2 to v3 with empty local productivity data. Malformed or unknown data falls back to safe defaults. Migrations are deterministic, tested, and run before data is used. Failed migrations must retain the original data long enough to offer export or reset rather than silently discarding it.
+Persisted root data must include a schema version. The current Navode shell validates its versioned settings before use, migrating schema v1 to v2 with generic removable starter links and empty project/workspace collections, v2 to v3 with empty local productivity data, then v3 to v4 with personalization defaults. Malformed or unknown data falls back to safe defaults. Migrations are deterministic, tested, and run before data is used. Failed migrations must retain the original data long enough to offer export or reset rather than silently discarding it.
 
 ## Limits and privacy
 

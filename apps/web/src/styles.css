@@ -119,6 +119,10 @@ h2 { font-size: 1.08rem; letter-spacing: -.025em; margin-bottom: .5rem; }
 .alias-form label { color: var(--muted); display: grid; font-size: .78rem; font-weight: 700; gap: .3rem; }
 .alias-form .text-input { font-size: .9rem; padding: .65rem .75rem; }
 .form-actions { display: flex; gap: .55rem; justify-content: flex-end; }
+.settings-toggles { display: flex; flex-wrap: wrap; gap: .45rem; margin: .9rem 0; }
+.file-button { cursor: pointer; display: inline-flex; font-size: .85rem; }
+.import-preview { background: var(--surface-raised); border-radius: .7rem; display: grid; font-size: .85rem; gap: .45rem; margin-top: 1rem; padding: .75rem; }
+.import-preview span { color: var(--muted); }
 .form-error { color: #d65e46; font-size: .82rem; margin-bottom: 0; }
 .recent-actions li { color: var(--muted); font-size: .88rem; }
 .manager-section { min-width: 0; }
@@ -155,3 +159,7 @@ h2 { font-size: 1.08rem; letter-spacing: -.025em; margin-bottom: .5rem; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
 }
+
+:root[data-reduced-motion='reduce'] *,
+:root[data-reduced-motion='reduce'] *::before,
+:root[data-reduced-motion='reduce'] *::after { scroll-behavior: auto !important; transition: none !important; }

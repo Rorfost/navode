@@ -3,6 +3,7 @@ import {
   clearRecentExecutions,
   createCommandAlias,
   removeCommandAlias,
+  serializeNavodeBackup,
   startFocusTimer,
   type CommandAction,
   type CommandResult,
@@ -26,6 +27,7 @@ import {
 } from './primitives';
 import { OrganizationManager, type OrganizationScreen } from './organization-manager';
 import { ProductivityManager, type ProductivityScreen } from './productivity-manager';
+import { SettingsDataControls } from './settings-data-controls';
 
 const searchProviders: Record<DefaultSearchProvider, { alias: string; label: string }> = {
   google: { alias: 'g', label: 'Google' },
@@ -164,6 +166,10 @@ export function NavodeShell({
         if (timer) updateSettings({ focusTimer: timer });
         setProductivityScreen('focus');
       }
+      if (result.action.type === 'export-data') {
+        downloadBackup(settings);
+        setCommandFeedback('Backup downloaded.');
+      }
       if (result.action.type === 'run-snippet') {
         const snippet = settings.snippets.find((candidate) => candidate.id === result.action.snippetId);
         if (snippet && navigator.clipboard) {
@@ -290,7 +296,7 @@ export function NavodeShell({
       </section>
 
       <div className="content-grid">
-        <Card aria-labelledby="quick-access-title">
+        {settings.homeSections.quickAccess && <Card aria-labelledby="quick-access-title">
           <div className="section-heading">
             <div>
               <p className="section-kicker">START HERE</p>
@@ -307,9 +313,9 @@ export function NavodeShell({
             ))}
           </div>
           {!settings.quickLinks.some((link) => link.enabled && link.showOnHome) && <p className="muted">Add the destinations you use most.</p>}
-        </Card>
+        </Card>}
 
-        <Card aria-labelledby="projects-title">
+        {settings.homeSections.projects && <Card aria-labelledby="projects-title">
           <div className="section-heading">
             <div>
               <p className="section-kicker">YOUR WORK</p>
@@ -325,9 +331,9 @@ export function NavodeShell({
           ))}
           {!settings.projects.some((project) => project.showOnHome) && <p className="muted">Group related destinations into a project.</p>}
           <Button onClick={() => setOrganizationScreen('projects')}>Manage projects</Button>
-        </Card>
+        </Card>}
 
-        <Card aria-labelledby="workspaces-title">
+        {settings.homeSections.workspaces && <Card aria-labelledby="workspaces-title">
           <div className="section-heading">
             <div>
               <p className="section-kicker">REPEATABLE ROUTINES</p>
@@ -343,9 +349,9 @@ export function NavodeShell({
           ))}
           {!settings.workspaces.some((workspace) => workspace.showOnHome) && <p className="muted">Launch intentional groups of browser destinations.</p>}
           <Button onClick={() => setOrganizationScreen('workspaces')}>Manage workspaces</Button>
-        </Card>
+        </Card>}
 
-        <Card aria-labelledby="productivity-title">
+        {settings.homeSections.productivity && <Card aria-labelledby="productivity-title">
           <div className="section-heading">
             <div>
               <p className="section-kicker">A LITTLE MOMENTUM</p>
@@ -359,7 +365,7 @@ export function NavodeShell({
             <Button onClick={() => setProductivityScreen('snippets')} variant="quiet">Snippets</Button>
             <Button onClick={() => setProductivityScreen('today')} variant="quiet">Today</Button>
           </div>
-        </Card>
+        </Card>}
       </div>
 
       <Dialog label="Welcome to Navode" onClose={() => setIsOnboardingOpen(false)} open={isOnboardingOpen}>
@@ -477,6 +483,18 @@ export function NavodeShell({
             <p className="muted">Executed commands appear here without storing their search terms.</p>
           )}
         </section>
+        <SettingsDataControls
+          onOpenOnboarding={() => {
+            setIsSettingsOpen(false);
+            setIsOnboardingOpen(true);
+          }}
+          onOpenOrganization={(screen) => {
+            setIsSettingsOpen(false);
+            setOrganizationScreen(screen);
+          }}
+          onSettingsChange={(next) => onSettingsChange?.(next)}
+          settings={settings}
+        />
         <div className="dialog-actions">
           <Button onClick={() => setIsSettingsOpen(false)} variant="primary">Done</Button>
         </div>
@@ -578,4 +596,14 @@ function initials(name: string): string {
     .map((part) => part[0])
     .join('')
     .toUpperCase() || 'N';
+}
+
+function downloadBackup(settings: NavodeSettings) {
+  const blob = new Blob([serializeNavodeBackup(settings)], { type: 'application/json' });
+  const href = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.download = `navode-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  link.href = href;
+  link.click();
+  URL.revokeObjectURL(href);
 }

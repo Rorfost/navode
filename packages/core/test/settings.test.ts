@@ -33,4 +33,31 @@ describe('parseNavodeSettings', () => {
     });
     expect(settings).toMatchObject({ schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION, scratchpad: { content: '' }, snippets: [], todayItems: [] });
   });
+
+  it('migrates v3 productivity settings to v4 personalization defaults', () => {
+    const settings = parseNavodeSettings({
+      schemaVersion: 3,
+      theme: 'dark',
+      onboardingCompleted: true,
+      defaultSearchProvider: 'google',
+      initialQuickLinks: false,
+      customAliases: [],
+      projects: [],
+      quickLinks: [],
+      recentExecutions: [],
+      scratchpad: { content: 'Keep this note.' },
+      snippets: [],
+      focusTimer: { durationMinutes: 25, remainingSeconds: 1500, status: 'paused' },
+      todayItems: [],
+      workspaces: [],
+    });
+
+    expect(settings).toMatchObject({
+      schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
+      scratchpad: { content: 'Keep this note.' },
+      focusPresets: [25, 50, 60],
+      homeSections: { quickAccess: true, projects: true, workspaces: true, productivity: true },
+      reducedMotion: 'system',
+    });
+  });
 });

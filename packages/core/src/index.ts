@@ -23,11 +23,28 @@ import {
 
 export type CommandKind = 'url' | 'search' | 'project' | 'focus';
 
-export const NAVODE_STORAGE_SCHEMA_VERSION = 3;
+export const NAVODE_STORAGE_SCHEMA_VERSION = 4;
 export const NAVODE_SETTINGS_STORAGE_KEY = 'navode.settings';
 
 export type ThemePreference = 'dark' | 'light' | 'system';
 export type DefaultSearchProvider = 'google' | 'youtube';
+export type ReducedMotionPreference = 'system' | 'reduce';
+
+export interface HomeSections {
+  productivity: boolean;
+  projects: boolean;
+  quickAccess: boolean;
+  workspaces: boolean;
+}
+
+export const DEFAULT_HOME_SECTIONS: HomeSections = {
+  productivity: true,
+  projects: true,
+  quickAccess: true,
+  workspaces: true,
+};
+
+export const DEFAULT_FOCUS_PRESETS = [25, 50, 60];
 
 export interface StoredSettings {
   schemaVersion: typeof NAVODE_STORAGE_SCHEMA_VERSION;
@@ -45,6 +62,10 @@ export interface NavodeSettings extends StoredSettings {
   scratchpad: Scratchpad;
   snippets: Snippet[];
   focusTimer: FocusTimer;
+  focusPresets: number[];
+  homeSections: HomeSections;
+  recordRecentActions: boolean;
+  reducedMotion: ReducedMotionPreference;
   todayItems: TodayItem[];
   workspaces: Workspace[];
 }
@@ -62,6 +83,10 @@ export const DEFAULT_NAVODE_SETTINGS: NavodeSettings = {
   scratchpad: DEFAULT_SCRATCHPAD,
   snippets: [],
   focusTimer: DEFAULT_FOCUS_TIMER,
+  focusPresets: DEFAULT_FOCUS_PRESETS,
+  homeSections: DEFAULT_HOME_SECTIONS,
+  recordRecentActions: true,
+  reducedMotion: 'system',
   todayItems: [],
   workspaces: [],
 };
@@ -71,6 +96,7 @@ export function parseNavodeSettings(value: unknown): NavodeSettings {
   if (!isRecord(value)) return DEFAULT_NAVODE_SETTINGS;
   if (value.schemaVersion === 1) return migrateV1Settings(value);
   if (value.schemaVersion === 2) return migrateV2Settings(value);
+  if (value.schemaVersion === 3) return migrateV3Settings(value);
   if (value.schemaVersion !== NAVODE_STORAGE_SCHEMA_VERSION) return DEFAULT_NAVODE_SETTINGS;
 
   return {
@@ -94,6 +120,10 @@ export function parseNavodeSettings(value: unknown): NavodeSettings {
     scratchpad: parseScratchpad(value.scratchpad),
     snippets: parseSnippets(value.snippets),
     focusTimer: parseFocusTimer(value.focusTimer),
+    focusPresets: parseFocusPresets(value.focusPresets),
+    homeSections: parseHomeSections(value.homeSections),
+    recordRecentActions: typeof value.recordRecentActions === 'boolean' ? value.recordRecentActions : true,
+    reducedMotion: isReducedMotionPreference(value.reducedMotion) ? value.reducedMotion : 'system',
     todayItems: parseTodayItems(value.todayItems),
     workspaces: parseWorkspaces(value.workspaces),
   };
@@ -121,6 +151,10 @@ export function migrateV1Settings(value: Record<string, unknown>): NavodeSetting
     scratchpad: DEFAULT_SCRATCHPAD,
     snippets: [],
     focusTimer: DEFAULT_FOCUS_TIMER,
+    focusPresets: DEFAULT_FOCUS_PRESETS,
+    homeSections: DEFAULT_HOME_SECTIONS,
+    recordRecentActions: true,
+    reducedMotion: 'system',
     todayItems: [],
     workspaces: [],
   };
@@ -133,11 +167,26 @@ export function migrateV2Settings(value: Record<string, unknown>): NavodeSetting
     scratchpad: DEFAULT_SCRATCHPAD,
     snippets: [],
     focusTimer: DEFAULT_FOCUS_TIMER,
+    focusPresets: DEFAULT_FOCUS_PRESETS,
+    homeSections: DEFAULT_HOME_SECTIONS,
+    recordRecentActions: true,
+    reducedMotion: 'system',
     todayItems: [],
   };
 }
 
-function parseV2Base(value: Record<string, unknown>): Omit<NavodeSettings, 'schemaVersion' | 'scratchpad' | 'snippets' | 'focusTimer' | 'todayItems'> {
+export function migrateV3Settings(value: Record<string, unknown>): NavodeSettings {
+  return {
+    ...parseV3Base(value),
+    schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
+    focusPresets: DEFAULT_FOCUS_PRESETS,
+    homeSections: DEFAULT_HOME_SECTIONS,
+    recordRecentActions: true,
+    reducedMotion: 'system',
+  };
+}
+
+function parseV2Base(value: Record<string, unknown>): Omit<NavodeSettings, 'schemaVersion' | 'scratchpad' | 'snippets' | 'focusTimer' | 'focusPresets' | 'homeSections' | 'recordRecentActions' | 'reducedMotion' | 'todayItems'> {
   return {
     theme: isThemePreference(value.theme) ? value.theme : DEFAULT_NAVODE_SETTINGS.theme,
     onboardingCompleted: typeof value.onboardingCompleted === 'boolean' ? value.onboardingCompleted : DEFAULT_NAVODE_SETTINGS.onboardingCompleted,
@@ -147,6 +196,24 @@ function parseV2Base(value: Record<string, unknown>): Omit<NavodeSettings, 'sche
     projects: parseProjects(value.projects),
     quickLinks: parseQuickLinks(value.quickLinks),
     recentExecutions: parseRecentExecutions(value.recentExecutions),
+    workspaces: parseWorkspaces(value.workspaces),
+  };
+}
+
+function parseV3Base(value: Record<string, unknown>): Omit<NavodeSettings, 'schemaVersion' | 'focusPresets' | 'homeSections' | 'recordRecentActions' | 'reducedMotion'> {
+  return {
+    theme: isThemePreference(value.theme) ? value.theme : DEFAULT_NAVODE_SETTINGS.theme,
+    onboardingCompleted: typeof value.onboardingCompleted === 'boolean' ? value.onboardingCompleted : DEFAULT_NAVODE_SETTINGS.onboardingCompleted,
+    defaultSearchProvider: isDefaultSearchProvider(value.defaultSearchProvider) ? value.defaultSearchProvider : DEFAULT_NAVODE_SETTINGS.defaultSearchProvider,
+    initialQuickLinks: typeof value.initialQuickLinks === 'boolean' ? value.initialQuickLinks : DEFAULT_NAVODE_SETTINGS.initialQuickLinks,
+    customAliases: parseCustomAliases(value.customAliases),
+    projects: parseProjects(value.projects),
+    quickLinks: parseQuickLinks(value.quickLinks),
+    recentExecutions: parseRecentExecutions(value.recentExecutions),
+    scratchpad: parseScratchpad(value.scratchpad),
+    snippets: parseSnippets(value.snippets),
+    focusTimer: parseFocusTimer(value.focusTimer),
+    todayItems: parseTodayItems(value.todayItems),
     workspaces: parseWorkspaces(value.workspaces),
   };
 }
@@ -161,6 +228,10 @@ function isThemePreference(value: unknown): value is ThemePreference {
 
 function isDefaultSearchProvider(value: unknown): value is DefaultSearchProvider {
   return value === 'google' || value === 'youtube';
+}
+
+function isReducedMotionPreference(value: unknown): value is ReducedMotionPreference {
+  return value === 'system' || value === 'reduce';
 }
 
 function parseCustomAliases(value: unknown): CommandAlias[] {
@@ -327,6 +398,22 @@ function parseFocusTimer(value: unknown): FocusTimer {
   return { durationMinutes: value.durationMinutes, ...(endsAt ? { endsAt } : {}), remainingSeconds: value.remainingSeconds, status };
 }
 
+function parseFocusPresets(value: unknown): number[] {
+  if (!Array.isArray(value)) return DEFAULT_FOCUS_PRESETS;
+  const presets = [...new Set(value.filter((duration): duration is number => Number.isInteger(duration) && duration >= 1 && duration <= 180))].slice(0, 5);
+  return presets.length ? presets : DEFAULT_FOCUS_PRESETS;
+}
+
+function parseHomeSections(value: unknown): HomeSections {
+  if (!isRecord(value)) return DEFAULT_HOME_SECTIONS;
+  return {
+    productivity: typeof value.productivity === 'boolean' ? value.productivity : true,
+    projects: typeof value.projects === 'boolean' ? value.projects : true,
+    quickAccess: typeof value.quickAccess === 'boolean' ? value.quickAccess : true,
+    workspaces: typeof value.workspaces === 'boolean' ? value.workspaces : true,
+  };
+}
+
 function parseTodayItems(value: unknown): TodayItem[] {
   if (!Array.isArray(value)) return [];
   return value.slice(0, 3).flatMap((candidate) =>
@@ -458,3 +545,12 @@ export {
   type SnippetInput,
   type TodayItem,
 } from './productivity';
+
+export {
+  NAVODE_BACKUP_SCHEMA_VERSION,
+  createNavodeBackup,
+  parseNavodeBackup,
+  serializeNavodeBackup,
+  type BackupImportResult,
+  type NavodeBackup,
+} from './backup';

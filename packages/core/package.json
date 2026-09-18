@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": { ".": "./src/index.ts" },
+  "dependencies": { "zod": "3.25.67" },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run"

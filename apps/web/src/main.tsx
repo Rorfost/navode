@@ -36,6 +36,7 @@ function NavodeWebApp() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
+    document.documentElement.dataset.reducedMotion = settings.reducedMotion;
     saveWebSettings(settings);
   }, [settings]);
 
@@ -52,10 +53,11 @@ function NavodeWebApp() {
   function handleCommandResult(result: CommandResult) {
     if (result.action.type === 'error') return;
     executeAction(result.action);
-    setSettings((current) => ({
-      ...current,
-      recentExecutions: recordRecentExecution(current.recentExecutions, result),
-    }));
+    setSettings((current) =>
+      current.recordRecentActions
+        ? { ...current, recentExecutions: recordRecentExecution(current.recentExecutions, result) }
+        : current,
+    );
   }
 
   function launchWorkspace(workspace: Workspace) {
@@ -71,7 +73,11 @@ function NavodeWebApp() {
       score: 100,
       source: 'workspace',
     };
-    setSettings((current) => ({ ...current, recentExecutions: recordRecentExecution(current.recentExecutions, result) }));
+    setSettings((current) =>
+      current.recordRecentActions
+        ? { ...current, recentExecutions: recordRecentExecution(current.recentExecutions, result) }
+        : current,
+    );
   }
 
   return (

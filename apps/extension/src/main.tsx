@@ -48,6 +48,7 @@ function NavodeExtensionApp() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = settings.theme;
+    document.documentElement.dataset.reducedMotion = settings.reducedMotion;
     if (hasLoadedSettings) void saveExtensionSettings(storage, settings).catch(() => undefined);
   }, [hasLoadedSettings, settings]);
 
@@ -64,10 +65,11 @@ function NavodeExtensionApp() {
   function handleCommandResult(result: CommandResult) {
     if (result.action.type === 'error') return;
     executeAction(result.action);
-    setSettings((current) => ({
-      ...current,
-      recentExecutions: recordRecentExecution(current.recentExecutions, result),
-    }));
+    setSettings((current) =>
+      current.recordRecentActions
+        ? { ...current, recentExecutions: recordRecentExecution(current.recentExecutions, result) }
+        : current,
+    );
   }
 
   function launchWorkspace(workspace: Workspace) {
@@ -83,7 +85,11 @@ function NavodeExtensionApp() {
       score: 100,
       source: 'workspace',
     };
-    setSettings((current) => ({ ...current, recentExecutions: recordRecentExecution(current.recentExecutions, result) }));
+    setSettings((current) =>
+      current.recordRecentActions
+        ? { ...current, recentExecutions: recordRecentExecution(current.recentExecutions, result) }
+        : current,
+    );
   }
 
   return (

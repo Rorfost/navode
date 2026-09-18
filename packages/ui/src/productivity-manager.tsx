@@ -200,7 +200,19 @@ export function ProductivityManager({ onClose, onSettingsChange, screen, setting
         <p className="muted" role="status">{timer.status === 'completed' ? 'Session complete.' : `${timer.status[0]?.toUpperCase()}${timer.status.slice(1)} session`}</p>
         <fieldset className="provider-options">
           <legend>Duration</legend>
-          {[25, 50, 60].map((preset) => <Button key={preset} onClick={() => { setDuration(String(preset)); const next = startFocusTimer(preset); if (next) update({ focusTimer: next }); }} variant="secondary">{preset} min</Button>)}
+          {settings.focusPresets.map((preset) => (
+            <Button
+              key={preset}
+              onClick={() => {
+                setDuration(String(preset));
+                const next = startFocusTimer(preset);
+                if (next) update({ focusTimer: next });
+              }}
+              variant="secondary"
+            >
+              {preset} min
+            </Button>
+          ))}
         </fieldset>
         <label className="editor-field" htmlFor="focus-duration">Custom minutes (1–180)
           <TextInput id="focus-duration" inputMode="numeric" max="180" min="1" onChange={(event) => setDuration(event.target.value)} type="number" value={duration} />

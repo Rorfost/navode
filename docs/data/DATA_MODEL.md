@@ -16,4 +16,4 @@ This is a client-side conceptual model, not a database schema.
 | `HealthTarget` | A user-configured status destination. |
 | `RecentAction` | Local, bounded history for convenience. |
 
-Quick links carry an enabled state, display order, optional grouping/alias/icon, and a home-preview choice. Projects own editable typed URL actions; workspaces own ordered URL destinations and require a launch confirmation. All IDs should be stable opaque strings. The persisted settings root is currently schema v3; it migrates v1 and v2 data deterministically. Scratchpad and snippet text never leave local storage, and snippets must not be used for passwords or tokens.
+Quick links carry an enabled state, display order, optional grouping/alias/icon, and a home-preview choice. Projects own editable typed URL actions; workspaces own ordered URL destinations and require a launch confirmation. All IDs should be stable opaque strings. The persisted settings root is currently schema v4; it migrates earlier schemas deterministically. Scratchpad and snippet text never leave local storage, and snippets must not be used for passwords or tokens.
