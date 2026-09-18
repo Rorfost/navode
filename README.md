@@ -35,11 +35,11 @@ infrastructure/  Deployment configuration and notes
 Prerequisites: Node.js 22+ and pnpm 10+.
 
 ```sh
-pnpm install --frozen-lockfile
+pnpm install
 pnpm dev:web
 ```
 
-See [local development](docs/operations/LOCAL_DEVELOPMENT.md) for all commands, including extension loading and API development.
+Commit the generated `pnpm-lock.yaml`, then use `pnpm install --frozen-lockfile` for reproducible installs. See [local development](docs/operations/LOCAL_DEVELOPMENT.md) for all commands, including extension loading and API development.
 
 ## Development commands
 
