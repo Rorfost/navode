@@ -1,3 +1,25 @@
-Copyright © 2026 Rorfost. All rights reserved.
+Navode Proprietary License
+Copyright (c) 2026 Rorfost. All rights reserved.
 
-This source code and associated documentation are proprietary and confidential unless Rorfost explicitly publishes them under a separate license. No permission is granted to use, copy, modify, distribute, or disclose this material except under a written agreement with Rorfost.
+The source code in this repository is made publicly available for
+viewing, educational reference, issue reporting, and contribution
+to the official Navode project.
+
+Except with prior written permission from Rorfost, you may not:
+
+- copy or reproduce substantial portions of the source code;
+- redistribute the source code or compiled software;
+- publish modified or derivative versions of Navode;
+- use the source code to create a competing or substantially similar product;
+- sell, sublicense, or commercially exploit the software;
+- use the Navode or Rorfost name, logo, branding, or other assets in a way
+  that suggests an official or endorsed product.
+
+Contributions submitted to the official Navode repository may be incorporated
+into Navode subject to the repository's contribution terms.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED. RORFOST SHALL NOT BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY ARISING FROM THE SOFTWARE OR ITS USE.
+
+For licensing or other permissions, contact the Navode/Rorfost maintainers.
