@@ -13,6 +13,7 @@ describe('extension manifest policy', () => {
     expect(completeManifest.optional_host_permissions).toEqual([
       'https://api.github.com/*',
       'https://www.googleapis.com/*',
+      'https://codeforces.com/*',
     ]);
     expect(completeManifest.content_scripts).toBeUndefined();
     expect(manifest.content_security_policy.extension_pages).toBe(

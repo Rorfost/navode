@@ -57,6 +57,24 @@ sequenceDiagram
 
 No Gmail or Drive scopes are requested. The extension never sends Calendar data to Navode infrastructure.
 
+## Connect and refresh Codeforces
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant E as Host
+  participant C as Codeforces API
+  U->>E: Connect Competitive programming
+  E->>E: Request codeforces.com optional origin (extension only)
+  E->>C: Read public contests
+  opt Public handle configured
+    E->>C: Read public profile and recent submissions
+  end
+  E-->>U: Store bounded local cache or retain prior cache on error
+```
+
+The adapter uses Codeforces' documented public API and spaces calls to respect its public rate limit. It never asks for a Codeforces API key or stores credentials.
+
 ## Execute a command
 
 ```mermaid

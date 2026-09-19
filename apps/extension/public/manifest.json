@@ -6,6 +6,6 @@
   "chrome_url_overrides": { "newtab": "index.html" },
   "permissions": ["storage"],
   "optional_permissions": ["identity"],
-  "optional_host_permissions": ["https://api.github.com/*", "https://www.googleapis.com/*"],
+  "optional_host_permissions": ["https://api.github.com/*", "https://www.googleapis.com/*", "https://codeforces.com/*"],
   "content_security_policy": { "extension_pages": "script-src 'self'; object-src 'self'" }
 }

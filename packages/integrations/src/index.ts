@@ -1,5 +1,6 @@
 export * from './github';
 export * from './calendar';
+export * from './codeforces';
 
 export type IntegrationId = 'github' | 'google-calendar' | 'competitive-programming' | 'project-health';
 
@@ -104,7 +105,7 @@ export const DEFAULT_REFRESH_POLICY: RefreshPolicy = {
   refreshOnOpen: true,
 };
 
-/** GitHub is available in V2.2; other provider definitions remain metadata only. */
+/** Providers become available independently; their API clients remain in dedicated adapter modules. */
 export const NAVODE_INTEGRATIONS = createIntegrationRegistry([
   {
     id: 'github',
@@ -145,13 +146,19 @@ export const NAVODE_INTEGRATIONS = createIntegrationRegistry([
   {
     id: 'competitive-programming',
     name: 'Competitive programming',
-    description: 'Contest and profile updates from supported platforms.',
-    availability: 'planned',
-    capabilities: [{ id: 'contest-status', label: 'Contest status', description: 'Read public contest updates.' }],
-    permissions: [],
-    actions: [],
-    widgets: [],
-    refreshPolicy: DEFAULT_REFRESH_POLICY,
+    description: 'Public Codeforces contests and an optional public profile handle.',
+    availability: 'available',
+    capabilities: [
+      { id: 'contest-status', label: 'Upcoming contests', description: 'Read public Codeforces contest timing.' },
+      { id: 'public-profile', label: 'Public profile', description: 'Read an optional public Codeforces rating and recent submissions.' },
+    ],
+    permissions: [{ id: 'codeforces-public-api', label: 'Codeforces public API', description: 'Read public contest and optional public-handle data from codeforces.com.' }],
+    actions: [
+      { id: 'open-contests', label: 'Open Codeforces contests', capabilityId: 'contest-status' },
+      { id: 'open-problemset', label: 'Open Codeforces practice', capabilityId: 'contest-status' },
+    ],
+    widgets: [{ id: 'contest-context', title: 'Contests', capabilityId: 'contest-status', emptyMessage: 'No upcoming Codeforces contests.' }],
+    refreshPolicy: { ...DEFAULT_REFRESH_POLICY, staleAfterMs: 15 * 60_000 },
   },
   {
     id: 'project-health',

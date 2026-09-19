@@ -25,7 +25,6 @@ describe('command engine parsing and search aliases', () => {
     ['g graph theory', 'https://www.google.com/search?q=graph%20theory'],
     ['yt segment tree', 'https://www.youtube.com/results?search_query=segment%20tree'],
     ['gh navode', 'https://github.com/search?q=navode'],
-    ['cf 1700', 'https://codeforces.com/problemset?search=1700'],
     ['lc two sum', 'https://leetcode.com/problemset/?search=two%20sum'],
   ])('resolves %s to its public search URL', (input, url) => {
     const result = resolveCommand(input);
@@ -56,6 +55,14 @@ describe('command engine parsing and search aliases', () => {
     expect(resolveCommand('calendar').action).toEqual({ type: 'open-url', url: 'https://calendar.google.com' });
     expect(resolveCommand('next event').action).toEqual({ type: 'open-url', url: 'https://calendar.google.com' });
     expect(resolveCommand('today').action).toEqual({ type: 'open-view', view: 'today' });
+  });
+
+  it('generates explicit Codeforces contest, profile, and rating-practice commands', () => {
+    expect(resolveCommand('cf').action).toEqual({ type: 'open-url', url: 'https://codeforces.com/contests' });
+    expect(resolveCommand('cf contests').action).toEqual({ type: 'open-url', url: 'https://codeforces.com/contests' });
+    expect(resolveCommand('cf profile', { codeforcesHandle: 'tourist' }).action).toEqual({ type: 'open-url', url: 'https://codeforces.com/profile/tourist' });
+    expect(resolveCommand('cf problem 1700').action).toEqual({ type: 'open-url', url: 'https://codeforces.com/problemset?tags=1700-1700' });
+    expect(resolveCommand('cf profile').action).toMatchObject({ type: 'error' });
   });
 
   it('starts a requested focus duration and opens local utility views', () => {

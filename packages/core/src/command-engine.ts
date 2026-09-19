@@ -58,6 +58,7 @@ export interface SnippetCommandTarget {
 }
 
 export interface CommandCatalog {
+  codeforcesHandle?: string;
   customAliases?: readonly CommandAlias[];
   defaultSearchProvider?: SearchProviderId;
   projects?: readonly ProjectCommandTarget[];
@@ -188,6 +189,9 @@ export function resolveCommand(input: string, catalog: CommandCatalog = {}): Com
     });
   }
 
+  const codeforcesResult = resolveCodeforcesCommand(parsed.name, parsed.argument, normalized, catalog);
+  if (codeforcesResult) return codeforcesResult;
+
   const githubResult = resolveGitHubCommand(parsed.argument, parsed.name, normalized, catalog);
   if (githubResult) return githubResult;
 
@@ -236,6 +240,60 @@ export function resolveCommand(input: string, catalog: CommandCatalog = {}): Com
   if (bestMatch && bestMatch.score >= 80) return bestMatch;
 
   return createFallbackSearchResult(normalized, catalog.defaultSearchProvider ?? 'google');
+}
+
+function resolveCodeforcesCommand(
+  name: string,
+  argument: string,
+  command: string,
+  catalog: CommandCatalog,
+): CommandResult | null {
+  if (name !== 'cf' && name !== 'codeforces') return null;
+  const normalizedArgument = argument.trim().toLowerCase();
+  if (!normalizedArgument || normalizedArgument === 'contests') {
+    return createResult({
+      action: { type: 'open-url', url: 'https://codeforces.com/contests' },
+      command,
+      description: 'Open upcoming Codeforces contests',
+      id: 'codeforces:contests',
+      label: 'Open Codeforces contests',
+      score: 100,
+      source: 'internal',
+    });
+  }
+  if (normalizedArgument === 'profile') {
+    if (!catalog.codeforcesHandle) {
+      return createResult({
+        action: { type: 'error', message: 'Add your public Codeforces handle in Integrations before opening your profile.' },
+        command,
+        description: 'A public Codeforces handle is required for this command.',
+        id: 'error:codeforces-handle',
+        label: 'Configure Codeforces handle',
+        score: 100,
+        source: 'internal',
+      });
+    }
+    return createResult({
+      action: { type: 'open-url', url: `https://codeforces.com/profile/${encodeURIComponent(catalog.codeforcesHandle)}` },
+      command,
+      description: `Open ${catalog.codeforcesHandle}'s Codeforces profile`,
+      id: 'codeforces:profile',
+      label: 'Open Codeforces profile',
+      score: 100,
+      source: 'internal',
+    });
+  }
+  const rating = /^problem\s+(\d{3,4})$/.exec(normalizedArgument)?.[1] ?? /^(\d{3,4})$/.exec(normalizedArgument)?.[1];
+  if (!rating) return null;
+  return createResult({
+    action: { type: 'open-url', url: `https://codeforces.com/problemset?tags=${rating}-${rating}` },
+    command,
+    description: `Open Codeforces problems around ${rating} rating`,
+    id: `codeforces:practice:${rating}`,
+    label: `Practice Codeforces ${rating}`,
+    score: 100,
+    source: 'internal',
+  });
 }
 
 export function getCommandResults(input: string, catalog: CommandCatalog = {}): CommandResult[] {

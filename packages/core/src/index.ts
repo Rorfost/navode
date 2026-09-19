@@ -34,7 +34,7 @@ import {
 
 export type CommandKind = 'url' | 'search' | 'project' | 'focus';
 
-export const NAVODE_STORAGE_SCHEMA_VERSION = 6;
+export const NAVODE_STORAGE_SCHEMA_VERSION = 7;
 export const NAVODE_SETTINGS_STORAGE_KEY = 'navode.settings';
 
 export type ThemePreference = 'dark' | 'light' | 'system';
@@ -57,6 +57,15 @@ export const DEFAULT_HOME_SECTIONS: HomeSections = {
 
 export const DEFAULT_FOCUS_PRESETS = [25, 50, 60];
 
+export interface CompetitiveProgrammingSettings {
+  codeforcesHandle?: string;
+  showWidget: boolean;
+}
+
+export const DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS: CompetitiveProgrammingSettings = {
+  showWidget: true,
+};
+
 export interface StoredSettings {
   schemaVersion: typeof NAVODE_STORAGE_SCHEMA_VERSION;
 }
@@ -68,6 +77,7 @@ export interface NavodeSettings extends StoredSettings {
   initialQuickLinks: boolean;
   integrationCache: Partial<Record<IntegrationId, IntegrationCacheState>>;
   integrations: Partial<Record<IntegrationId, IntegrationConnection>>;
+  competitiveProgramming: CompetitiveProgrammingSettings;
   customAliases: CommandAlias[];
   projects: Project[];
   quickLinks: QuickLink[];
@@ -91,6 +101,7 @@ export const DEFAULT_NAVODE_SETTINGS: NavodeSettings = {
   initialQuickLinks: true,
   integrationCache: {},
   integrations: {},
+  competitiveProgramming: DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS,
   customAliases: [],
   projects: [],
   quickLinks: createStarterQuickLinks(),
@@ -114,6 +125,7 @@ export function parseNavodeSettings(value: unknown): NavodeSettings {
   if (value.schemaVersion === 3) return migrateV3Settings(value);
   if (value.schemaVersion === 4) return migrateV4Settings(value);
   if (value.schemaVersion === 5) return migrateV5Settings(value);
+  if (value.schemaVersion === 6) return migrateV6Settings(value);
   if (value.schemaVersion !== NAVODE_STORAGE_SCHEMA_VERSION) return DEFAULT_NAVODE_SETTINGS;
 
   return {
@@ -132,6 +144,7 @@ export function parseNavodeSettings(value: unknown): NavodeSettings {
         : DEFAULT_NAVODE_SETTINGS.initialQuickLinks,
     integrationCache: parseIntegrationCache(value.integrationCache),
     integrations: parseIntegrationConnections(value.integrations),
+    competitiveProgramming: parseCompetitiveProgrammingSettings(value.competitiveProgramming),
     customAliases: parseCustomAliases(value.customAliases),
     projects: parseProjects(value.projects),
     quickLinks: parseQuickLinks(value.quickLinks),
@@ -166,6 +179,7 @@ export function migrateV1Settings(value: Record<string, unknown>): NavodeSetting
         : DEFAULT_NAVODE_SETTINGS.initialQuickLinks,
     integrationCache: {},
     integrations: {},
+    competitiveProgramming: DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS,
     customAliases: parseCustomAliases(value.customAliases),
     projects: [],
     quickLinks: value.initialQuickLinks === false ? [] : createStarterQuickLinks(),
@@ -188,6 +202,7 @@ export function migrateV2Settings(value: Record<string, unknown>): NavodeSetting
     schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
     integrationCache: {},
     integrations: {},
+    competitiveProgramming: DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS,
     scratchpad: DEFAULT_SCRATCHPAD,
     snippets: [],
     focusTimer: DEFAULT_FOCUS_TIMER,
@@ -205,6 +220,7 @@ export function migrateV3Settings(value: Record<string, unknown>): NavodeSetting
     schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
     integrationCache: {},
     integrations: {},
+    competitiveProgramming: DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS,
     focusPresets: DEFAULT_FOCUS_PRESETS,
     homeSections: DEFAULT_HOME_SECTIONS,
     recordRecentActions: true,
@@ -224,11 +240,17 @@ export function migrateV4Settings(value: Record<string, unknown>): NavodeSetting
     reducedMotion: isReducedMotionPreference(value.reducedMotion) ? value.reducedMotion : 'system',
     integrationCache: {},
     integrations: {},
+    competitiveProgramming: DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS,
   };
 }
 
 /** V2.2 adds an optional validated GitHub repository reference to each project. */
 export function migrateV5Settings(value: Record<string, unknown>): NavodeSettings {
+  return parseNavodeSettings({ ...value, schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION });
+}
+
+/** V2.4 adds an optional public Codeforces handle and a removable contest widget preference. */
+export function migrateV6Settings(value: Record<string, unknown>): NavodeSettings {
   return parseNavodeSettings({ ...value, schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION });
 }
 
@@ -239,6 +261,7 @@ function parseV2Base(
   | 'schemaVersion'
   | 'integrationCache'
   | 'integrations'
+  | 'competitiveProgramming'
   | 'scratchpad'
   | 'snippets'
   | 'focusTimer'
@@ -276,6 +299,7 @@ function parseV3Base(
   | 'schemaVersion'
   | 'integrationCache'
   | 'integrations'
+  | 'competitiveProgramming'
   | 'focusPresets'
   | 'homeSections'
   | 'recordRecentActions'
@@ -560,6 +584,18 @@ function parseHomeSections(value: unknown): HomeSections {
     projects: typeof value.projects === 'boolean' ? value.projects : true,
     quickAccess: typeof value.quickAccess === 'boolean' ? value.quickAccess : true,
     workspaces: typeof value.workspaces === 'boolean' ? value.workspaces : true,
+  };
+}
+
+function parseCompetitiveProgrammingSettings(value: unknown): CompetitiveProgrammingSettings {
+  if (!isRecord(value)) return DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS;
+  const codeforcesHandle =
+    typeof value.codeforcesHandle === 'string' && /^[A-Za-z0-9][A-Za-z0-9_.-]{0,23}$/.test(value.codeforcesHandle.trim())
+      ? value.codeforcesHandle.trim()
+      : undefined;
+  return {
+    ...(codeforcesHandle ? { codeforcesHandle } : {}),
+    showWidget: typeof value.showWidget === 'boolean' ? value.showWidget : true,
   };
 }
 

@@ -119,6 +119,12 @@ describe('parseNavodeSettings', () => {
     });
   });
 
+  it('migrates v6 settings with a safe empty Codeforces configuration', () => {
+    const settings = parseNavodeSettings({ ...DEFAULT_NAVODE_SETTINGS, schemaVersion: 6 });
+    expect(settings).toMatchObject({ schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION, competitiveProgramming: { showWidget: true } });
+    expect(settings.competitiveProgramming.codeforcesHandle).toBeUndefined();
+  });
+
   it('drops malformed integration cache entries and unknown providers', () => {
     const settings = parseNavodeSettings({
       ...DEFAULT_NAVODE_SETTINGS,

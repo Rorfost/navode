@@ -2,24 +2,47 @@ import {
   NAVODE_INTEGRATIONS,
   defaultIntegrationConnection,
   disconnectIntegration,
+  parseCodeforcesHandle,
   type IntegrationId,
 } from '@navode/integrations';
 import type { NavodeSettings } from '@navode/core';
-import { Button } from './primitives';
+import { useEffect, useState } from 'react';
+import { Button, TextInput } from './primitives';
 
 export interface IntegrationSettingsProps {
-  onConnect?: (providerId: Extract<IntegrationId, 'github' | 'google-calendar'>) => void;
+  onConnect?: (providerId: Extract<IntegrationId, 'github' | 'google-calendar' | 'competitive-programming'>) => void;
   onSettingsChange: (settings: NavodeSettings) => void;
   settings: NavodeSettings;
 }
 
 export function IntegrationSettings({ onConnect, onSettingsChange, settings }: IntegrationSettingsProps) {
+  const [codeforcesHandle, setCodeforcesHandle] = useState(settings.competitiveProgramming.codeforcesHandle ?? '');
+  const [handleError, setHandleError] = useState('');
+
+  useEffect(() => setCodeforcesHandle(settings.competitiveProgramming.codeforcesHandle ?? ''), [settings.competitiveProgramming.codeforcesHandle]);
+
   function disconnect(providerId: keyof NavodeSettings['integrations']) {
     onSettingsChange({
       ...settings,
       integrations: {
         ...settings.integrations,
         [providerId]: disconnectIntegration(),
+      },
+    });
+  }
+
+  function saveCodeforcesHandle() {
+    const handle = codeforcesHandle.trim();
+    if (handle && !parseCodeforcesHandle(handle)) {
+      setHandleError('Use 1–24 letters, numbers, dots, underscores, or hyphens.');
+      return;
+    }
+    setHandleError('');
+    onSettingsChange({
+      ...settings,
+      competitiveProgramming: {
+        ...settings.competitiveProgramming,
+        ...(handle ? { codeforcesHandle: handle } : { codeforcesHandle: undefined }),
       },
     });
   }
@@ -51,7 +74,7 @@ export function IntegrationSettings({ onConnect, onSettingsChange, settings }: I
                 {provider.availability === 'available' && connection.status !== 'connected' && (
                   <Button
                     onClick={() =>
-                      (provider.id === 'github' || provider.id === 'google-calendar') &&
+                      (provider.id === 'github' || provider.id === 'google-calendar' || provider.id === 'competitive-programming') &&
                       onConnect?.(provider.id)
                     }
                   >
@@ -73,6 +96,33 @@ export function IntegrationSettings({ onConnect, onSettingsChange, settings }: I
           );
         })}
       </ul>
+      <div className="integration-handle" aria-label="Codeforces profile">
+        <label htmlFor="codeforces-handle">Public Codeforces handle</label>
+        <div className="integration-actions">
+          <TextInput
+            id="codeforces-handle"
+            onChange={(event) => setCodeforcesHandle(event.target.value)}
+            placeholder="Optional — no default handle"
+            value={codeforcesHandle}
+          />
+          <Button onClick={saveCodeforcesHandle} variant="quiet">Save handle</Button>
+          <Button
+            onClick={() =>
+              onSettingsChange({
+                ...settings,
+                competitiveProgramming: {
+                  ...settings.competitiveProgramming,
+                  showWidget: !settings.competitiveProgramming.showWidget,
+                },
+              })
+            }
+            variant="quiet"
+          >
+            {settings.competitiveProgramming.showWidget ? 'Hide contest widget' : 'Show contest widget'}
+          </Button>
+        </div>
+        {handleError && <small role="alert">{handleError}</small>}
+      </div>
       <p className="muted">
         Navode will explain and request only the permissions needed when a provider becomes available.
       </p>

@@ -14,11 +14,15 @@ import {
 import {
   GOOGLE_CALENDAR_EVENTS_READONLY_SCOPE,
   NAVODE_INTEGRATIONS,
+  fetchCodeforcesContext,
   fetchGoogleCalendarContext,
+  isCodeforcesCacheStale,
   isCacheStale,
   parseGitHubRepositoryReference,
+  readCodeforcesCachedContext,
   refreshGitHubRepositoryCache,
   requestIntegrationPermissions,
+  saveCodeforcesCachedContext,
 } from '@navode/integrations';
 import { ErrorBoundary, NavodeShell } from '@navode/ui';
 import { loadExtensionSettings, saveExtensionSettings } from './settings';
@@ -35,6 +39,7 @@ function NavodeExtensionApp() {
   const [calendarAccessToken, setCalendarAccessToken] = useState<string | null>(null);
   const catalog = useMemo<CommandCatalog>(
     () => ({
+      ...(settings.competitiveProgramming.codeforcesHandle ? { codeforcesHandle: settings.competitiveProgramming.codeforcesHandle } : {}),
       customAliases: settings.customAliases,
       defaultSearchProvider: settings.defaultSearchProvider,
       projects: settings.projects.map((project) => ({
@@ -62,6 +67,7 @@ function NavodeExtensionApp() {
     }),
     [
       settings.customAliases,
+      settings.competitiveProgramming.codeforcesHandle,
       settings.defaultSearchProvider,
       settings.projects,
       settings.quickLinks,
@@ -124,6 +130,32 @@ function NavodeExtensionApp() {
       }));
     });
   }, [settings.integrationCache.github, settings.integrations.github, settings.projects]);
+
+  useEffect(() => {
+    const connection = settings.integrations['competitive-programming'];
+    if (connection?.status !== 'connected') return;
+    const cache = settings.integrationCache['competitive-programming'] ?? { entries: {} };
+    const cachedContext = readCodeforcesCachedContext(cache);
+    const hasCurrentProfile =
+      !settings.competitiveProgramming.codeforcesHandle ||
+      cachedContext?.profile?.handle.toLowerCase() === settings.competitiveProgramming.codeforcesHandle.toLowerCase();
+    if (!isCodeforcesCacheStale(cache) && hasCurrentProfile) return;
+    void fetchCodeforcesContext(settings.competitiveProgramming.codeforcesHandle).then((result) => {
+      setSettings((current) => ({
+        ...current,
+        ...(result.kind === 'success'
+          ? { integrationCache: { ...current.integrationCache, 'competitive-programming': saveCodeforcesCachedContext(cache, result.context) } }
+          : {}),
+        integrations: {
+          ...current.integrations,
+          'competitive-programming': {
+            ...connection,
+            ...(result.kind === 'success' ? { lastRefreshAt: result.context.generatedAt } : { error: result.error, status: 'error' as const }),
+          },
+        },
+      }));
+    });
+  }, [settings.competitiveProgramming.codeforcesHandle, settings.integrationCache['competitive-programming'], settings.integrations['competitive-programming']]);
 
   useEffect(() => {
     const connection = settings.integrations['google-calendar'];
@@ -203,7 +235,7 @@ function NavodeExtensionApp() {
       });
   }, [calendarAccessToken, settings.integrations['google-calendar']]);
 
-  function connectIntegration(providerId: 'github' | 'google-calendar') {
+  function connectIntegration(providerId: 'github' | 'google-calendar' | 'competitive-programming') {
     const definition = NAVODE_INTEGRATIONS.get(providerId);
     if (!definition) return;
     const currentConnection = settings.integrations[providerId];
@@ -215,6 +247,7 @@ function NavodeExtensionApp() {
       {
         request: async () => {
           if (providerId === 'github') return chrome.permissions.request({ origins: ['https://api.github.com/*'] });
+          if (providerId === 'competitive-programming') return chrome.permissions.request({ origins: ['https://codeforces.com/*'] });
           const allowed = await chrome.permissions.request({
             permissions: ['identity'],
             origins: ['https://www.googleapis.com/*'],

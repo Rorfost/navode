@@ -12,9 +12,13 @@ import {
 } from '@navode/core';
 import {
   NAVODE_INTEGRATIONS,
+  fetchCodeforcesContext,
+  isCodeforcesCacheStale,
   parseGitHubRepositoryReference,
+  readCodeforcesCachedContext,
   refreshGitHubRepositoryCache,
   requestIntegrationPermissions,
+  saveCodeforcesCachedContext,
 } from '@navode/integrations';
 import { ErrorBoundary, NavodeShell } from '@navode/ui';
 import { PublicSite, type PublicPage } from './public-site';
@@ -25,6 +29,7 @@ function NavodeWebApp() {
   const [settings, setSettings] = useState(loadWebSettings);
   const catalog = useMemo<CommandCatalog>(
     () => ({
+      ...(settings.competitiveProgramming.codeforcesHandle ? { codeforcesHandle: settings.competitiveProgramming.codeforcesHandle } : {}),
       customAliases: settings.customAliases,
       defaultSearchProvider: settings.defaultSearchProvider,
       projects: settings.projects.map((project) => ({
@@ -52,6 +57,7 @@ function NavodeWebApp() {
     }),
     [
       settings.customAliases,
+      settings.competitiveProgramming.codeforcesHandle,
       settings.defaultSearchProvider,
       settings.projects,
       settings.quickLinks,
@@ -90,7 +96,33 @@ function NavodeWebApp() {
     });
   }, [settings.integrationCache.github, settings.integrations.github, settings.projects]);
 
-  function connectIntegration(providerId: 'github' | 'google-calendar') {
+  useEffect(() => {
+    const connection = settings.integrations['competitive-programming'];
+    if (connection?.status !== 'connected') return;
+    const cache = settings.integrationCache['competitive-programming'] ?? { entries: {} };
+    const cachedContext = readCodeforcesCachedContext(cache);
+    const hasCurrentProfile =
+      !settings.competitiveProgramming.codeforcesHandle ||
+      cachedContext?.profile?.handle.toLowerCase() === settings.competitiveProgramming.codeforcesHandle.toLowerCase();
+    if (!isCodeforcesCacheStale(cache) && hasCurrentProfile) return;
+    void fetchCodeforcesContext(settings.competitiveProgramming.codeforcesHandle).then((result) => {
+      setSettings((current) => ({
+        ...current,
+        ...(result.kind === 'success'
+          ? { integrationCache: { ...current.integrationCache, 'competitive-programming': saveCodeforcesCachedContext(cache, result.context) } }
+          : {}),
+        integrations: {
+          ...current.integrations,
+          'competitive-programming': {
+            ...connection,
+            ...(result.kind === 'success' ? { lastRefreshAt: result.context.generatedAt } : { error: result.error, status: 'error' as const }),
+          },
+        },
+      }));
+    });
+  }, [settings.competitiveProgramming.codeforcesHandle, settings.integrationCache['competitive-programming'], settings.integrations['competitive-programming']]);
+
+  function connectIntegration(providerId: 'github' | 'google-calendar' | 'competitive-programming') {
     const definition = NAVODE_INTEGRATIONS.get(providerId);
     if (!definition) return;
     const currentConnection = settings.integrations[providerId];
@@ -102,6 +134,7 @@ function NavodeWebApp() {
       {
         request: async () => {
           if (providerId === 'github') return true;
+          if (providerId === 'competitive-programming') return true;
           throw new Error('Google Calendar authorization is available in the Chrome extension.');
         },
       },

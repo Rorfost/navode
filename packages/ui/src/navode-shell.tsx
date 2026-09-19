@@ -12,8 +12,10 @@ import {
 } from '@navode/core';
 import {
   getNextCalendarEvent,
+  getNextCodeforcesContest,
   parseGitHubRepositoryReference,
   readCalendarCachedContext,
+  readCodeforcesCachedContext,
   readGitHubCachedStatus,
   type IntegrationId,
 } from '@navode/integrations';
@@ -75,7 +77,7 @@ export interface NavodeShellProps {
   onWorkspaceLaunch?: (workspace: Workspace) => void;
   resolveCommandResults?: (input: string) => readonly CommandResult[];
   onSettingsChange?: (settings: NavodeSettings) => void;
-  onIntegrationConnect?: (providerId: Extract<IntegrationId, 'github' | 'google-calendar'>) => void;
+  onIntegrationConnect?: (providerId: Extract<IntegrationId, 'github' | 'google-calendar' | 'competitive-programming'>) => void;
   settings?: NavodeSettings;
   startupNotice?: string;
 }
@@ -474,6 +476,29 @@ export function NavodeShell({
           </div>
           <CalendarPreview cache={settings.integrationCache['google-calendar']} />
         </Card>
+
+        {settings.competitiveProgramming.showWidget && (
+          <Card aria-labelledby="contests-title">
+            <div className="section-heading">
+              <div>
+                <p className="section-kicker">COMPETITIVE PROGRAMMING</p>
+                <h2 id="contests-title">Contests</h2>
+              </div>
+              <Button
+                onClick={() =>
+                  onSettingsChange?.({
+                    ...settings,
+                    competitiveProgramming: { ...settings.competitiveProgramming, showWidget: false },
+                  })
+                }
+                variant="quiet"
+              >
+                Hide
+              </Button>
+            </div>
+            <CodeforcesPreview cache={settings.integrationCache['competitive-programming']} now={now} />
+          </Card>
+        )}
 
         {settings.homeSections.workspaces && (
           <Card aria-labelledby="workspaces-title">
@@ -888,6 +913,39 @@ function CalendarPreview({ cache }: { cache: NavodeSettings['integrationCache'][
           </span>
         </div>
       ))}
+    </div>
+  );
+}
+
+function CodeforcesPreview({
+  cache,
+  now,
+}: {
+  cache: NavodeSettings['integrationCache']['competitive-programming'];
+  now: Date;
+}) {
+  const context = readCodeforcesCachedContext(cache);
+  if (!context) return <p className="empty-text">Connect Competitive programming to see Codeforces contests.</p>;
+  const next = getNextCodeforcesContest(context, now);
+  return (
+    <div className="calendar-preview">
+      <p className="muted">
+        {next ? `Next: ${next.name} · ${formatCalendarTime(next.startAt)} · ${formatTimeUntil(next.startAt)}` : 'No upcoming Codeforces contests.'}
+      </p>
+      {context.profile && (
+        <p className="muted">
+          {context.profile.handle} · {context.profile.title ?? 'Unrated'}{context.profile.rating ? ` · ${context.profile.rating}` : ''}
+        </p>
+      )}
+      {context.submissions.slice(0, 2).map((submission) => (
+        <div className="preview-row" key={submission.id}>
+          <span>
+            <strong>{submission.problemName}</strong>
+            <small>{submission.verdict}</small>
+          </span>
+        </div>
+      ))}
+      <a className="quick-link" href="https://codeforces.com/problemset" rel="noreferrer" target="_blank">Practice Codeforces</a>
     </div>
   );
 }
