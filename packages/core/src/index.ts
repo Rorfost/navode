@@ -34,7 +34,7 @@ import {
 
 export type CommandKind = 'url' | 'search' | 'project' | 'focus';
 
-export const NAVODE_STORAGE_SCHEMA_VERSION = 5;
+export const NAVODE_STORAGE_SCHEMA_VERSION = 6;
 export const NAVODE_SETTINGS_STORAGE_KEY = 'navode.settings';
 
 export type ThemePreference = 'dark' | 'light' | 'system';
@@ -113,6 +113,7 @@ export function parseNavodeSettings(value: unknown): NavodeSettings {
   if (value.schemaVersion === 2) return migrateV2Settings(value);
   if (value.schemaVersion === 3) return migrateV3Settings(value);
   if (value.schemaVersion === 4) return migrateV4Settings(value);
+  if (value.schemaVersion === 5) return migrateV5Settings(value);
   if (value.schemaVersion !== NAVODE_STORAGE_SCHEMA_VERSION) return DEFAULT_NAVODE_SETTINGS;
 
   return {
@@ -226,11 +227,18 @@ export function migrateV4Settings(value: Record<string, unknown>): NavodeSetting
   };
 }
 
+/** V2.2 adds an optional validated GitHub repository reference to each project. */
+export function migrateV5Settings(value: Record<string, unknown>): NavodeSettings {
+  return parseNavodeSettings({ ...value, schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION });
+}
+
 function parseV2Base(
   value: Record<string, unknown>,
 ): Omit<
   NavodeSettings,
   | 'schemaVersion'
+  | 'integrationCache'
+  | 'integrations'
   | 'scratchpad'
   | 'snippets'
   | 'focusTimer'
@@ -265,7 +273,13 @@ function parseV3Base(
   value: Record<string, unknown>,
 ): Omit<
   NavodeSettings,
-  'schemaVersion' | 'focusPresets' | 'homeSections' | 'recordRecentActions' | 'reducedMotion'
+  | 'schemaVersion'
+  | 'integrationCache'
+  | 'integrations'
+  | 'focusPresets'
+  | 'homeSections'
+  | 'recordRecentActions'
+  | 'reducedMotion'
 > {
   return {
     theme: isThemePreference(value.theme) ? value.theme : DEFAULT_NAVODE_SETTINGS.theme,
@@ -394,6 +408,8 @@ function parseProjects(value: unknown): Project[] {
     const project = createProject(
       {
         description: typeof candidate.description === 'string' ? candidate.description : undefined,
+        githubRepository:
+          typeof candidate.githubRepository === 'string' ? candidate.githubRepository : undefined,
         icon: typeof candidate.icon === 'string' ? candidate.icon : undefined,
         name: typeof candidate.name === 'string' ? candidate.name : '',
         showOnHome: typeof candidate.showOnHome === 'boolean' ? candidate.showOnHome : false,

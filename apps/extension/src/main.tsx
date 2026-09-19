@@ -11,6 +11,12 @@ import {
   type NavodeSettings,
   type Workspace,
 } from '@navode/core';
+import {
+  NAVODE_INTEGRATIONS,
+  parseGitHubRepositoryReference,
+  refreshGitHubRepositoryCache,
+  requestIntegrationPermissions,
+} from '@navode/integrations';
 import { ErrorBoundary, NavodeShell } from '@navode/ui';
 import { loadExtensionSettings, saveExtensionSettings } from './settings';
 import { getExtensionStorage } from './storage';
@@ -27,7 +33,11 @@ function NavodeExtensionApp() {
     () => ({
       customAliases: settings.customAliases,
       defaultSearchProvider: settings.defaultSearchProvider,
-      projects: settings.projects.map((project) => ({ id: project.id, label: project.name })),
+      projects: settings.projects.map((project) => ({
+        id: project.id,
+        label: project.name,
+        ...(project.githubRepository ? { githubRepository: project.githubRepository } : {}),
+      })),
       quickLinks: settings.quickLinks
         .filter((link) => link.enabled)
         .map((link) => ({
@@ -87,6 +97,48 @@ function NavodeExtensionApp() {
     }
   }, [canPersist, hasLoadedSettings, settings]);
 
+  useEffect(() => {
+    const connection = settings.integrations.github;
+    const references = settings.projects.flatMap((project) =>
+      project.githubRepository ? [parseGitHubRepositoryReference(project.githubRepository)] : [],
+    ).filter((reference) => reference !== null);
+    if (connection?.status !== 'connected' || !references.length) return;
+    const cache = settings.integrationCache.github ?? { entries: {} };
+    void refreshGitHubRepositoryCache(cache, references).then((result) => {
+      if (!result.refreshed && !result.error) return;
+      setSettings((current) => ({
+        ...current,
+        integrationCache: { ...current.integrationCache, github: result.cache },
+        integrations: {
+          ...current.integrations,
+          github: {
+            ...connection,
+            ...(result.error ? { error: result.error, status: 'error' as const } : {}),
+            ...(result.refreshed ? { lastRefreshAt: new Date().toISOString() } : {}),
+          },
+        },
+      }));
+    });
+  }, [settings.integrationCache.github, settings.integrations.github, settings.projects]);
+
+  function connectIntegration(providerId: 'github') {
+    const definition = NAVODE_INTEGRATIONS.get(providerId);
+    if (!definition) return;
+    void requestIntegrationPermissions(
+      definition,
+      settings.integrations[providerId] ?? { enabled: false, status: 'disconnected', grantedPermissionIds: [] },
+      {
+        request: async () =>
+          chrome.permissions.request({ origins: ['https://api.github.com/*'] }),
+      },
+    ).then((connection) =>
+      setSettings((current) => ({
+        ...current,
+        integrations: { ...current.integrations, [providerId]: connection },
+      })),
+    );
+  }
+
   function updateSettings(next: NavodeSettings) {
     setSettings(next);
   }
@@ -137,6 +189,7 @@ function NavodeExtensionApp() {
   return (
     <NavodeShell
       onCommandResult={handleCommandResult}
+      onIntegrationConnect={connectIntegration}
       onSettingsChange={updateSettings}
       onWorkspaceLaunch={launchWorkspace}
       resolveCommandResults={resolveResults}

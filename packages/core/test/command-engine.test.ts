@@ -44,6 +44,14 @@ describe('command engine parsing and search aliases', () => {
     });
   });
 
+  it('opens configured GitHub repositories and their read-only views', () => {
+    const catalog = { projects: [{ id: 'navode', label: 'Navode', githubRepository: 'Rorfost/navode' }] };
+    expect(resolveCommand('gh navode', catalog).action).toEqual({ type: 'open-url', url: 'https://github.com/Rorfost/navode' });
+    expect(resolveCommand('gh prs navode', catalog).action).toEqual({ type: 'open-url', url: 'https://github.com/Rorfost/navode/pulls' });
+    expect(resolveCommand('gh issues navode', catalog).action).toEqual({ type: 'open-url', url: 'https://github.com/Rorfost/navode/issues' });
+    expect(resolveCommand('gh actions navode', catalog).action).toEqual({ type: 'open-url', url: 'https://github.com/Rorfost/navode/actions' });
+  });
+
   it('starts a requested focus duration and opens local utility views', () => {
     expect(resolveCommand('focus 60').action).toEqual({ type: 'start-focus', durationMinutes: 60 });
     expect(resolveCommand('note').action).toEqual({ type: 'open-view', view: 'note' });

@@ -98,6 +98,27 @@ describe('parseNavodeSettings', () => {
     });
   });
 
+  it('migrates v5 settings while retaining a valid GitHub project reference', () => {
+    const settings = parseNavodeSettings({
+      ...DEFAULT_NAVODE_SETTINGS,
+      schemaVersion: 5,
+      projects: [
+        {
+          id: 'navode',
+          name: 'Navode',
+          actions: [],
+          showOnHome: true,
+          githubRepository: 'Rorfost/navode',
+        },
+      ],
+    });
+
+    expect(settings).toMatchObject({
+      schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
+      projects: [{ githubRepository: 'Rorfost/navode' }],
+    });
+  });
+
   it('drops malformed integration cache entries and unknown providers', () => {
     const settings = parseNavodeSettings({
       ...DEFAULT_NAVODE_SETTINGS,

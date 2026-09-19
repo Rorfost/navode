@@ -3,11 +3,12 @@ import type { NavodeSettings } from '@navode/core';
 import { Button } from './primitives';
 
 export interface IntegrationSettingsProps {
+  onConnect?: (providerId: 'github') => void;
   onSettingsChange: (settings: NavodeSettings) => void;
   settings: NavodeSettings;
 }
 
-export function IntegrationSettings({ onSettingsChange, settings }: IntegrationSettingsProps) {
+export function IntegrationSettings({ onConnect, onSettingsChange, settings }: IntegrationSettingsProps) {
   function disconnect(providerId: keyof NavodeSettings['integrations']) {
     onSettingsChange({
       ...settings,
@@ -42,6 +43,11 @@ export function IntegrationSettings({ onSettingsChange, settings }: IntegrationS
                 {connection.error && <small role="alert">{connection.error.message}</small>}
               </div>
               <div className="integration-actions">
+                {provider.availability === 'available' && connection.status === 'disconnected' && (
+                  <Button onClick={() => provider.id === 'github' && onConnect?.('github')}>
+                    Connect
+                  </Button>
+                )}
                 {provider.availability === 'planned' && (
                   <span className="integration-planned">Coming in a later V2 step</span>
                 )}

@@ -1,3 +1,5 @@
+export * from './github';
+
 export type IntegrationId = 'github' | 'google-calendar' | 'competitive-programming' | 'project-health';
 
 export type IntegrationConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
@@ -101,18 +103,32 @@ export const DEFAULT_REFRESH_POLICY: RefreshPolicy = {
   refreshOnOpen: true,
 };
 
-/** Metadata only: V2.1 deliberately grants no browser or provider permissions. */
+/** GitHub is available in V2.2; other provider definitions remain metadata only. */
 export const NAVODE_INTEGRATIONS = createIntegrationRegistry([
   {
     id: 'github',
     name: 'GitHub',
     description: 'Repository activity and pull-request status.',
-    availability: 'planned',
-    capabilities: [{ id: 'repository-activity', label: 'Repository activity', description: 'Read repository updates.' }],
-    permissions: [],
-    actions: [],
-    widgets: [],
-    refreshPolicy: DEFAULT_REFRESH_POLICY,
+    availability: 'available',
+    capabilities: [
+      { id: 'repository-status', label: 'Repository status', description: 'Read repository activity and metadata.' },
+      { id: 'pull-requests', label: 'Pull requests', description: 'Read open pull requests.' },
+      { id: 'issues', label: 'Issues', description: 'Read open issues.' },
+      { id: 'workflow-runs', label: 'Workflow runs', description: 'Read recent workflow status.' },
+    ],
+    permissions: [
+      { id: 'github-api', label: 'GitHub API access', description: 'Read selected repository data from api.github.com.' },
+    ],
+    actions: [
+      { id: 'open-repository', label: 'Open repository', capabilityId: 'repository-status' },
+      { id: 'open-pull-requests', label: 'Open pull requests', capabilityId: 'pull-requests' },
+      { id: 'open-issues', label: 'Open issues', capabilityId: 'issues' },
+      { id: 'open-actions', label: 'Open workflow runs', capabilityId: 'workflow-runs' },
+    ],
+    widgets: [
+      { id: 'repository-status', title: 'Repository status', capabilityId: 'repository-status', emptyMessage: 'No GitHub repository selected.' },
+    ],
+    refreshPolicy: { ...DEFAULT_REFRESH_POLICY, staleAfterMs: 10 * 60_000 },
   },
   {
     id: 'google-calendar',

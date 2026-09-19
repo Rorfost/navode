@@ -5,5 +5,6 @@
   "description": "A personal browser command center.",
   "chrome_url_overrides": { "newtab": "index.html" },
   "permissions": ["storage"],
+  "optional_host_permissions": ["https://api.github.com/*"],
   "content_security_policy": { "extension_pages": "script-src 'self'; object-src 'self'" }
 }

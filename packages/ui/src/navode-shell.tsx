@@ -10,6 +10,7 @@ import {
   type NavodeSettings,
   type Workspace,
 } from '@navode/core';
+import { parseGitHubRepositoryReference, readGitHubCachedStatus } from '@navode/integrations';
 import {
   lazy,
   Suspense,
@@ -68,6 +69,7 @@ export interface NavodeShellProps {
   onWorkspaceLaunch?: (workspace: Workspace) => void;
   resolveCommandResults?: (input: string) => readonly CommandResult[];
   onSettingsChange?: (settings: NavodeSettings) => void;
+  onIntegrationConnect?: (providerId: 'github') => void;
   settings?: NavodeSettings;
   startupNotice?: string;
 }
@@ -78,6 +80,7 @@ export function NavodeShell({
   onWorkspaceLaunch,
   resolveCommandResults,
   onSettingsChange,
+  onIntegrationConnect,
   settings = DEFAULT_NAVODE_SETTINGS,
   startupNotice,
 }: NavodeShellProps) {
@@ -437,7 +440,7 @@ export function NavodeShell({
                   </span>
                   <span>
                     <strong>{project.name}</strong>
-                    <small>{project.actions.length} actions</small>
+                    <small>{formatProjectStatus(project, settings.integrationCache.github)}</small>
                   </span>
                 </div>
               ))}
@@ -677,6 +680,7 @@ export function NavodeShell({
           )}
         </section>
         <IntegrationSettings
+          onConnect={onIntegrationConnect}
           onSettingsChange={(next) => onSettingsChange?.(next)}
           settings={settings}
         />
@@ -830,6 +834,20 @@ function formatDate(date: Date) {
 
 function formatTime(date: Date) {
   return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(date);
+}
+
+function formatProjectStatus(
+  project: NavodeSettings['projects'][number],
+  cache: NavodeSettings['integrationCache']['github'],
+): string {
+  if (!project.githubRepository) return `${project.actions.length} actions`;
+  const reference = parseGitHubRepositoryReference(project.githubRepository);
+  const status = reference ? readGitHubCachedStatus(cache, reference) : undefined;
+  if (!status) return `${project.githubRepository} · Cached status unavailable`;
+  const workflow = status.workflow
+    ? ` · ${status.workflow.name}: ${status.workflow.conclusion ?? status.workflow.status}`
+    : '';
+  return `${status.openPullRequestCount} PRs · ${status.issueCount} issues${workflow}`;
 }
 
 function initials(name: string): string {

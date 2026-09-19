@@ -39,6 +39,7 @@ export interface QuickLinkCommandTarget {
 }
 
 export interface ProjectCommandTarget {
+  githubRepository?: string;
   id: string;
   label: string;
   aliases?: readonly string[];
@@ -163,6 +164,9 @@ export function resolveCommand(input: string, catalog: CommandCatalog = {}): Com
 
   const parsed = parseCommandInput(normalized);
   if (!parsed) return createHelpResult(normalized);
+
+  const githubResult = resolveGitHubCommand(parsed.argument, parsed.name, normalized, catalog);
+  if (githubResult) return githubResult;
 
   const aliasResult = resolveAlias(parsed.name, parsed.argument, normalized, catalog);
   if (aliasResult) return aliasResult;
@@ -331,6 +335,41 @@ function resolveAlias(
     label: alias.label,
     score: 100,
     source: 'alias',
+  });
+}
+
+function resolveGitHubCommand(
+  argument: string,
+  name: string,
+  command: string,
+  catalog: CommandCatalog,
+): CommandResult | null {
+  if (name !== 'gh') return null;
+  const [section, ...repositoryParts] = argument.split(/\s+/).filter(Boolean);
+  const isSection = section === 'prs' || section === 'issues' || section === 'actions';
+  const repositoryInput = (isSection ? repositoryParts : [section, ...repositoryParts])
+    .join(' ')
+    .trim()
+    .toLowerCase();
+  if (!repositoryInput) return null;
+  const project = catalog.projects?.find(
+    (candidate) =>
+      candidate.githubRepository?.toLowerCase() === repositoryInput ||
+      candidate.label.toLowerCase() === repositoryInput,
+  );
+  if (!project?.githubRepository) return null;
+  const suffix = section === 'prs' ? '/pulls' : isSection ? `/${section}` : '';
+  const viewLabel =
+    section === 'prs' ? 'pull requests' : section === 'issues' ? 'issues' : section === 'actions' ? 'workflow runs' : 'repository';
+  const url = `https://github.com/${project.githubRepository}${suffix}`;
+  return createResult({
+    action: { type: 'open-url', url },
+    command,
+    description: `Open ${viewLabel} for ${project.githubRepository}`,
+    id: `github:${project.id}:${section ?? 'repository'}`,
+    label: `Open ${project.githubRepository}${suffix}`,
+    score: 100,
+    source: 'project',
   });
 }
 

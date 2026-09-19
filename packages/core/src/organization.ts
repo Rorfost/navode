@@ -32,6 +32,7 @@ export interface ProjectAction {
 export interface Project {
   actions: ProjectAction[];
   description?: string;
+  githubRepository?: string;
   icon?: string;
   id: string;
   name: string;
@@ -65,6 +66,7 @@ export interface QuickLinkInput {
 
 export interface ProjectInput {
   description?: string | undefined;
+  githubRepository?: string | undefined;
   icon?: string | undefined;
   name: string;
   showOnHome?: boolean | undefined;
@@ -180,11 +182,13 @@ export function reorderQuickLinks(
 export function createProject(input: ProjectInput, id: string): Project | null {
   const name = input.name.trim();
   const description = normalizeText(input.description);
+  const githubRepository = normalizeGitHubRepository(input.githubRepository);
   const icon = normalizeIcon(input.icon);
-  if (!name) return null;
+  if (!name || (input.githubRepository && !githubRepository)) return null;
   return {
     actions: [],
     ...(description ? { description } : {}),
+    ...(githubRepository ? { githubRepository } : {}),
     ...(icon ? { icon } : {}),
     id,
     name,
@@ -339,4 +343,11 @@ function normalizeIcon(value: string | undefined): string | undefined {
 function normalizeAlias(value: string | undefined): string | undefined {
   const normalized = normalizeText(value)?.toLowerCase();
   return normalized && /^[a-z0-9][a-z0-9-]{0,31}$/.test(normalized) ? normalized : undefined;
+}
+
+function normalizeGitHubRepository(value: string | undefined): string | undefined {
+  const normalized = normalizeText(value);
+  return normalized && /^([A-Za-z0-9](?:[A-Za-z0-9-]{0,38}[A-Za-z0-9])?)\/([A-Za-z0-9_.-]+)$/.test(normalized)
+    ? normalized
+    : undefined;
 }

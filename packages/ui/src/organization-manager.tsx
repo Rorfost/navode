@@ -257,6 +257,7 @@ function ProjectsEditor({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [githubRepository, setGithubRepository] = useState('');
   const [icon, setIcon] = useState('');
   const [showOnHome, setShowOnHome] = useState(false);
   const [actionId, setActionId] = useState<string | null>(null);
@@ -270,6 +271,7 @@ function ProjectsEditor({
     setEditingId(null);
     setName('');
     setDescription('');
+    setGithubRepository('');
     setIcon('');
     setShowOnHome(false);
     setActionId(null);
@@ -281,7 +283,7 @@ function ProjectsEditor({
 
   function saveProject(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const input = { description, icon, name, showOnHome };
+    const input = { description, githubRepository, icon, name, showOnHome };
     const next = editingId
       ? updateProject(settings.projects, editingId, input)
       : (() => {
@@ -289,7 +291,7 @@ function ProjectsEditor({
           return project ? [...settings.projects, project] : null;
         })();
     if (!next) {
-      setError('A project needs a name.');
+      setError('A project needs a name and an optional GitHub repository in owner/repository format.');
       return;
     }
     onSettingsChange({ ...settings, projects: next });
@@ -302,6 +304,7 @@ function ProjectsEditor({
     setEditingId(id);
     setName(project.name);
     setDescription(project.description ?? '');
+    setGithubRepository(project.githubRepository ?? '');
     setIcon(project.icon ?? '');
     setShowOnHome(project.showOnHome);
     setError('');
@@ -339,7 +342,7 @@ function ProjectsEditor({
             </span>
             <span className="manager-item-copy">
               <strong>{project.name}</strong>
-              <small>{project.actions.length} actions</small>
+              <small>{project.githubRepository ?? `${project.actions.length} actions`}</small>
             </span>
             <span className="manager-actions">
               <Button onClick={() => editProject(project.id)} variant="quiet">
@@ -366,6 +369,13 @@ function ProjectsEditor({
         </Field>
         <Field label="Description (optional)">
           <TextInput onChange={(event) => setDescription(event.target.value)} value={description} />
+        </Field>
+        <Field label="GitHub repository (optional)">
+          <TextInput
+            onChange={(event) => setGithubRepository(event.target.value)}
+            placeholder="owner/repository"
+            value={githubRepository}
+          />
         </Field>
         <Field label="Icon (optional)">
           <TextInput maxLength={4} onChange={(event) => setIcon(event.target.value)} value={icon} />

@@ -37,7 +37,7 @@ sequenceDiagram
   end
 ```
 
-A provider failure never prevents the New Tab shell from starting. V2.1 registers provider metadata only and does not make network requests.
+A provider failure never prevents the New Tab shell from starting. V2.2's GitHub provider reads local cache first, requests the `api.github.com` origin only after the user connects it, and refreshes configured repositories only after the 10-minute cache window. A rate-limited response retains cached data and delays retry until GitHub's indicated reset time.
 
 ## Execute a command
 

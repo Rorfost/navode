@@ -79,6 +79,11 @@ describe('projects and workspaces', () => {
     ).toBeNull();
   });
 
+  it('allows a project to reference a validated GitHub repository', () => {
+    expect(createProject({ name: 'Navode', githubRepository: 'Rorfost/navode' }, 'navode')).toMatchObject({ githubRepository: 'Rorfost/navode' });
+    expect(createProject({ name: 'Unsafe', githubRepository: 'javascript:alert(1)' }, 'unsafe')).toBeNull();
+  });
+
   it('builds a deliberate workspace launch plan from valid items', () => {
     const workspace = createWorkspace({ name: 'Morning' }, 'morning', 0)!;
     const news = createWorkspaceItem({ label: 'News', url: 'https://example.com/news' }, 'news')!;
@@ -112,14 +117,14 @@ describe('organizational settings migration', () => {
     });
 
     expect(migrated).toMatchObject({
-      schemaVersion: 5,
+      schemaVersion: 6,
       theme: 'light',
       defaultSearchProvider: 'youtube',
       projects: [],
       workspaces: [],
     });
     expect(migrated.quickLinks.map((link) => link.name)).toEqual(['Google', 'YouTube', 'GitHub']);
-    expect(DEFAULT_NAVODE_SETTINGS.schemaVersion).toBe(5);
+    expect(DEFAULT_NAVODE_SETTINGS.schemaVersion).toBe(6);
     expect(parseNavodeSettings({ schemaVersion: 1, initialQuickLinks: false }).quickLinks).toEqual(
       [],
     );
