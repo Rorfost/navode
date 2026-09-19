@@ -2,7 +2,7 @@
 
 All notable changes to Navode are documented here.
 
-## [1.0.0]
+## [1.0.0] - 2026-09-19
 
 ### Added
 
@@ -15,3 +15,8 @@ All notable changes to Navode are documented here.
 ### Fixed
 
 - Hardened extension startup, storage recovery, permission policy, CSP, packaged-code checks, and accessible UI states for the V1 release.
+- Removed the legacy Cloudflare redirect rule that conflicts with the Worker Assets SPA fallback.
+
+### Changed
+
+- Aligned release documentation and repository licensing with Navode's source-available proprietary model.
