@@ -2,20 +2,51 @@ name: Bug report
 description: Report unexpected Navode behavior.
 labels: [bug]
 body:
-  - type: textarea
-    id: summary
+  - type: markdown
     attributes:
-      label: What happened?
+      value: Please do not include passwords, tokens, private URLs, scratchpad content, snippets, or exported Navode data.
+  - type: input
+    id: navode-version
+    attributes:
+      label: Navode version
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: input
+    id: browser-version
+    attributes:
+      label: Chrome or browser version
+      placeholder: Chrome 140.0.0
+    validations:
+      required: true
+  - type: input
+    id: operating-system
+    attributes:
+      label: Operating system
+      placeholder: Windows 11, macOS 15, Ubuntu 24.04
     validations:
       required: true
   - type: textarea
     id: reproduction
     attributes:
       label: Steps to reproduce
-      placeholder: '1. ...'
+      placeholder: "1. ..."
     validations:
       required: true
-  - type: input
-    id: environment
+  - type: textarea
+    id: expected-behavior
     attributes:
-      label: Browser, OS, and Navode version
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshots or logs (optional)
+      description: Redact private information before attaching anything.
