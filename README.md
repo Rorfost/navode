@@ -1,6 +1,7 @@
 # Navode
 
-> Navode is a local-first personal browser command center that turns your Chrome New Tab into a fast starting point for search, links, projects, workspaces, snippets, notes, and focus sessions.
+> Navode is a local-first personal browser command center that turns your Chrome New Tab into a fast
+> starting point for search, links, projects, workspaces, snippets, notes, and focus sessions.
 
 Navode = NAVigation + nODE — one central node for navigating your digital workflow.
 
@@ -108,5 +109,6 @@ Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CON
 
 Do not report vulnerabilities in public issues. See [SECURITY.md](SECURITY.md) for the current disclosure process.
 
-## LICENSE AND NOTICE
-All rights reserved. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+## License
+
+Navode is available under the [MIT License](LICENSE).
