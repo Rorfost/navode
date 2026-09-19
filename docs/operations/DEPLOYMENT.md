@@ -22,4 +22,4 @@ The API is a Cloudflare Worker configured in `apps/api/wrangler.jsonc`. After Cl
 
 ## Chrome extension
 
-Run `pnpm build:extension` and package the contents of `apps/extension/dist` for manual testing or future Chrome Web Store submission. The current manifest uses only the `storage` permission and has no content scripts or host permissions. Store listing, privacy, and signing/publishing information outside this repository until a deliberate publication process is approved.
+Run `pnpm build:extension` and package the contents of `apps/extension/dist` for manual testing or future Chrome Web Store submission. The current manifest uses only the `storage` permission and has no content scripts or host permissions. Keep signing and publishing credentials outside this repository; use the public store-listing, privacy, and release documentation only after a deliberate publication process is approved.
