@@ -1,4 +1,5 @@
 export * from './github';
+export * from './calendar';
 
 export type IntegrationId = 'github' | 'google-calendar' | 'competitive-programming' | 'project-health';
 
@@ -134,12 +135,12 @@ export const NAVODE_INTEGRATIONS = createIntegrationRegistry([
     id: 'google-calendar',
     name: 'Google Calendar',
     description: 'Upcoming events from calendars you choose to connect.',
-    availability: 'planned',
-    capabilities: [{ id: 'upcoming-events', label: 'Upcoming events', description: 'Read upcoming calendar events.' }],
-    permissions: [],
-    actions: [],
-    widgets: [],
-    refreshPolicy: DEFAULT_REFRESH_POLICY,
+    availability: 'available',
+    capabilities: [{ id: 'upcoming-events', label: 'Upcoming events', description: 'Read today’s upcoming events.' }],
+    permissions: [{ id: 'calendar-events-readonly', label: 'Calendar events (read-only)', description: 'Read today’s events from your primary calendar.' }],
+    actions: [{ id: 'open-calendar', label: 'Open Google Calendar', capabilityId: 'upcoming-events' }],
+    widgets: [{ id: 'daily-context', title: 'Today', capabilityId: 'upcoming-events', emptyMessage: 'No upcoming events today.' }],
+    refreshPolicy: { ...DEFAULT_REFRESH_POLICY, staleAfterMs: 5 * 60_000 },
   },
   {
     id: 'competitive-programming',

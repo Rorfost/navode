@@ -1,9 +1,14 @@
-import { NAVODE_INTEGRATIONS, defaultIntegrationConnection, disconnectIntegration } from '@navode/integrations';
+import {
+  NAVODE_INTEGRATIONS,
+  defaultIntegrationConnection,
+  disconnectIntegration,
+  type IntegrationId,
+} from '@navode/integrations';
 import type { NavodeSettings } from '@navode/core';
 import { Button } from './primitives';
 
 export interface IntegrationSettingsProps {
-  onConnect?: (providerId: 'github') => void;
+  onConnect?: (providerId: Extract<IntegrationId, 'github' | 'google-calendar'>) => void;
   onSettingsChange: (settings: NavodeSettings) => void;
   settings: NavodeSettings;
 }
@@ -43,9 +48,14 @@ export function IntegrationSettings({ onConnect, onSettingsChange, settings }: I
                 {connection.error && <small role="alert">{connection.error.message}</small>}
               </div>
               <div className="integration-actions">
-                {provider.availability === 'available' && connection.status === 'disconnected' && (
-                  <Button onClick={() => provider.id === 'github' && onConnect?.('github')}>
-                    Connect
+                {provider.availability === 'available' && connection.status !== 'connected' && (
+                  <Button
+                    onClick={() =>
+                      (provider.id === 'github' || provider.id === 'google-calendar') &&
+                      onConnect?.(provider.id)
+                    }
+                  >
+                    {connection.status === 'error' ? 'Reconnect' : 'Connect'}
                   </Button>
                 )}
                 {provider.availability === 'planned' && (

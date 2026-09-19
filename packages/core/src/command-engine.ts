@@ -165,6 +165,29 @@ export function resolveCommand(input: string, catalog: CommandCatalog = {}): Com
   const parsed = parseCommandInput(normalized);
   if (!parsed) return createHelpResult(normalized);
 
+  if (parsed.name === 'calendar' && !parsed.argument) {
+    return createResult({
+      action: { type: 'open-url', url: 'https://calendar.google.com' },
+      command: normalized,
+      description: 'Open Google Calendar',
+      id: 'calendar:open',
+      label: 'Open Google Calendar',
+      score: 100,
+      source: 'internal',
+    });
+  }
+  if (parsed.name === 'next' && parsed.argument === 'event') {
+    return createResult({
+      action: { type: 'open-url', url: 'https://calendar.google.com' },
+      command: normalized,
+      description: 'Open Google Calendar for your next event',
+      id: 'calendar:next-event',
+      label: 'Open next calendar event',
+      score: 100,
+      source: 'internal',
+    });
+  }
+
   const githubResult = resolveGitHubCommand(parsed.argument, parsed.name, normalized, catalog);
   if (githubResult) return githubResult;
 

@@ -90,13 +90,21 @@ function NavodeWebApp() {
     });
   }, [settings.integrationCache.github, settings.integrations.github, settings.projects]);
 
-  function connectIntegration(providerId: 'github') {
+  function connectIntegration(providerId: 'github' | 'google-calendar') {
     const definition = NAVODE_INTEGRATIONS.get(providerId);
     if (!definition) return;
+    const currentConnection = settings.integrations[providerId];
     void requestIntegrationPermissions(
       definition,
-      settings.integrations[providerId] ?? { enabled: false, status: 'disconnected', grantedPermissionIds: [] },
-      { request: async () => true },
+      currentConnection?.status === 'error'
+        ? { ...currentConnection, grantedPermissionIds: [] }
+        : currentConnection ?? { enabled: false, status: 'disconnected', grantedPermissionIds: [] },
+      {
+        request: async () => {
+          if (providerId === 'github') return true;
+          throw new Error('Google Calendar authorization is available in the Chrome extension.');
+        },
+      },
     ).then((connection) =>
       setSettings((current) => ({
         ...current,

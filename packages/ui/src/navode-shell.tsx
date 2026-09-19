@@ -10,7 +10,13 @@ import {
   type NavodeSettings,
   type Workspace,
 } from '@navode/core';
-import { parseGitHubRepositoryReference, readGitHubCachedStatus } from '@navode/integrations';
+import {
+  getNextCalendarEvent,
+  parseGitHubRepositoryReference,
+  readCalendarCachedContext,
+  readGitHubCachedStatus,
+  type IntegrationId,
+} from '@navode/integrations';
 import {
   lazy,
   Suspense,
@@ -69,7 +75,7 @@ export interface NavodeShellProps {
   onWorkspaceLaunch?: (workspace: Workspace) => void;
   resolveCommandResults?: (input: string) => readonly CommandResult[];
   onSettingsChange?: (settings: NavodeSettings) => void;
-  onIntegrationConnect?: (providerId: 'github') => void;
+  onIntegrationConnect?: (providerId: Extract<IntegrationId, 'github' | 'google-calendar'>) => void;
   settings?: NavodeSettings;
   startupNotice?: string;
 }
@@ -455,6 +461,19 @@ export function NavodeShell({
             <Button onClick={() => setOrganizationScreen('projects')}>Manage projects</Button>
           </Card>
         )}
+
+        <Card aria-labelledby="calendar-title">
+          <div className="section-heading">
+            <div>
+              <p className="section-kicker">DAILY CONTEXT</p>
+              <h2 id="calendar-title">Calendar</h2>
+            </div>
+            <a className="quick-link" href="https://calendar.google.com" rel="noreferrer" target="_blank">
+              Open
+            </a>
+          </div>
+          <CalendarPreview cache={settings.integrationCache['google-calendar']} />
+        </Card>
 
         {settings.homeSections.workspaces && (
           <Card aria-labelledby="workspaces-title">
@@ -848,6 +867,46 @@ function formatProjectStatus(
     ? ` · ${status.workflow.name}: ${status.workflow.conclusion ?? status.workflow.status}`
     : '';
   return `${status.openPullRequestCount} PRs · ${status.issueCount} issues${workflow}`;
+}
+
+function CalendarPreview({ cache }: { cache: NavodeSettings['integrationCache']['google-calendar'] }) {
+  const context = readCalendarCachedContext(cache);
+  if (!context) return <p className="empty-text">Connect Google Calendar to see today’s events.</p>;
+  const next = getNextCalendarEvent(context);
+  return (
+    <div className="calendar-preview">
+      <p className="muted">
+        {next
+          ? `Next: ${next.title} · ${formatCalendarTime(next.startAt)} · ${formatTimeUntil(next.startAt)}`
+          : 'No more timed events today.'}
+      </p>
+      {context.events.slice(0, 3).map((event) => (
+        <div className="preview-row" key={event.id}>
+          <span>
+            <strong>{event.title}</strong>
+            <small>{event.allDay ? 'All day' : formatCalendarTime(event.startAt)}</small>
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function formatCalendarTime(value: string | undefined): string {
+  if (!value) return 'Time unavailable';
+  const date = new Date(value);
+  return Number.isFinite(date.getTime())
+    ? new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(date)
+    : 'All day';
+}
+
+function formatTimeUntil(value: string | undefined): string {
+  const target = value ? Date.parse(value) : Number.NaN;
+  if (!Number.isFinite(target)) return 'Time unavailable';
+  const minutes = Math.max(0, Math.round((target - Date.now()) / 60_000));
+  if (minutes < 60) return `in ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  return `in ${hours}h ${minutes % 60}m`;
 }
 
 function initials(name: string): string {

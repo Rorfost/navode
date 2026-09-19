@@ -52,6 +52,12 @@ describe('command engine parsing and search aliases', () => {
     expect(resolveCommand('gh actions navode', catalog).action).toEqual({ type: 'open-url', url: 'https://github.com/Rorfost/navode/actions' });
   });
 
+  it('opens Calendar from its focused commands', () => {
+    expect(resolveCommand('calendar').action).toEqual({ type: 'open-url', url: 'https://calendar.google.com' });
+    expect(resolveCommand('next event').action).toEqual({ type: 'open-url', url: 'https://calendar.google.com' });
+    expect(resolveCommand('today').action).toEqual({ type: 'open-view', view: 'today' });
+  });
+
   it('starts a requested focus duration and opens local utility views', () => {
     expect(resolveCommand('focus 60').action).toEqual({ type: 'start-focus', durationMinutes: 60 });
     expect(resolveCommand('note').action).toEqual({ type: 'open-view', view: 'note' });

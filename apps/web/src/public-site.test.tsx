@@ -16,7 +16,7 @@ describe('public web pages', () => {
     expect(screen.getByRole('link', { name: /open companion/i }).getAttribute('href')).toBe('/app');
   });
 
-  it('states the local-only V2.2 privacy behavior accurately', () => {
+  it('states the local-only V2.3 privacy behavior accurately', () => {
     render(<PublicSite page="privacy" />);
 
     expect(screen.getByRole('heading', { name: /your navode data stays local/i })).toBeVisible();

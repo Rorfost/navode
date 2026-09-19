@@ -12,7 +12,10 @@ import {
   type Workspace,
 } from '@navode/core';
 import {
+  GOOGLE_CALENDAR_EVENTS_READONLY_SCOPE,
   NAVODE_INTEGRATIONS,
+  fetchGoogleCalendarContext,
+  isCacheStale,
   parseGitHubRepositoryReference,
   refreshGitHubRepositoryCache,
   requestIntegrationPermissions,
@@ -29,6 +32,7 @@ function NavodeExtensionApp() {
   const [hasLoadedSettings, setHasLoadedSettings] = useState(false);
   const [canPersist, setCanPersist] = useState(false);
   const [storageNotice, setStorageNotice] = useState('');
+  const [calendarAccessToken, setCalendarAccessToken] = useState<string | null>(null);
   const catalog = useMemo<CommandCatalog>(
     () => ({
       customAliases: settings.customAliases,
@@ -121,15 +125,109 @@ function NavodeExtensionApp() {
     });
   }, [settings.integrationCache.github, settings.integrations.github, settings.projects]);
 
-  function connectIntegration(providerId: 'github') {
+  useEffect(() => {
+    const connection = settings.integrations['google-calendar'];
+    if (connection?.status !== 'connected' || !calendarAccessToken) return;
+    const cache = settings.integrationCache['google-calendar'] ?? { entries: {} };
+    const definition = NAVODE_INTEGRATIONS.get('google-calendar');
+    if (!definition || !isCacheStale(cache, definition.refreshPolicy)) return;
+    void fetchGoogleCalendarContext({ accessToken: calendarAccessToken }).then((result) => {
+      if (result.kind === 'error') {
+        setSettings((current) => ({
+          ...current,
+          integrations: {
+            ...current.integrations,
+            'google-calendar': { ...connection, error: result.error, status: 'error' },
+          },
+        }));
+        return;
+      }
+      setSettings((current) => ({
+        ...current,
+        integrationCache: {
+          ...current.integrationCache,
+          'google-calendar': {
+            entries: { ...cache.entries, context: { cachedAt: result.context.generatedAt, value: result.context } },
+          },
+        },
+        integrations: {
+          ...current.integrations,
+          'google-calendar': { ...connection, lastRefreshAt: result.context.generatedAt },
+        },
+      }));
+    });
+  }, [calendarAccessToken, settings.integrationCache['google-calendar'], settings.integrations['google-calendar']]);
+
+  useEffect(() => {
+    const connection = settings.integrations['google-calendar'];
+    if (connection?.status !== 'connected' || calendarAccessToken) return;
+    void chrome.identity
+      .getAuthToken({ interactive: false, scopes: [GOOGLE_CALENDAR_EVENTS_READONLY_SCOPE] })
+      .then((auth) => {
+        if (auth.token) {
+          setCalendarAccessToken(auth.token);
+          return;
+        }
+        setSettings((current) => ({
+          ...current,
+          integrations: {
+            ...current.integrations,
+            'google-calendar': {
+              ...connection,
+              error: {
+                code: 'authorization-expired',
+                message: 'Google Calendar authorization expired. Reconnect to refresh events.',
+                occurredAt: new Date().toISOString(),
+              },
+              status: 'error',
+            },
+          },
+        }));
+      })
+      .catch(() => {
+        setSettings((current) => ({
+          ...current,
+          integrations: {
+            ...current.integrations,
+            'google-calendar': {
+              ...connection,
+              error: {
+                code: 'authorization-expired',
+                message: 'Google Calendar authorization expired. Reconnect to refresh events.',
+                occurredAt: new Date().toISOString(),
+              },
+              status: 'error',
+            },
+          },
+        }));
+      });
+  }, [calendarAccessToken, settings.integrations['google-calendar']]);
+
+  function connectIntegration(providerId: 'github' | 'google-calendar') {
     const definition = NAVODE_INTEGRATIONS.get(providerId);
     if (!definition) return;
+    const currentConnection = settings.integrations[providerId];
     void requestIntegrationPermissions(
       definition,
-      settings.integrations[providerId] ?? { enabled: false, status: 'disconnected', grantedPermissionIds: [] },
+      currentConnection?.status === 'error'
+        ? { ...currentConnection, grantedPermissionIds: [] }
+        : currentConnection ?? { enabled: false, status: 'disconnected', grantedPermissionIds: [] },
       {
-        request: async () =>
-          chrome.permissions.request({ origins: ['https://api.github.com/*'] }),
+        request: async () => {
+          if (providerId === 'github') return chrome.permissions.request({ origins: ['https://api.github.com/*'] });
+          const allowed = await chrome.permissions.request({
+            permissions: ['identity'],
+            origins: ['https://www.googleapis.com/*'],
+          });
+          if (!allowed) return false;
+          const auth = await chrome.identity.getAuthToken({
+            interactive: true,
+            scopes: [GOOGLE_CALENDAR_EVENTS_READONLY_SCOPE],
+          });
+          if (!auth.token) return false;
+          setCalendarAccessToken(auth.token);
+          return true;
+        },
       },
     ).then((connection) =>
       setSettings((current) => ({

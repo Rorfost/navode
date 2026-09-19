@@ -39,6 +39,24 @@ sequenceDiagram
 
 A provider failure never prevents the New Tab shell from starting. V2.2's GitHub provider reads local cache first, requests the `api.github.com` origin only after the user connects it, and refreshes configured repositories only after the 10-minute cache window. A rate-limited response retains cached data and delays retry until GitHub's indicated reset time.
 
+## Connect and refresh Calendar
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant E as Extension
+  participant I as Chrome identity
+  participant G as Google Calendar API
+  U->>E: Connect Google Calendar
+  E->>I: Request identity and calendar.events.readonly
+  I-->>E: In-memory access token
+  E->>G: Read today's primary-calendar events
+  G-->>E: Events or authorization/API error
+  E-->>U: Cached daily context or cached-data notice
+```
+
+No Gmail or Drive scopes are requested. The extension never sends Calendar data to Navode infrastructure.
+
 ## Execute a command
 
 ```mermaid
