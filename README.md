@@ -111,4 +111,13 @@ Do not report vulnerabilities in public issues. See [SECURITY.md](SECURITY.md) f
 
 ## License
 
-Navode is available under the [MIT License](LICENSE).
+Navode is source-available proprietary software.
+
+The source code is publicly accessible for viewing, educational reference, issue reporting,
+security review, and contribution to the official project.
+
+Redistribution, independent derivative distribution, rebranding, commercial use, and creation of
+competing products using substantial portions of Navode are not permitted without written
+authorization from Rorfost.
+
+See [LICENSE](./LICENSE) for the complete terms.

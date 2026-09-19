@@ -1,11 +1,16 @@
 Navode
-Copyright © 2026 Rorfost.
-All rights reserved.
+Copyright © 2026 Rorfost. All rights reserved.
 
-The Navode source code is publicly available under the terms described
-in the LICENSE file.
+Navode is source-available proprietary software.
 
-Navode, its logo, visual identity, and associated Rorfost branding
-remain the property of Rorfost.
+The source code is publicly accessible subject to the terms in the LICENSE file.
 
-Third-party libraries and assets remain subject to their respective licenses.
+Public availability of the source code does not grant permission to redistribute, relicense,
+rebrand, commercially exploit, or publish derivative versions of Navode except where explicitly
+permitted by the LICENSE or by written authorization from Rorfost.
+
+Navode, the Navode name, logo, visual identity, and associated Rorfost branding identify the
+official project.
+
+Third-party libraries, frameworks, fonts, icons, and other dependencies remain subject to their
+respective licenses and copyright notices.

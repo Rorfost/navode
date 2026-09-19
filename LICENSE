@@ -1,25 +1,43 @@
-Navode Proprietary License
-Copyright (c) 2026 Rorfost. All rights reserved.
+Navode Proprietary Source-Available License
 
-The source code in this repository is made publicly available for
-viewing, educational reference, issue reporting, and contribution
-to the official Navode project.
+Copyright © 2026 Rorfost. All rights reserved.
 
-Except with prior written permission from Rorfost, you may not:
+The source code and associated documentation in this repository (the “Software”) are made publicly
+available for viewing, educational reference, security review, issue reporting, and contribution to
+the official Navode project.
 
-- copy or reproduce substantial portions of the source code;
-- redistribute the source code or compiled software;
-- publish modified or derivative versions of Navode;
-- use the source code to create a competing or substantially similar product;
-- sell, sublicense, or commercially exploit the software;
-- use the Navode or Rorfost name, logo, branding, or other assets in a way
-  that suggests an official or endorsed product.
+Except where Rorfost expressly permits otherwise in writing, no license or permission is granted to
+use the Software beyond those limited purposes. You may view and study the source code and submit
+proposed changes through the official Navode contribution process.
 
-Contributions submitted to the official Navode repository may be incorporated
-into Navode subject to the repository's contribution terms.
+Without prior written permission from Rorfost, you may not:
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED. RORFOST SHALL NOT BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
-LIABILITY ARISING FROM THE SOFTWARE OR ITS USE.
+- copy or reproduce substantial portions of the Software;
+- redistribute the source code or compiled versions of the Software;
+- publish modified, forked, or derivative distributions of Navode;
+- use the Software or substantial portions of it to create a competing or substantially similar
+  product;
+- sell, sublicense, license, rent, or commercially exploit the Software;
+- remove or alter copyright, attribution, or proprietary notices; or
+- use the Navode name, logo, visual identity, Rorfost name, or related branding in a manner that
+  implies authorization, endorsement, or affiliation with the official project.
 
-For licensing or other permissions, contact the Navode/Rorfost maintainers.
+Normal GitHub operations necessary to contribute to the official Navode repository, including
+creating a temporary fork to prepare and submit a pull request, are permitted solely for
+contribution to the official project. They do not grant redistribution or independent publication
+rights.
+
+Contributions submitted to the official Navode repository may be used, modified, distributed, and
+incorporated into Navode by Rorfost as part of the project.
+
+Third-party software included in or used by Navode remains governed by its respective licenses.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
+BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
+NONINFRINGEMENT.
+
+IN NO EVENT SHALL RORFOST OR ITS CONTRIBUTORS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY ARISING FROM OR IN CONNECTION WITH THE SOFTWARE OR ITS USE.
+
+For commercial licensing, redistribution permission, derivative distribution rights, or other
+permissions, contact the Navode/Rorfost maintainers.

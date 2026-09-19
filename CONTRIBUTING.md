@@ -2,6 +2,12 @@
 
 Thanks for helping improve Navode. Keep contributions focused, reviewable, and aligned with its local-first privacy model.
 
+You may create a temporary fork when technically necessary to prepare a pull request for the
+official Navode repository. That contribution fork does not grant permission to redistribute,
+independently publish, rebrand, or otherwise use Navode outside the terms in [LICENSE](LICENSE).
+Contributions submitted to the official repository may be incorporated, modified, distributed, and
+used by Rorfost as part of the official Navode project.
+
 ## Prerequisites and setup
 
 - Node.js 22+
