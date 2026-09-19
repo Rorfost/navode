@@ -15,4 +15,6 @@ Thumbs.db
 .vscode/
 *.crx
 *.zip
+/artifacts/
+store-assets/captures/
 tmp/

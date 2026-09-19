@@ -14,7 +14,7 @@ Fast, privacy-conscious, configurable, visually calm, modular, and useful offlin
 
 ## V1 scope
 
-V1 will provide a new-tab command bar, quick links, local settings, keyboard shortcuts, scratchpad, focus timer, basic project launcher, configurable commands, and import/export. The present repository implements only the shared interface shell and the beginnings of command parsing.
+V1 will provide a new-tab command bar, quick links, local settings, keyboard shortcuts, scratchpad, focus timer, basic project launcher, configurable commands, and import/export. The present repository implements the shared interface shell and a local, validated command engine with public search aliases and fallback search; the remaining workflow surfaces are being added incrementally.
 
 ## Later releases and ideas
 

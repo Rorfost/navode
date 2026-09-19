@@ -1,5 +1,7 @@
 # Security
 
-Navode treats workflow configuration as sensitive personal data. Keep it local by default and do not add hidden telemetry. The extension starts with no runtime permissions, uses an MV3 CSP, and must not add broad host, history, tabs, or scripting permissions without a documented feature need.
+Navode treats workflow configuration as sensitive personal data. Keep it local by default and do not add hidden telemetry. The extension uses only the `storage` permission, which is required for `chrome.storage.local` persistence. It has no optional permissions, host permissions, content scripts, history, top-sites, tabs, or scripting access. The extension CSP is `script-src 'self'; object-src 'self'`; every executable asset is packaged in the extension, and release checks reject `eval` and dynamic function construction.
 
 Validate imported data and all externally opened URLs. Reject `javascript:`, `data:`, and other unsafe schemes unless a narrowly designed feature requires one. Render user text safely, avoid unsafe HTML, redact tokens from logs, evaluate OAuth storage carefully, and review third-party dependencies for maintenance and supply-chain risk. Configurable commands must never become an arbitrary code-execution mechanism.
+
+Import validation completes before settings are replaced, and failed validation leaves current data untouched. Clipboard writes use the browser clipboard API only after an explicit user command, do not require an extension permission, and show a local failure message when unavailable. Failed extension storage reads fall back to safe in-memory defaults with a visible recovery notice; they do not overwrite the original data.

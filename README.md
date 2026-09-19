@@ -8,7 +8,7 @@ Opening a new tab should be the fastest path from intent to action—not a detou
 
 ## Status
 
-Repository foundation. The web app and Chrome extension render a small shared shell; the API exposes only health and version metadata. Product features are planned, not yet implemented.
+Navode 1.0.0 is a release candidate, not yet published in the Chrome Web Store. The web app and extension provide a local-first command shell with onboarding, accessible keyboard navigation, quick links, projects, workspaces, scratchpad, snippets, focus tools, backups, and public privacy/support pages. The optional API exposes only health and version metadata.
 
 ## Architecture
 
@@ -16,7 +16,7 @@ This pnpm monorepo contains a React/Vite web app, a React Manifest V3 Chrome new
 
 ## Tech stack
 
-- React, TypeScript, Vite, and lightweight client state foundations
+- React, TypeScript, Vite, Tailwind CSS, and lightweight client state foundations
 - Chrome Extension Manifest V3
 - Hono on Cloudflare Workers for the optional API
 - Vitest, Playwright, ESLint, Prettier, and GitHub Actions
@@ -54,7 +54,7 @@ pnpm format:check
 
 ## Chrome extension
 
-Build with `pnpm build:extension`, then load `apps/extension/dist` as an unpacked extension in Chrome. The starter manifest overrides the new-tab page and requests no runtime permissions.
+Build with `pnpm build:extension`, then load `apps/extension/dist` as an unpacked extension in Chrome. The starter manifest overrides the new-tab page and requests only Chrome's `storage` permission for local persistence.
 
 ## Web app and API
 

@@ -1,42 +1,791 @@
-import type { FormEvent } from 'react';
+import {
+  DEFAULT_NAVODE_SETTINGS,
+  clearRecentExecutions,
+  createCommandAlias,
+  removeCommandAlias,
+  startFocusTimer,
+  type CommandAction,
+  type CommandResult,
+  type DefaultSearchProvider,
+  type NavodeSettings,
+  type Workspace,
+} from '@navode/core';
+import {
+  lazy,
+  Suspense,
+  type FormEvent,
+  type KeyboardEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import {
+  Button,
+  Card,
+  CommandResult as CommandResultOption,
+  Dialog,
+  KeyboardShortcutHint,
+  Tab,
+  Tabs,
+  TextInput,
+  Toggle,
+  Tooltip,
+} from './primitives';
+import type { OrganizationScreen } from './organization-manager';
+import type { ProductivityScreen } from './productivity-manager';
+
+const OrganizationManager = lazy(() =>
+  import('./organization-manager').then((module) => ({ default: module.OrganizationManager })),
+);
+const ProductivityManager = lazy(() =>
+  import('./productivity-manager').then((module) => ({ default: module.ProductivityManager })),
+);
+const SettingsDataControls = lazy(() =>
+  import('./settings-data-controls').then((module) => ({ default: module.SettingsDataControls })),
+);
+
+const searchProviders: Record<DefaultSearchProvider, { alias: string; label: string }> = {
+  google: { alias: 'g', label: 'Google' },
+  youtube: { alias: 'yt', label: 'YouTube' },
+};
+
+interface ShellCommandResult {
+  action?: CommandAction;
+  command: string;
+  description: string;
+  id: string;
+  label: string;
+  resolved?: CommandResult;
+  shortcut: string;
+}
 
 export interface NavodeShellProps {
   onCommand?: (command: string) => void;
+  onCommandResult?: (result: CommandResult) => void;
+  onWorkspaceLaunch?: (workspace: Workspace) => void;
+  resolveCommandResults?: (input: string) => readonly CommandResult[];
+  onSettingsChange?: (settings: NavodeSettings) => void;
+  settings?: NavodeSettings;
+  startupNotice?: string;
 }
 
-export function NavodeShell({ onCommand }: NavodeShellProps) {
+export function NavodeShell({
+  onCommand,
+  onCommandResult,
+  onWorkspaceLaunch,
+  resolveCommandResults,
+  onSettingsChange,
+  settings = DEFAULT_NAVODE_SETTINGS,
+  startupNotice,
+}: NavodeShellProps) {
+  const [command, setCommand] = useState('');
+  const [selectedResult, setSelectedResult] = useState(0);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState(!settings.onboardingCompleted);
+  const [now, setNow] = useState(() => new Date());
+  const [aliasName, setAliasName] = useState('');
+  const [aliasLabel, setAliasLabel] = useState('');
+  const [aliasUrlTemplate, setAliasUrlTemplate] = useState('');
+  const [aliasError, setAliasError] = useState('');
+  const [editingAliasId, setEditingAliasId] = useState<string | null>(null);
+  const [commandFeedback, setCommandFeedback] = useState('');
+  const [organizationScreen, setOrganizationScreen] = useState<OrganizationScreen | null>(null);
+  const [workspaceToLaunch, setWorkspaceToLaunch] = useState<Workspace | null>(null);
+  const [productivityScreen, setProductivityScreen] = useState<ProductivityScreen | null>(null);
+  const commandInput = useRef<HTMLInputElement>(null);
+  const provider = searchProviders[settings.defaultSearchProvider];
+  const results = useMemo(() => {
+    const resolved = resolveCommandResults?.(command);
+    return resolved
+      ? resolved.map(toShellResult)
+      : createCommandResults(command, settings.defaultSearchProvider);
+  }, [command, resolveCommandResults, settings.defaultSearchProvider]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    function handleShortcut(event: globalThis.KeyboardEvent) {
+      const target = event.target;
+      const isTyping =
+        target instanceof HTMLElement &&
+        (target.matches('input, textarea, select') ||
+          target.isContentEditable ||
+          Boolean(target.closest('[contenteditable="true"]')));
+
+      if (event.key === 'Escape') {
+        if (isSettingsOpen) setIsSettingsOpen(false);
+        else if (isOnboardingOpen) setIsOnboardingOpen(false);
+        return;
+      }
+      if (event.key === '/' && !event.metaKey && !event.ctrlKey && !event.altKey && !isTyping) {
+        event.preventDefault();
+        commandInput.current?.focus();
+      }
+    }
+
+    window.addEventListener('keydown', handleShortcut);
+    return () => window.removeEventListener('keydown', handleShortcut);
+  }, [isOnboardingOpen, isSettingsOpen]);
+
+  function updateSettings(next: Partial<NavodeSettings>) {
+    onSettingsChange?.({ ...settings, ...next });
+  }
+
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const command = new FormData(event.currentTarget).get('command');
-    if (typeof command === 'string' && command.trim()) onCommand?.(command.trim());
+    const selected = results[selectedResult];
+    if (selected) executeResult(selected);
+    else if (command.trim()) onCommand?.(command.trim());
+  }
+
+  function handleCommandKeys(event: KeyboardEvent<HTMLInputElement>) {
+    if (!results.length) return;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setSelectedResult((current) => (current + 1) % results.length);
+    }
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setSelectedResult((current) => (current - 1 + results.length) % results.length);
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const selected = results[selectedResult];
+      if (selected) executeResult(selected);
+    }
+  }
+
+  function chooseResult(index: number) {
+    setSelectedResult(index);
+    const result = results[index];
+    if (result) executeResult(result);
+  }
+
+  function executeResult(result: ShellCommandResult) {
+    const action = result.action;
+    if (action) {
+      if (action.type === 'error') {
+        setCommandFeedback(action.message);
+        return;
+      }
+      if (action.type === 'open-view' && action.view === 'settings') setIsSettingsOpen(true);
+      if (
+        action.type === 'open-view' &&
+        (action.view === 'links' || action.view === 'projects' || action.view === 'workspaces')
+      ) {
+        setOrganizationScreen(action.view);
+      }
+      if (
+        action.type === 'open-view' &&
+        (action.view === 'snippets' || action.view === 'note' || action.view === 'today')
+      ) {
+        setProductivityScreen(action.view);
+      }
+      if (action.type === 'start-focus') {
+        const timer = startFocusTimer(
+          action.durationMinutes ?? settings.focusTimer.durationMinutes,
+        );
+        if (timer) updateSettings({ focusTimer: timer });
+        setProductivityScreen('focus');
+      }
+      if (action.type === 'export-data') {
+        setIsSettingsOpen(true);
+        setCommandFeedback('Use Backup and recovery in Settings to export your data.');
+      }
+      if (action.type === 'run-snippet') {
+        const snippet = settings.snippets.find((candidate) => candidate.id === action.snippetId);
+        if (snippet && navigator.clipboard) {
+          void navigator.clipboard
+            .writeText(snippet.content)
+            .then(() => setCommandFeedback(`Copied ${snippet.title}.`))
+            .catch(() => setCommandFeedback('Clipboard access was unavailable.'));
+        } else if (snippet) {
+          setCommandFeedback('Clipboard access was unavailable.');
+        }
+      }
+      if (action.type === 'launch-workspace') {
+        const workspace = settings.workspaces.find(
+          (candidate) => candidate.id === action.workspaceId,
+        );
+        if (workspace) setWorkspaceToLaunch(workspace);
+        return;
+      }
+      if (result.resolved) onCommandResult?.(result.resolved);
+      return;
+    }
+    onCommand?.(result.command);
+  }
+
+  function finishOnboarding() {
+    updateSettings({ onboardingCompleted: true });
+    setIsOnboardingOpen(false);
+    commandInput.current?.focus();
+  }
+
+  function saveCustomAlias(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const id = editingAliasId ?? `alias-${Date.now()}`;
+    const alias = createCommandAlias(
+      { alias: aliasName, label: aliasLabel, urlTemplate: aliasUrlTemplate },
+      id,
+    );
+    if (
+      !alias ||
+      settings.customAliases.some(
+        (existing) => existing.id !== id && existing.alias === alias.alias,
+      )
+    ) {
+      setAliasError('Use a unique alias with a safe http or https URL template.');
+      return;
+    }
+    updateSettings({
+      customAliases: editingAliasId
+        ? settings.customAliases.map((existing) => (existing.id === id ? alias : existing))
+        : [...settings.customAliases, alias],
+    });
+    resetAliasForm();
+  }
+
+  function editCustomAlias(id: string) {
+    const alias = settings.customAliases.find((candidate) => candidate.id === id);
+    if (!alias) return;
+    setEditingAliasId(alias.id);
+    setAliasName(alias.alias);
+    setAliasLabel(alias.label);
+    setAliasUrlTemplate(alias.urlTemplate);
+    setAliasError('');
+  }
+
+  function resetAliasForm() {
+    setAliasName('');
+    setAliasLabel('');
+    setAliasUrlTemplate('');
+    setAliasError('');
+    setEditingAliasId(null);
   }
 
   return (
     <main className="navode-shell">
-      <header>
-        <p className="eyebrow">YOUR CENTRAL NAVIGATION NODE</p>
-        <h1>Navode</h1>
-        <time dateTime={new Date().toISOString()}>{new Intl.DateTimeFormat(undefined, { dateStyle: 'full' }).format(new Date())}</time>
+      <header className="shell-header">
+        <div>
+          <p className="eyebrow">YOUR CENTRAL NAVIGATION NODE</p>
+          <h1>Navode</h1>
+        </div>
+        <div className="clock" aria-label="Current date and time">
+          <time dateTime={now.toISOString()}>{formatDate(now)}</time>
+          <span>{formatTime(now)}</span>
+        </div>
+        <Button
+          aria-label="Open settings"
+          onClick={(event) => {
+            event.currentTarget.focus();
+            setIsSettingsOpen(true);
+          }}
+          variant="quiet"
+        >
+          Settings
+        </Button>
       </header>
-      <form aria-label="Run a Navode command" onSubmit={submit}>
-        <label htmlFor="command">What do you want to do?</label>
-        <div className="command-row">
-          <input id="command" name="command" autoFocus autoComplete="off" placeholder="Try: yt segment tree" />
-          <button type="submit">Run</button>
-        </div>
-      </form>
-      <section aria-labelledby="quick-actions-title">
-        <h2 id="quick-actions-title">Quick actions</h2>
-        <div className="quick-actions">
-          <button type="button">Search the web</button>
-          <button type="button">Open a project</button>
-          <button type="button">Start focus time</button>
-        </div>
+
+      <section className="command-area" aria-labelledby="command-title">
+        <h2 className="sr-only" id="command-title">
+          Command bar
+        </h2>
+        <form aria-label="Run a Navode command" onSubmit={submit}>
+          <label className="sr-only" htmlFor="command">
+            What do you want to do?
+          </label>
+          <div className="command-row">
+            <TextInput
+              aria-autocomplete="list"
+              aria-activedescendant={
+                results[selectedResult] ? `command-result-${results[selectedResult].id}` : undefined
+              }
+              aria-controls="command-results"
+              aria-expanded={results.length > 0}
+              autoComplete="off"
+              autoFocus
+              id="command"
+              name="command"
+              onChange={(event) => {
+                setCommand(event.target.value);
+                setSelectedResult(0);
+                setCommandFeedback('');
+              }}
+              onKeyDown={handleCommandKeys}
+              placeholder={`Search ${provider.label} or run a command…`}
+              ref={commandInput}
+              role="combobox"
+              value={command}
+            />
+            <Tooltip label="Run command">
+              <Button aria-label="Run command" type="submit" variant="primary">
+                Run
+              </Button>
+            </Tooltip>
+          </div>
+          <p className="command-help">
+            Press <KeyboardShortcutHint>/</KeyboardShortcutHint> to focus, then use arrows to
+            choose.
+          </p>
+        </form>
+        {startupNotice && (
+          <p className="startup-notice" role="alert">
+            {startupNotice}
+          </p>
+        )}
+        {results.length > 0 && (
+          <div className="menu">
+            <div id="command-results" role="listbox" aria-label="Command suggestions">
+              {results.map((result, index) => (
+                <CommandResultOption
+                  active={selectedResult === index}
+                  id={`command-result-${result.id}`}
+                  key={result.id}
+                  onClick={() => chooseResult(index)}
+                >
+                  <span>
+                    <strong>{result.label}</strong>
+                    <small>{result.description}</small>
+                  </span>
+                  <KeyboardShortcutHint>{result.shortcut}</KeyboardShortcutHint>
+                </CommandResultOption>
+              ))}
+            </div>
+          </div>
+        )}
+        {commandFeedback && (
+          <p className="command-feedback" role="status">
+            {commandFeedback}
+          </p>
+        )}
       </section>
-      <section aria-labelledby="projects-title">
-        <div className="section-heading"><h2 id="projects-title">Projects</h2><button type="button" aria-label="Open settings">Settings</button></div>
-        <p className="muted">Configure project workspaces and shortcuts as Navode grows.</p>
-      </section>
+
+      <div className="content-grid">
+        {settings.homeSections.quickAccess && (
+          <Card aria-labelledby="quick-access-title">
+            <div className="section-heading">
+              <div>
+                <p className="section-kicker">START HERE</p>
+                <h2 id="quick-access-title">Quick access</h2>
+              </div>
+              <Button onClick={() => setOrganizationScreen('links')} variant="quiet">
+                Manage
+              </Button>
+            </div>
+            <div className="quick-actions">
+              {settings.quickLinks
+                .filter((link) => link.enabled && link.showOnHome)
+                .slice(0, 6)
+                .map((link) => (
+                  <a
+                    className="quick-link"
+                    href={link.url}
+                    key={link.id}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    <span className="link-initials" aria-hidden="true">
+                      {link.icon ?? initials(link.name)}
+                    </span>
+                    {link.name}
+                  </a>
+                ))}
+            </div>
+            {!settings.quickLinks.some((link) => link.enabled && link.showOnHome) && (
+              <p className="muted">Add the destinations you use most.</p>
+            )}
+          </Card>
+        )}
+
+        {settings.homeSections.projects && (
+          <Card aria-labelledby="projects-title">
+            <div className="section-heading">
+              <div>
+                <p className="section-kicker">YOUR WORK</p>
+                <h2 id="projects-title">Projects &amp; workspaces</h2>
+              </div>
+              <Button onClick={() => setOrganizationScreen('projects')} variant="quiet">
+                Manage
+              </Button>
+            </div>
+            {settings.projects
+              .filter((project) => project.showOnHome)
+              .slice(0, 3)
+              .map((project) => (
+                <div className="preview-row" key={project.id}>
+                  <span className="link-initials" aria-hidden="true">
+                    {project.icon ?? initials(project.name)}
+                  </span>
+                  <span>
+                    <strong>{project.name}</strong>
+                    <small>{project.actions.length} actions</small>
+                  </span>
+                </div>
+              ))}
+            {!settings.projects.some((project) => project.showOnHome) && (
+              <p className="muted">Group related destinations into a project.</p>
+            )}
+            <Button onClick={() => setOrganizationScreen('projects')}>Manage projects</Button>
+          </Card>
+        )}
+
+        {settings.homeSections.workspaces && (
+          <Card aria-labelledby="workspaces-title">
+            <div className="section-heading">
+              <div>
+                <p className="section-kicker">REPEATABLE ROUTINES</p>
+                <h2 id="workspaces-title">Workspaces</h2>
+              </div>
+              <Button onClick={() => setOrganizationScreen('workspaces')} variant="quiet">
+                Manage
+              </Button>
+            </div>
+            {settings.workspaces
+              .filter((workspace) => workspace.showOnHome)
+              .slice(0, 3)
+              .map((workspace) => (
+                <div className="preview-row" key={workspace.id}>
+                  <span>
+                    <strong>{workspace.name}</strong>
+                    <small>{workspace.items.length} destinations</small>
+                  </span>
+                  <Button
+                    disabled={!workspace.items.length}
+                    onClick={() => setWorkspaceToLaunch(workspace)}
+                    variant="quiet"
+                  >
+                    Launch
+                  </Button>
+                </div>
+              ))}
+            {!settings.workspaces.some((workspace) => workspace.showOnHome) && (
+              <p className="muted">Launch intentional groups of browser destinations.</p>
+            )}
+            <Button onClick={() => setOrganizationScreen('workspaces')}>Manage workspaces</Button>
+          </Card>
+        )}
+
+        {settings.homeSections.productivity && (
+          <Card aria-labelledby="productivity-title">
+            <div className="section-heading">
+              <div>
+                <p className="section-kicker">A LITTLE MOMENTUM</p>
+                <h2 id="productivity-title">Productivity</h2>
+              </div>
+            </div>
+            <p className="muted">
+              {settings.todayItems.filter((item) => !item.completed).length} priorities left today ·{' '}
+              {settings.snippets.length} snippets
+            </p>
+            <div className="productivity-actions">
+              <Button onClick={() => setProductivityScreen('focus')}>Focus</Button>
+              <Button onClick={() => setProductivityScreen('note')} variant="quiet">
+                Note
+              </Button>
+              <Button onClick={() => setProductivityScreen('snippets')} variant="quiet">
+                Snippets
+              </Button>
+              <Button onClick={() => setProductivityScreen('today')} variant="quiet">
+                Today
+              </Button>
+            </div>
+          </Card>
+        )}
+      </div>
+
+      <Dialog
+        label="Welcome to Navode"
+        onClose={() => setIsOnboardingOpen(false)}
+        open={isOnboardingOpen}
+      >
+        <p className="eyebrow">WELCOME</p>
+        <h2>Your next tab, pointed somewhere useful.</h2>
+        <p className="muted">
+          Navode keeps your frequent moves close and lets you reach them from the keyboard.
+        </p>
+        <fieldset className="provider-options">
+          <legend>Default search provider</legend>
+          {(['google', 'youtube'] as const).map((searchProvider) => (
+            <Toggle
+              key={searchProvider}
+              onClick={() => updateSettings({ defaultSearchProvider: searchProvider })}
+              pressed={settings.defaultSearchProvider === searchProvider}
+            >
+              {searchProviders[searchProvider].label}
+            </Toggle>
+          ))}
+        </fieldset>
+        <p className="muted">
+          We added Google, YouTube, and GitHub as safe quick links. You can change them later.
+        </p>
+        <div className="dialog-actions">
+          <Button onClick={finishOnboarding} variant="quiet">
+            Skip for now
+          </Button>
+          <Button onClick={finishOnboarding} variant="primary">
+            Start using Navode
+          </Button>
+        </div>
+      </Dialog>
+
+      <Dialog
+        label="Navode settings"
+        onClose={() => setIsSettingsOpen(false)}
+        open={isSettingsOpen}
+      >
+        <p className="eyebrow">PREFERENCES</p>
+        <h2>Make Navode feel like yours.</h2>
+        <Tabs label="Theme">
+          {(['dark', 'light', 'system'] as const).map((theme) => (
+            <Tab
+              active={settings.theme === theme}
+              key={theme}
+              onClick={() => updateSettings({ theme })}
+            >
+              {theme[0]?.toUpperCase()}
+              {theme.slice(1)}
+            </Tab>
+          ))}
+        </Tabs>
+        <p className="muted">Theme preference is stored only on this device.</p>
+        <section className="settings-section" aria-labelledby="aliases-title">
+          <h3 id="aliases-title">Custom aliases</h3>
+          <p className="muted">
+            Use an alias followed by a query. Only public http and https URLs are accepted.
+          </p>
+          {settings.customAliases.length > 0 && (
+            <ul className="alias-list" aria-label="Custom aliases">
+              {settings.customAliases.map((alias) => (
+                <li key={alias.id}>
+                  <span>
+                    <strong>{alias.alias}</strong> · {alias.label}
+                  </span>
+                  <span>
+                    <Button onClick={() => editCustomAlias(alias.id)} variant="quiet">
+                      Edit
+                    </Button>
+                    <Button
+                      onClick={() =>
+                        updateSettings({
+                          customAliases: removeCommandAlias(settings.customAliases, alias.id),
+                        })
+                      }
+                      variant="quiet"
+                    >
+                      Delete
+                    </Button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <form className="alias-form" onSubmit={saveCustomAlias}>
+            <label>
+              Alias
+              <TextInput
+                maxLength={32}
+                onChange={(event) => setAliasName(event.target.value)}
+                placeholder="docs"
+                required
+                value={aliasName}
+              />
+            </label>
+            <label>
+              Label
+              <TextInput
+                onChange={(event) => setAliasLabel(event.target.value)}
+                placeholder="Search documentation"
+                required
+                value={aliasLabel}
+              />
+            </label>
+            <label>
+              URL template
+              <TextInput
+                onChange={(event) => setAliasUrlTemplate(event.target.value)}
+                placeholder="https://example.com/search?q={query}"
+                required
+                value={aliasUrlTemplate}
+              />
+            </label>
+            {aliasError && (
+              <p className="form-error" role="alert">
+                {aliasError}
+              </p>
+            )}
+            <div className="form-actions">
+              {editingAliasId && (
+                <Button onClick={resetAliasForm} variant="quiet">
+                  Cancel
+                </Button>
+              )}
+              <Button type="submit">{editingAliasId ? 'Save alias' : 'Add alias'}</Button>
+            </div>
+          </form>
+        </section>
+        <section className="settings-section" aria-labelledby="recent-actions-title">
+          <div className="section-heading">
+            <h3 id="recent-actions-title">Recent actions</h3>
+            {settings.recentExecutions.length > 0 && (
+              <Button
+                onClick={() => updateSettings({ recentExecutions: clearRecentExecutions() })}
+                variant="quiet"
+              >
+                Clear history
+              </Button>
+            )}
+          </div>
+          {settings.recentExecutions.length ? (
+            <ul className="recent-actions">
+              {settings.recentExecutions.slice(0, 5).map((execution) => (
+                <li key={execution.id}>{execution.label}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="muted">
+              Executed commands appear here without storing their search terms.
+            </p>
+          )}
+        </section>
+        {isSettingsOpen && (
+          <Suspense fallback={<p className="muted">Loading recovery controls…</p>}>
+            <SettingsDataControls
+              onOpenOnboarding={() => {
+                setIsSettingsOpen(false);
+                setIsOnboardingOpen(true);
+              }}
+              onOpenOrganization={(screen) => {
+                setIsSettingsOpen(false);
+                setOrganizationScreen(screen);
+              }}
+              onSettingsChange={(next) => onSettingsChange?.(next)}
+              settings={settings}
+            />
+          </Suspense>
+        )}
+        <div className="dialog-actions">
+          <Button onClick={() => setIsSettingsOpen(false)} variant="primary">
+            Done
+          </Button>
+        </div>
+      </Dialog>
+
+      {organizationScreen && (
+        <Suspense fallback={null}>
+          <OrganizationManager
+            onClose={() => setOrganizationScreen(null)}
+            onRequestWorkspaceLaunch={setWorkspaceToLaunch}
+            onSettingsChange={(next) => onSettingsChange?.(next)}
+            screen={organizationScreen}
+            settings={settings}
+          />
+        </Suspense>
+      )}
+
+      {productivityScreen && (
+        <Suspense fallback={null}>
+          <ProductivityManager
+            onClose={() => setProductivityScreen(null)}
+            onSettingsChange={(next) => onSettingsChange?.(next)}
+            screen={productivityScreen}
+            settings={settings}
+          />
+        </Suspense>
+      )}
+
+      <Dialog
+        label="Launch workspace"
+        onClose={() => setWorkspaceToLaunch(null)}
+        open={workspaceToLaunch !== null}
+      >
+        <p className="eyebrow">CONFIRM LAUNCH</p>
+        <h2>Open {workspaceToLaunch?.name}?</h2>
+        <p className="muted">
+          This will open {workspaceToLaunch?.items.length ?? 0}{' '}
+          {workspaceToLaunch?.items.length === 1 ? 'tab' : 'tabs'} in your browser.
+        </p>
+        <div className="dialog-actions">
+          <Button onClick={() => setWorkspaceToLaunch(null)} variant="quiet">
+            Cancel
+          </Button>
+          <Button
+            disabled={!workspaceToLaunch?.items.length}
+            onClick={() => {
+              if (workspaceToLaunch) onWorkspaceLaunch?.(workspaceToLaunch);
+              setWorkspaceToLaunch(null);
+            }}
+            variant="primary"
+          >
+            Open workspace
+          </Button>
+        </div>
+      </Dialog>
     </main>
+  );
+}
+
+function toShellResult(result: CommandResult): ShellCommandResult {
+  return {
+    action: result.action,
+    command: result.command,
+    description: result.description,
+    id: result.id,
+    label: result.label,
+    resolved: result,
+    shortcut: 'Enter',
+  };
+}
+
+function createCommandResults(
+  input: string,
+  defaultProvider: DefaultSearchProvider,
+): ShellCommandResult[] {
+  const query = input.trim();
+  if (!query || /^(g|google|yt|youtube|focus)\b/i.test(query)) return [];
+
+  const primary = searchProviders[defaultProvider];
+  const secondaryProvider: DefaultSearchProvider =
+    defaultProvider === 'google' ? 'youtube' : 'google';
+  const secondary = searchProviders[secondaryProvider];
+  return [
+    {
+      id: primary.alias,
+      label: `Search ${primary.label} for “${query}”`,
+      description: `Run ${primary.alias} ${query}`,
+      command: `${primary.alias} ${query}`,
+      shortcut: 'Enter',
+    },
+    {
+      id: secondary.alias,
+      label: `Search ${secondary.label} for “${query}”`,
+      description: `Run ${secondary.alias} ${query}`,
+      command: `${secondary.alias} ${query}`,
+      shortcut: '↓',
+    },
+  ];
+}
+
+function formatDate(date: Date) {
+  return new Intl.DateTimeFormat(undefined, { dateStyle: 'full' }).format(date);
+}
+
+function formatTime(date: Date) {
+  return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(date);
+}
+
+function initials(name: string): string {
+  return (
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase() || 'N'
   );
 }

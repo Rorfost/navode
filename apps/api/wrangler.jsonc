@@ -3,5 +3,5 @@
   "name": "navode-api",
   "main": "src/index.ts",
   "compatibility_date": "2025-06-17",
-  "vars": { "APP_ENV": "development", "APP_VERSION": "0.1.0" }
+  "vars": { "APP_ENV": "development", "APP_VERSION": "1.0.0" },
 }

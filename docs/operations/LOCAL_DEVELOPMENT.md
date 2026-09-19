@@ -22,4 +22,4 @@ pnpm dev:api
 3. Select `apps/extension/dist`.
 4. Open a new tab and verify the Navode shell loads.
 
-The starter extension requires no runtime permissions. Its development command watches a Vite build; reload the unpacked extension after changes.
+The starter extension requires only Chrome's `storage` permission for local-first persistence. Its development command watches a Vite build; reload the unpacked extension after changes.

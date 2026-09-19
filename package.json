@@ -1,6 +1,6 @@
 {
   "name": "navode",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "A personal browser command center.",
   "packageManager": "pnpm@10.12.1",
@@ -16,6 +16,7 @@
     "build": "pnpm -r --if-present build",
     "build:web": "pnpm --filter @navode/web build",
     "build:extension": "pnpm --filter @navode/extension build && node scripts/check-extension.mjs",
+    "package:extension": "pnpm build:extension && node scripts/package-extension.mjs",
     "build:api": "pnpm --filter @navode/api build",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "pnpm -r --if-present typecheck",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@eslint/js": "9.30.1",
+    "@types/chrome": "0.0.328",
     "@types/node": "22.15.30",
     "@typescript-eslint/eslint-plugin": "8.36.0",
     "@typescript-eslint/parser": "8.36.0",

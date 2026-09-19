@@ -3,19 +3,25 @@ name: Release check
 on:
   workflow_dispatch:
   push:
-    tags: ["v*"]
+    tags: ['v*']
 
 jobs:
   prepare:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
         with: { version: 10.12.1 }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with: { node-version-file: .nvmrc, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - run: pnpm lint && pnpm typecheck && pnpm test && pnpm build
-      - run: pnpm build:extension
-      - uses: actions/upload-artifact@v4
-        with: { name: navode-extension-release, path: apps/extension/dist }
+      - run: pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build
+      - run: pnpm --filter @navode/web exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+      - run: pnpm package:extension
+      - uses: actions/upload-artifact@v7
+        with:
+          name: navode-extension-1.0.0
+          path: |
+            artifacts/navode-1.0.0.zip
+            artifacts/navode-1.0.0.zip.sha256

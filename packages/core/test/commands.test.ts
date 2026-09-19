@@ -10,7 +10,13 @@ describe('parseCommand', () => {
 describe('findCommand', () => {
   it('matches a command alias case-insensitively', () => {
     const commands: Command[] = [
-      { id: 'youtube', label: 'youtube', kind: 'search', template: 'https://youtube.com', aliases: ['yt'] },
+      {
+        id: 'youtube',
+        label: 'youtube',
+        kind: 'search',
+        template: 'https://youtube.com',
+        aliases: ['yt'],
+      },
     ];
     expect(findCommand(commands, 'YT graph theory')?.id).toBe('youtube');
   });
