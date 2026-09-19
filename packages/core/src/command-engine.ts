@@ -205,7 +205,8 @@ export function resolveCommand(input: string, catalog: CommandCatalog = {}): Com
   }
 
   const matches = getPredictableMatches(normalized, catalog);
-  if (matches[0]?.score >= 80) return matches[0];
+  const bestMatch = matches[0];
+  if (bestMatch && bestMatch.score >= 80) return bestMatch;
 
   return createFallbackSearchResult(normalized, catalog.defaultSearchProvider ?? 'google');
 }
@@ -250,7 +251,7 @@ export function recordRecentExecution(
   if (result.action.type === 'error') return [...history];
   const execution: RecentExecution = {
     actionType: result.action.type,
-    id: `${performedAt}:${result.id}`,
+    id: `${performedAt}:${history.length}`,
     label: result.label,
     performedAt,
   };

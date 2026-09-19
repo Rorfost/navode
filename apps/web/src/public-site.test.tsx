@@ -7,8 +7,12 @@ describe('public web pages', () => {
     render(<PublicSite page="home" />);
 
     expect(screen.getByRole('heading', { name: /new tab that knows/i })).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Privacy' }).getAttribute('href')).toBe('/privacy');
-    expect(screen.getByRole('link', { name: 'Support' }).getAttribute('href')).toBe('/support');
+    expect(screen.getAllByRole('link', { name: 'Privacy' })[0]?.getAttribute('href')).toBe(
+      '/privacy',
+    );
+    expect(screen.getAllByRole('link', { name: 'Support' })[0]?.getAttribute('href')).toBe(
+      '/support',
+    );
     expect(screen.getByRole('link', { name: /open companion/i }).getAttribute('href')).toBe('/app');
   });
 

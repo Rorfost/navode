@@ -303,23 +303,27 @@ function parseRecentExecutions(value: unknown): RecentExecution[] {
     'export-data',
     'show-help',
   ]);
-  return value
-    .filter(
-      (candidate): candidate is Record<string, unknown> =>
-        isRecord(candidate) &&
-        typeof candidate.id === 'string' &&
-        typeof candidate.label === 'string' &&
-        typeof candidate.performedAt === 'string' &&
-        typeof candidate.actionType === 'string' &&
-        validActionTypes.has(candidate.actionType),
+  const executions: RecentExecution[] = [];
+  for (const candidate of value) {
+    if (!isRecord(candidate)) continue;
+    const { actionType, id, label, performedAt } = candidate;
+    if (
+      typeof id !== 'string' ||
+      typeof label !== 'string' ||
+      typeof performedAt !== 'string' ||
+      typeof actionType !== 'string' ||
+      !validActionTypes.has(actionType)
     )
-    .slice(0, MAX_RECENT_EXECUTIONS)
-    .map((candidate) => ({
-      id: candidate.id,
-      label: candidate.label,
-      performedAt: candidate.performedAt,
-      actionType: candidate.actionType as RecentExecution['actionType'],
-    }));
+      continue;
+    executions.push({
+      actionType: actionType as RecentExecution['actionType'],
+      id,
+      label,
+      performedAt,
+    });
+    if (executions.length === MAX_RECENT_EXECUTIONS) break;
+  }
+  return executions;
 }
 
 function parseQuickLinks(value: unknown): QuickLink[] {
@@ -453,9 +457,11 @@ function parseSnippets(value: unknown): Snippet[] {
 function parseFocusTimer(value: unknown): FocusTimer {
   if (
     !isRecord(value) ||
+    typeof value.durationMinutes !== 'number' ||
     !Number.isInteger(value.durationMinutes) ||
     value.durationMinutes < 1 ||
     value.durationMinutes > 180 ||
+    typeof value.remainingSeconds !== 'number' ||
     !Number.isInteger(value.remainingSeconds) ||
     value.remainingSeconds < 0
   )
@@ -487,7 +493,10 @@ function parseFocusPresets(value: unknown): number[] {
     ...new Set(
       value.filter(
         (duration): duration is number =>
-          Number.isInteger(duration) && duration >= 1 && duration <= 180,
+          typeof duration === 'number' &&
+          Number.isInteger(duration) &&
+          duration >= 1 &&
+          duration <= 180,
       ),
     ),
   ].slice(0, 5);

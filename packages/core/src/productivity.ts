@@ -126,10 +126,13 @@ export function getFocusTimerSnapshot(timer: FocusTimer, now = new Date()): Focu
 export function pauseFocusTimer(timer: FocusTimer, now = new Date()): FocusTimer {
   const snapshot = getFocusTimerSnapshot(timer, now);
   if (snapshot.status === 'completed')
-    return { ...timer, endsAt: undefined, remainingSeconds: 0, status: 'completed' };
+    return {
+      durationMinutes: timer.durationMinutes,
+      remainingSeconds: 0,
+      status: 'completed',
+    };
   return {
-    ...timer,
-    endsAt: undefined,
+    durationMinutes: timer.durationMinutes,
     remainingSeconds: snapshot.remainingSeconds,
     status: 'paused',
   };

@@ -8,7 +8,7 @@ Opening a new tab should be the fastest path from intent to action—not a detou
 
 ## Status
 
-The web app and Chrome extension share a polished local-first command shell with onboarding, theme preference, accessible dialogs, keyboard navigation, validated command actions, and user-managed quick links, projects, and workspaces. The API exposes only health and version metadata; workflow features are being added incrementally.
+Navode 1.0.0 is a release candidate, not yet published in the Chrome Web Store. The web app and extension provide a local-first command shell with onboarding, accessible keyboard navigation, quick links, projects, workspaces, scratchpad, snippets, focus tools, backups, and public privacy/support pages. The optional API exposes only health and version metadata.
 
 ## Architecture
 

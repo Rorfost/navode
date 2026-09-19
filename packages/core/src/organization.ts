@@ -123,12 +123,14 @@ export function createQuickLink(
   const url = input.url.trim();
   if (!name || !isSafeExternalUrl(url)) return null;
   const alias = normalizeAlias(input.alias);
+  const group = normalizeText(input.group);
+  const icon = normalizeIcon(input.icon);
   if (input.alias && !alias) return null;
   return {
     ...(alias ? { alias } : {}),
     enabled: input.enabled ?? true,
-    ...(normalizeText(input.group) ? { group: normalizeText(input.group) } : {}),
-    ...(normalizeIcon(input.icon) ? { icon: normalizeIcon(input.icon) } : {}),
+    ...(group ? { group } : {}),
+    ...(icon ? { icon } : {}),
     id,
     name,
     order,
@@ -177,11 +179,13 @@ export function reorderQuickLinks(
 
 export function createProject(input: ProjectInput, id: string): Project | null {
   const name = input.name.trim();
+  const description = normalizeText(input.description);
+  const icon = normalizeIcon(input.icon);
   if (!name) return null;
   return {
     actions: [],
-    ...(normalizeText(input.description) ? { description: normalizeText(input.description) } : {}),
-    ...(normalizeIcon(input.icon) ? { icon: normalizeIcon(input.icon) } : {}),
+    ...(description ? { description } : {}),
+    ...(icon ? { icon } : {}),
     id,
     name,
     showOnHome: input.showOnHome ?? false,
@@ -209,9 +213,10 @@ export function removeProject(projects: readonly Project[], id: string): Project
 export function createProjectAction(input: ProjectActionInput, id: string): ProjectAction | null {
   const label = input.label.trim();
   const url = input.url.trim();
+  const icon = normalizeIcon(input.icon);
   if (!label || !isSafeExternalUrl(url)) return null;
   return {
-    ...(normalizeIcon(input.icon) ? { icon: normalizeIcon(input.icon) } : {}),
+    ...(icon ? { icon } : {}),
     id,
     kind: input.kind,
     label,
@@ -252,9 +257,10 @@ export function createWorkspace(
   order: number,
 ): Workspace | null {
   const name = input.name.trim();
+  const description = normalizeText(input.description);
   if (!name) return null;
   return {
-    ...(normalizeText(input.description) ? { description: normalizeText(input.description) } : {}),
+    ...(description ? { description } : {}),
     id,
     items: [],
     name,

@@ -23,7 +23,7 @@ import {
 import {
   Button,
   Card,
-  CommandResult,
+  CommandResult as CommandResultOption,
   Dialog,
   KeyboardShortcutHint,
   Tab,
@@ -166,44 +166,38 @@ export function NavodeShell({
   }
 
   function executeResult(result: ShellCommandResult) {
-    if (result.action) {
-      if (result.action.type === 'error') {
-        setCommandFeedback(result.action.message);
+    const action = result.action;
+    if (action) {
+      if (action.type === 'error') {
+        setCommandFeedback(action.message);
         return;
       }
-      if (result.action.type === 'open-view' && result.action.view === 'settings')
-        setIsSettingsOpen(true);
+      if (action.type === 'open-view' && action.view === 'settings') setIsSettingsOpen(true);
       if (
-        result.action.type === 'open-view' &&
-        (result.action.view === 'links' ||
-          result.action.view === 'projects' ||
-          result.action.view === 'workspaces')
+        action.type === 'open-view' &&
+        (action.view === 'links' || action.view === 'projects' || action.view === 'workspaces')
       ) {
-        setOrganizationScreen(result.action.view);
+        setOrganizationScreen(action.view);
       }
       if (
-        result.action.type === 'open-view' &&
-        (result.action.view === 'snippets' ||
-          result.action.view === 'note' ||
-          result.action.view === 'today')
+        action.type === 'open-view' &&
+        (action.view === 'snippets' || action.view === 'note' || action.view === 'today')
       ) {
-        setProductivityScreen(result.action.view);
+        setProductivityScreen(action.view);
       }
-      if (result.action.type === 'start-focus') {
+      if (action.type === 'start-focus') {
         const timer = startFocusTimer(
-          result.action.durationMinutes ?? settings.focusTimer.durationMinutes,
+          action.durationMinutes ?? settings.focusTimer.durationMinutes,
         );
         if (timer) updateSettings({ focusTimer: timer });
         setProductivityScreen('focus');
       }
-      if (result.action.type === 'export-data') {
+      if (action.type === 'export-data') {
         setIsSettingsOpen(true);
         setCommandFeedback('Use Backup and recovery in Settings to export your data.');
       }
-      if (result.action.type === 'run-snippet') {
-        const snippet = settings.snippets.find(
-          (candidate) => candidate.id === result.action.snippetId,
-        );
+      if (action.type === 'run-snippet') {
+        const snippet = settings.snippets.find((candidate) => candidate.id === action.snippetId);
         if (snippet && navigator.clipboard) {
           void navigator.clipboard
             .writeText(snippet.content)
@@ -213,9 +207,9 @@ export function NavodeShell({
           setCommandFeedback('Clipboard access was unavailable.');
         }
       }
-      if (result.action.type === 'launch-workspace') {
+      if (action.type === 'launch-workspace') {
         const workspace = settings.workspaces.find(
-          (candidate) => candidate.id === result.action.workspaceId,
+          (candidate) => candidate.id === action.workspaceId,
         );
         if (workspace) setWorkspaceToLaunch(workspace);
         return;
@@ -285,6 +279,16 @@ export function NavodeShell({
           <time dateTime={now.toISOString()}>{formatDate(now)}</time>
           <span>{formatTime(now)}</span>
         </div>
+        <Button
+          aria-label="Open settings"
+          onClick={(event) => {
+            event.currentTarget.focus();
+            setIsSettingsOpen(true);
+          }}
+          variant="quiet"
+        >
+          Settings
+        </Button>
       </header>
 
       <section className="command-area" aria-labelledby="command-title">
@@ -338,7 +342,7 @@ export function NavodeShell({
           <div className="menu">
             <div id="command-results" role="listbox" aria-label="Command suggestions">
               {results.map((result, index) => (
-                <CommandResult
+                <CommandResultOption
                   active={selectedResult === index}
                   id={`command-result-${result.id}`}
                   key={result.id}
@@ -349,7 +353,7 @@ export function NavodeShell({
                     <small>{result.description}</small>
                   </span>
                   <KeyboardShortcutHint>{result.shortcut}</KeyboardShortcutHint>
-                </CommandResult>
+                </CommandResultOption>
               ))}
             </div>
           </div>

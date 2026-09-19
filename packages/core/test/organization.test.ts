@@ -37,8 +37,8 @@ describe('quick links', () => {
         alias: 'docs',
         name: 'Documentation',
         url: 'https://example.com/docs',
-      }),
-    ).toMatchObject([{ id: 'docs', name: 'Documentation' }]);
+      })?.[0],
+    ).toMatchObject({ id: 'docs', name: 'Documentation' });
     expect(reorderQuickLinks([docs, tasks], ['tasks', 'docs']).map((link) => link.id)).toEqual([
       'tasks',
       'docs',
@@ -100,7 +100,7 @@ describe('projects and workspaces', () => {
 });
 
 describe('organizational settings migration', () => {
-  it('migrates v1 settings to v2 generic starter links without losing prior preferences', () => {
+  it('migrates v1 settings to the current schema without losing prior preferences', () => {
     const migrated = migrateV1Settings({
       schemaVersion: 1,
       theme: 'light',
@@ -112,14 +112,14 @@ describe('organizational settings migration', () => {
     });
 
     expect(migrated).toMatchObject({
-      schemaVersion: 2,
+      schemaVersion: 4,
       theme: 'light',
       defaultSearchProvider: 'youtube',
       projects: [],
       workspaces: [],
     });
     expect(migrated.quickLinks.map((link) => link.name)).toEqual(['Google', 'YouTube', 'GitHub']);
-    expect(DEFAULT_NAVODE_SETTINGS.schemaVersion).toBe(2);
+    expect(DEFAULT_NAVODE_SETTINGS.schemaVersion).toBe(4);
     expect(parseNavodeSettings({ schemaVersion: 1, initialQuickLinks: false }).quickLinks).toEqual(
       [],
     );
