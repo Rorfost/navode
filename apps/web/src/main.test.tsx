@@ -42,6 +42,16 @@ describe('Navode shell', () => {
     expect(onSettingsChange).toHaveBeenCalledWith({ ...settings, theme: 'light' });
   });
 
+  it('shows the integration connection inventory without requesting access', () => {
+    renderShell();
+    fireEvent.click(screen.getByRole('button', { name: 'Open settings' }));
+
+    expect(screen.getByRole('heading', { name: 'Integrations' })).toBeVisible();
+    expect(screen.getByText('GitHub')).toBeVisible();
+    expect(screen.getAllByText('No permissions requested yet')).toHaveLength(4);
+    expect(screen.getAllByText('Coming in a later V2 step')).toHaveLength(4);
+  });
+
   it('offers onboarding choices and allows a user to skip them', () => {
     const { onSettingsChange } = renderShell(DEFAULT_NAVODE_SETTINGS);
 

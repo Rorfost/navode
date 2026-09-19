@@ -112,14 +112,14 @@ describe('organizational settings migration', () => {
     });
 
     expect(migrated).toMatchObject({
-      schemaVersion: 4,
+      schemaVersion: 5,
       theme: 'light',
       defaultSearchProvider: 'youtube',
       projects: [],
       workspaces: [],
     });
     expect(migrated.quickLinks.map((link) => link.name)).toEqual(['Google', 'YouTube', 'GitHub']);
-    expect(DEFAULT_NAVODE_SETTINGS.schemaVersion).toBe(4);
+    expect(DEFAULT_NAVODE_SETTINGS.schemaVersion).toBe(5);
     expect(parseNavodeSettings({ schemaVersion: 1, initialQuickLinks: false }).quickLinks).toEqual(
       [],
     );

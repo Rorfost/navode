@@ -34,6 +34,7 @@ import {
 } from './primitives';
 import type { OrganizationScreen } from './organization-manager';
 import type { ProductivityScreen } from './productivity-manager';
+import { IntegrationSettings } from './integration-settings';
 
 const OrganizationManager = lazy(() =>
   import('./organization-manager').then((module) => ({ default: module.OrganizationManager })),
@@ -675,6 +676,10 @@ export function NavodeShell({
             </p>
           )}
         </section>
+        <IntegrationSettings
+          onSettingsChange={(next) => onSettingsChange?.(next)}
+          settings={settings}
+        />
         {isSettingsOpen && (
           <Suspense fallback={<p className="muted">Loading recovery controls…</p>}>
             <SettingsDataControls

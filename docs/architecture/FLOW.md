@@ -16,6 +16,29 @@ sequenceDiagram
 
 Initial rendering must be independent of a network request.
 
+## Refresh an integration
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant UI as Settings or widget
+  participant C as Refresh coordinator
+  participant S as Local cache
+  participant P as Provider
+  UI->>C: Refresh only when user requests or cache is stale
+  C->>S: Read cached provider data first
+  alt Cache is fresh or provider is in backoff
+    C-->>UI: Render cached data
+  else Refresh is needed
+    C->>P: Refresh one enabled provider
+    P-->>C: Data or error
+    C->>S: Save refreshed cache or retain prior cache
+    C-->>UI: Updated data or provider-local error
+  end
+```
+
+A provider failure never prevents the New Tab shell from starting. V2.1 registers provider metadata only and does not make network requests.
+
 ## Execute a command
 
 ```mermaid

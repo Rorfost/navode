@@ -25,10 +25,16 @@ import {
   type TodayItem,
   createSnippet,
 } from './productivity';
+import {
+  NAVODE_INTEGRATIONS,
+  type IntegrationCacheState,
+  type IntegrationConnection,
+  type IntegrationId,
+} from '@navode/integrations';
 
 export type CommandKind = 'url' | 'search' | 'project' | 'focus';
 
-export const NAVODE_STORAGE_SCHEMA_VERSION = 4;
+export const NAVODE_STORAGE_SCHEMA_VERSION = 5;
 export const NAVODE_SETTINGS_STORAGE_KEY = 'navode.settings';
 
 export type ThemePreference = 'dark' | 'light' | 'system';
@@ -60,6 +66,8 @@ export interface NavodeSettings extends StoredSettings {
   onboardingCompleted: boolean;
   defaultSearchProvider: DefaultSearchProvider;
   initialQuickLinks: boolean;
+  integrationCache: Partial<Record<IntegrationId, IntegrationCacheState>>;
+  integrations: Partial<Record<IntegrationId, IntegrationConnection>>;
   customAliases: CommandAlias[];
   projects: Project[];
   quickLinks: QuickLink[];
@@ -81,6 +89,8 @@ export const DEFAULT_NAVODE_SETTINGS: NavodeSettings = {
   onboardingCompleted: false,
   defaultSearchProvider: 'google',
   initialQuickLinks: true,
+  integrationCache: {},
+  integrations: {},
   customAliases: [],
   projects: [],
   quickLinks: createStarterQuickLinks(),
@@ -102,6 +112,7 @@ export function parseNavodeSettings(value: unknown): NavodeSettings {
   if (value.schemaVersion === 1) return migrateV1Settings(value);
   if (value.schemaVersion === 2) return migrateV2Settings(value);
   if (value.schemaVersion === 3) return migrateV3Settings(value);
+  if (value.schemaVersion === 4) return migrateV4Settings(value);
   if (value.schemaVersion !== NAVODE_STORAGE_SCHEMA_VERSION) return DEFAULT_NAVODE_SETTINGS;
 
   return {
@@ -118,6 +129,8 @@ export function parseNavodeSettings(value: unknown): NavodeSettings {
       typeof value.initialQuickLinks === 'boolean'
         ? value.initialQuickLinks
         : DEFAULT_NAVODE_SETTINGS.initialQuickLinks,
+    integrationCache: parseIntegrationCache(value.integrationCache),
+    integrations: parseIntegrationConnections(value.integrations),
     customAliases: parseCustomAliases(value.customAliases),
     projects: parseProjects(value.projects),
     quickLinks: parseQuickLinks(value.quickLinks),
@@ -150,6 +163,8 @@ export function migrateV1Settings(value: Record<string, unknown>): NavodeSetting
       typeof value.initialQuickLinks === 'boolean'
         ? value.initialQuickLinks
         : DEFAULT_NAVODE_SETTINGS.initialQuickLinks,
+    integrationCache: {},
+    integrations: {},
     customAliases: parseCustomAliases(value.customAliases),
     projects: [],
     quickLinks: value.initialQuickLinks === false ? [] : createStarterQuickLinks(),
@@ -170,6 +185,8 @@ export function migrateV2Settings(value: Record<string, unknown>): NavodeSetting
   return {
     ...parseV2Base(value),
     schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
+    integrationCache: {},
+    integrations: {},
     scratchpad: DEFAULT_SCRATCHPAD,
     snippets: [],
     focusTimer: DEFAULT_FOCUS_TIMER,
@@ -185,10 +202,27 @@ export function migrateV3Settings(value: Record<string, unknown>): NavodeSetting
   return {
     ...parseV3Base(value),
     schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
+    integrationCache: {},
+    integrations: {},
     focusPresets: DEFAULT_FOCUS_PRESETS,
     homeSections: DEFAULT_HOME_SECTIONS,
     recordRecentActions: true,
     reducedMotion: 'system',
+  };
+}
+
+/** V2.1 adds non-secret connection metadata and provider caches; V1 data stays untouched. */
+export function migrateV4Settings(value: Record<string, unknown>): NavodeSettings {
+  return {
+    ...parseV3Base(value),
+    schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
+    focusPresets: parseFocusPresets(value.focusPresets),
+    homeSections: parseHomeSections(value.homeSections),
+    recordRecentActions:
+      typeof value.recordRecentActions === 'boolean' ? value.recordRecentActions : true,
+    reducedMotion: isReducedMotionPreference(value.reducedMotion) ? value.reducedMotion : 'system',
+    integrationCache: {},
+    integrations: {},
   };
 }
 
@@ -529,6 +563,91 @@ function parseTodayItems(value: unknown): TodayItem[] {
         ]
       : [],
   );
+}
+
+function parseIntegrationConnections(
+  value: unknown,
+): Partial<Record<IntegrationId, IntegrationConnection>> {
+  if (!isRecord(value)) return {};
+  const result: Partial<Record<IntegrationId, IntegrationConnection>> = {};
+  for (const definition of NAVODE_INTEGRATIONS.all()) {
+    const candidate = value[definition.id];
+    if (!isRecord(candidate)) continue;
+    const status = candidate.status;
+    if (
+      typeof candidate.enabled !== 'boolean' ||
+      (status !== 'disconnected' && status !== 'connecting' && status !== 'connected' && status !== 'error')
+    )
+      continue;
+    const grantedPermissionIds = Array.isArray(candidate.grantedPermissionIds)
+      ? candidate.grantedPermissionIds
+          .filter((id): id is string => typeof id === 'string')
+          .filter((id) => definition.permissions.some((permission) => permission.id === id))
+      : [];
+    const lastRefreshAt = parseIsoDate(candidate.lastRefreshAt);
+    const error = parseIntegrationError(candidate.error);
+    result[definition.id] = {
+      enabled: candidate.enabled,
+      status,
+      grantedPermissionIds,
+      ...(lastRefreshAt ? { lastRefreshAt } : {}),
+      ...(error ? { error } : {}),
+    };
+  }
+  return result;
+}
+
+function parseIntegrationCache(
+  value: unknown,
+): Partial<Record<IntegrationId, IntegrationCacheState>> {
+  if (!isRecord(value)) return {};
+  const result: Partial<Record<IntegrationId, IntegrationCacheState>> = {};
+  for (const definition of NAVODE_INTEGRATIONS.all()) {
+    const candidate = value[definition.id];
+    if (!isRecord(candidate) || !isRecord(candidate.entries)) continue;
+    const entries: IntegrationCacheState['entries'] = {};
+    for (const [key, entry] of Object.entries(candidate.entries).slice(0, 20)) {
+      if (!isSafeRecordKey(key) || !isRecord(entry)) continue;
+      const cachedAt = parseIsoDate(entry.cachedAt);
+      if (!cachedAt || !isCacheValue(entry.value)) continue;
+      entries[key.slice(0, 100)] = { cachedAt, value: entry.value };
+    }
+    result[definition.id] = { entries };
+  }
+  return result;
+}
+
+function parseIntegrationError(value: unknown): IntegrationConnection['error'] | undefined {
+  if (!isRecord(value) || typeof value.code !== 'string' || typeof value.message !== 'string') {
+    return undefined;
+  }
+  const occurredAt = parseIsoDate(value.occurredAt);
+  const retryAt = parseIsoDate(value.retryAt);
+  if (!occurredAt) return undefined;
+  return {
+    code: value.code.slice(0, 100),
+    message: value.message.slice(0, 500),
+    occurredAt,
+    ...(retryAt ? { retryAt } : {}),
+  };
+}
+
+function parseIsoDate(value: unknown): string | undefined {
+  return typeof value === 'string' && Number.isFinite(Date.parse(value)) ? value : undefined;
+}
+
+function isCacheValue(value: unknown, depth = 0): boolean {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
+    return true;
+  }
+  if (typeof value === 'number') return Number.isFinite(value);
+  if (depth >= 4) return false;
+  if (Array.isArray(value)) return value.length <= 100 && value.every((item) => isCacheValue(item, depth + 1));
+  return isRecord(value) && Object.keys(value).length <= 100 && Object.values(value).every((item) => isCacheValue(item, depth + 1));
+}
+
+function isSafeRecordKey(value: string): boolean {
+  return value !== '__proto__' && value !== 'constructor' && value !== 'prototype';
 }
 
 function numericValue(value: unknown): number {
