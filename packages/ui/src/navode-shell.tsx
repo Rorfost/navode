@@ -56,6 +56,7 @@ interface ShellCommandResult {
   description: string;
   id: string;
   label: string;
+  source?: string;
   resolved?: CommandResult;
   shortcut: string;
 }
@@ -101,6 +102,10 @@ export function NavodeShell({
       ? resolved.map(toShellResult)
       : createCommandResults(command, settings.defaultSearchProvider);
   }, [command, resolveCommandResults, settings.defaultSearchProvider]);
+
+  useEffect(() => {
+    setIsOnboardingOpen(!settings.onboardingCompleted);
+  }, [settings.onboardingCompleted]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 30_000);
@@ -348,9 +353,12 @@ export function NavodeShell({
                   key={result.id}
                   onClick={() => chooseResult(index)}
                 >
-                  <span>
-                    <strong>{result.label}</strong>
-                    <small>{result.description}</small>
+                  <span className="result-label-group">
+                    {result.source && <span className="result-badge">{result.source}</span>}
+                    <span>
+                      <strong>{result.label}</strong>
+                      <small>{result.description}</small>
+                    </span>
                   </span>
                   <KeyboardShortcutHint>{result.shortcut}</KeyboardShortcutHint>
                 </CommandResultOption>
@@ -397,7 +405,12 @@ export function NavodeShell({
                 ))}
             </div>
             {!settings.quickLinks.some((link) => link.enabled && link.showOnHome) && (
-              <p className="muted">Add the destinations you use most.</p>
+              <div className="card-empty-state">
+                <p className="empty-text">No quick links configured yet.</p>
+                <Button onClick={() => setOrganizationScreen('links')} variant="quiet">
+                  Add Quick Link
+                </Button>
+              </div>
             )}
           </Card>
         )}
@@ -428,7 +441,12 @@ export function NavodeShell({
                 </div>
               ))}
             {!settings.projects.some((project) => project.showOnHome) && (
-              <p className="muted">Group related destinations into a project.</p>
+              <div className="card-empty-state">
+                <p className="empty-text">No active projects yet.</p>
+                <Button onClick={() => setOrganizationScreen('projects')} variant="quiet">
+                  Create Project
+                </Button>
+              </div>
             )}
             <Button onClick={() => setOrganizationScreen('projects')}>Manage projects</Button>
           </Card>
@@ -464,7 +482,12 @@ export function NavodeShell({
                 </div>
               ))}
             {!settings.workspaces.some((workspace) => workspace.showOnHome) && (
-              <p className="muted">Launch intentional groups of browser destinations.</p>
+              <div className="card-empty-state">
+                <p className="empty-text">No active workspaces yet.</p>
+                <Button onClick={() => setOrganizationScreen('workspaces')} variant="quiet">
+                  Create Workspace
+                </Button>
+              </div>
             )}
             <Button onClick={() => setOrganizationScreen('workspaces')}>Manage workspaces</Button>
           </Card>
@@ -729,6 +752,29 @@ export function NavodeShell({
   );
 }
 
+function formatSourceTag(source?: string): string {
+  switch (source) {
+    case 'alias':
+      return 'Alias';
+    case 'direct-url':
+      return 'URL';
+    case 'fallback-search':
+      return 'Search';
+    case 'internal':
+      return 'System';
+    case 'quick-link':
+      return 'Link';
+    case 'project':
+      return 'Project';
+    case 'workspace':
+      return 'Workspace';
+    case 'snippet':
+      return 'Snippet';
+    default:
+      return 'Command';
+  }
+}
+
 function toShellResult(result: CommandResult): ShellCommandResult {
   return {
     action: result.action,
@@ -736,6 +782,7 @@ function toShellResult(result: CommandResult): ShellCommandResult {
     description: result.description,
     id: result.id,
     label: result.label,
+    source: formatSourceTag(result.source),
     resolved: result,
     shortcut: 'Enter',
   };
@@ -758,6 +805,7 @@ function createCommandResults(
       label: `Search ${primary.label} for “${query}”`,
       description: `Run ${primary.alias} ${query}`,
       command: `${primary.alias} ${query}`,
+      source: 'Search',
       shortcut: 'Enter',
     },
     {
@@ -765,6 +813,7 @@ function createCommandResults(
       label: `Search ${secondary.label} for “${query}”`,
       description: `Run ${secondary.alias} ${query}`,
       command: `${secondary.alias} ${query}`,
+      source: 'Search',
       shortcut: '↓',
     },
   ];
