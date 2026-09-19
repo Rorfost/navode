@@ -25,7 +25,7 @@
 **Context:** Chrome extensions must use the current extension model.
 
 **Decision:** implement the new-tab experience as an MV3 extension.
-**Consequences:** the manifest starts with no runtime permissions; every future permission requires a documented reason.
+**Consequences:** the manifest requests only `storage` for local persistence; every future permission requires a documented reason.
 
 ## ADR-004: pnpm workspace monorepo
 

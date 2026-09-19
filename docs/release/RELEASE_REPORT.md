@@ -24,12 +24,11 @@ The intended generated package path is `artifacts/navode-1.0.0.zip`; its checksu
 - Actual clean-profile screenshots of the final build have not yet been captured. Do not use mock screenshots.
 - Clean-profile Chrome verification remains manual because it requires a local Chrome profile and visual inspection; follow `docs/release/MANUAL_SUBMISSION.md` after the visual assets are supplied.
 
-## Verification completed on 2026-09-19
+## Validation required before release
 
-- `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, and `pnpm test` pass.
-- `pnpm build` and `pnpm build:extension` pass. The extension policy checker reports a 309,847-byte JavaScript bundle, below the 750 KB budget.
-- `pnpm test:e2e` passes its two production-preview browser checks: public privacy navigation and non-sensitive local command history.
-- `pnpm package:extension` intentionally stops before ZIP or checksum creation because the required production icons are absent. Consequently, the release workflow remains correctly blocked until the final icon assets are committed.
+Run `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:e2e`, `pnpm build:web`, and `pnpm build:extension` from the release candidate commit. Record the exact results in the GitHub Release or release pull request.
+
+After final production icons are committed, run `pnpm package:extension`. It must create the ZIP and checksum from the exact production build before submission.
 
 ## Remaining owner actions
 

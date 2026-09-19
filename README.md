@@ -1,36 +1,51 @@
 # Navode
 
-Navode is a personal browser command center for navigation, workflows, projects, tools, and daily focus. Its name combines **NAVigation** and n**ODE**: one central node for moving through a digital workflow.
+> Navode is a local-first personal browser command center that turns your Chrome New Tab into a fast
+> starting point for search, links, projects, workspaces, snippets, notes, and focus sessions.
 
-## Why Navode
+Navode = NAVigation + nODE — one central node for navigating your digital workflow.
 
-Opening a new tab should be the fastest path from intent to action—not a detour through bookmarks, menus, and forgotten URLs. Navode is keyboard-first, local-first, and designed to remain useful without an account or network connection.
+## What is Navode?
 
-## Status
+Navode is a keyboard-first Chrome New Tab experience, with an optional web companion, for getting from intent to a useful destination without relying on an account or a network connection. Your configuration and the content you create stay in browser-local storage.
 
-Navode 1.0.0 is a release candidate, not yet published in the Chrome Web Store. The web app and extension provide a local-first command shell with onboarding, accessible keyboard navigation, quick links, projects, workspaces, scratchpad, snippets, focus tools, backups, and public privacy/support pages. The optional API exposes only health and version metadata.
+## Why Navode?
 
-## Architecture
+New tabs often become a detour through bookmarks, menus, and forgotten URLs. Navode keeps commonly used links, projects, workflows, notes, and focus tools in one calm, local-first starting point.
 
-This pnpm monorepo contains a React/Vite web app, a React Manifest V3 Chrome new-tab extension, an optional Hono/Cloudflare Workers API, and shared TypeScript packages. See [architecture documentation](docs/architecture/ARCHITECTURE.md).
+## Features
 
-## Tech stack
+- Command palette with safe URL handling, built-in search aliases, custom aliases, and keyboard navigation.
+- Quick links, projects, and confirmation-based workspace launches.
+- Scratchpad, reusable snippets, a resumable focus timer, and up to three Today priorities.
+- Theme, reduced-motion, onboarding, home-layout, search-provider, and focus-preset preferences.
+- Validated local JSON backup, import preview, targeted resets, and versioned storage migrations.
 
-- React, TypeScript, Vite, Tailwind CSS, and lightweight client state foundations
-- Chrome Extension Manifest V3
-- Hono on Cloudflare Workers for the optional API
-- Vitest, Playwright, ESLint, Prettier, and GitHub Actions
+## Screenshots
 
-## Repository structure
+Release screenshots are not committed yet. They must be captured from the final production extension build in a clean Chrome profile before Chrome Web Store submission. See [store-assets/README.md](store-assets/README.md).
 
-```text
-apps/       Runnable web, extension, and API applications
-packages/   Shared domain and UI code
-docs/       Product, architecture, engineering, and operations guidance
-infrastructure/  Deployment configuration and notes
+## How It Works
+
+The Chrome extension replaces the New Tab page and stores Navode settings in `chrome.storage.local`. The optional web companion stores its settings in that browser's local storage. V1 has no accounts, cloud sync, analytics, telemetry, or Navode-hosted database. Navode contacts an external site only when you intentionally open a link or run a search/command that navigates there.
+
+## Installation
+
+Chrome Web Store release coming soon.
+
+For local testing:
+
+```sh
+pnpm install
+pnpm build:extension
 ```
 
-## Getting started
+1. Open `chrome://extensions`.
+2. Enable **Developer mode**.
+3. Choose **Load unpacked**.
+4. Select `apps/extension/dist`, the build directory containing `manifest.json`.
+
+## Local Development
 
 Prerequisites: Node.js 22+ and pnpm 10+.
 
@@ -39,39 +54,70 @@ pnpm install
 pnpm dev:web
 ```
 
-Commit the generated `pnpm-lock.yaml`, then use `pnpm install --frozen-lockfile` for reproducible installs. See [local development](docs/operations/LOCAL_DEVELOPMENT.md) for all commands, including extension loading and API development.
-
-## Development commands
+Useful commands:
 
 ```sh
-pnpm dev
-pnpm build
+pnpm format:check
 pnpm lint
 pnpm typecheck
 pnpm test
-pnpm format:check
+pnpm test:e2e
+pnpm build:web
+pnpm build:extension
 ```
 
-## Chrome extension
+See [local development documentation](docs/operations/LOCAL_DEVELOPMENT.md) for web, extension, and optional API commands.
 
-Build with `pnpm build:extension`, then load `apps/extension/dist` as an unpacked extension in Chrome. The starter manifest overrides the new-tab page and requests only Chrome's `storage` permission for local persistence.
+## Tech Stack
 
-## Web app and API
+React, TypeScript, Vite, Tailwind CSS, Manifest V3, Hono, Cloudflare Workers, Vitest, Playwright, ESLint, Prettier, and pnpm workspaces.
 
-Run the web app with `pnpm dev:web`. Run the optional API with `pnpm dev:api`; it provides `GET /health` and `GET /version` only.
+## Repository Structure
+
+```text
+apps/           Runnable web, extension, and API applications
+packages/       Shared configuration, domain logic, and UI code
+docs/           Product, architecture, engineering, and release guidance
+infrastructure/ Deployment configuration and notes
+store-assets/   Chrome Web Store asset instructions
+```
+
+## Privacy
+
+V1 is local-first. The extension requests only Chrome's `storage` permission, used to persist Navode data in `chrome.storage.local`. It has no host permissions, content scripts, history, tabs, or scripting access. Read the full [privacy policy](docs/product/PRIVACY.md).
 
 ## Documentation
 
-The [docs](docs/) directory is the source of truth for the product scope, architecture, coding rules, storage, security, tests, deployment, and roadmap.
+Start with the [architecture overview](docs/architecture/ARCHITECTURE.md), [security guidance](docs/engineering/SECURITY.md), [testing strategy](docs/engineering/TESTING.md), and [release documentation](docs/release/).
 
-## Security
+## Roadmap
 
-Navode is local-first. Do not commit secrets, broaden extension permissions without documentation, or treat imported configuration as trusted. See [security guidance](docs/engineering/SECURITY.md).
+V1 is the local-first core release. Future work is directional rather than committed:
+
+- V2: expanded power-user workflows and developer utilities.
+- V3: opt-in integrations.
+- V4: carefully designed optional sync.
+- V5: broader public-product improvements.
+
+See the detailed [roadmap](docs/planning/ROADMAP.md).
 
 ## Contributing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENT.md](AGENT.md) before making changes.
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md), and [AGENT.md](AGENT.md) before opening a pull request.
+
+## Security
+
+Do not report vulnerabilities in public issues. See [SECURITY.md](SECURITY.md) for the current disclosure process.
 
 ## License
 
-Copyright © 2026 Rorfost. All rights reserved. This private repository is proprietary; see [LICENSE](LICENSE).
+Navode is source-available proprietary software.
+
+The source code is publicly accessible for viewing, educational reference, issue reporting,
+security review, and contribution to the official project.
+
+Redistribution, independent derivative distribution, rebranding, commercial use, and creation of
+competing products using substantial portions of Navode are not permitted without written
+authorization from Rorfost.
+
+See [LICENSE](./LICENSE) for the complete terms.

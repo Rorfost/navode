@@ -2,17 +2,16 @@
 
 All notable changes to Navode are documented here.
 
-## 1.0.0 — 2026-09-19
+## [1.0.0]
 
 ### Added
 
-- Manifest V3 Chrome New Tab experience with keyboard-first command search.
+- Manifest V3 Chrome New Tab experience with keyboard-first command search and safe search shortcuts.
 - Local quick links, projects, workspaces, scratchpad, snippets, focus sessions, and Today priorities.
 - Theme, motion, home-layout, alias, focus-preset, onboarding, history, backup, import, and reset controls.
-- Versioned local storage migrations and validated JSON backup/restore preview.
-- Public product, privacy, and support pages for the deployable web companion.
-- Release hardening for extension permissions, CSP, packaged-code safety, recovery states, accessibility, and bundle budget.
+- Versioned local storage migrations and validated JSON backup/restore previews.
+- Public product, privacy, and support pages for the optional web companion.
 
-### Privacy
+### Fixed
 
-- V1 remains local-first: no accounts, cloud sync, analytics, telemetry, content scripts, host permissions, or browser-history access.
+- Hardened extension startup, storage recovery, permission policy, CSP, packaged-code checks, and accessible UI states for the V1 release.

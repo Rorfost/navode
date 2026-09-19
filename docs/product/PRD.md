@@ -14,11 +14,11 @@ Fast, privacy-conscious, configurable, visually calm, modular, and useful offlin
 
 ## V1 scope
 
-V1 will provide a new-tab command bar, quick links, local settings, keyboard shortcuts, scratchpad, focus timer, basic project launcher, configurable commands, and import/export. The present repository implements the shared interface shell and a local, validated command engine with public search aliases and fallback search; the remaining workflow surfaces are being added incrementally.
+V1 provides a New Tab command bar, quick links, projects, workspaces, local settings, keyboard shortcuts, scratchpad, snippets, a focus timer, Today priorities, configurable commands, and validated import/export. The local command engine supports public search aliases, custom aliases, and fallback search while validating navigation targets before use.
 
 ## Later releases and ideas
 
-Power-user workspaces, snippets, session groups, developer utilities, GitHub/Codeforces/calendar/service-health integrations, and optional cross-device sync are future phases. They are not commitments.
+Expanded power-user workflows and developer utilities, opt-in integrations, and optional cross-device sync are future roadmap items. They are not commitments.
 
 ## Privacy and UX expectations
 
@@ -26,4 +26,4 @@ Personal configuration remains local by default. Sync and integrations require e
 
 ## Success criteria and release phases
 
-Success means a user can reach common tools and workflows faster than manual navigation, with settings they control. Phase 0 is the repository foundation; Phase 1 is a useful new tab; later phases add power-user features, integrations, sync, and public-product readiness.
+Success means a user can reach common tools and workflows faster than manual navigation, with settings they control. V1 is the local-first core release; later roadmap versions may add more workflow, integration, and sync capabilities only when they can preserve these principles.

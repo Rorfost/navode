@@ -59,6 +59,8 @@ function NavodeExtensionApp() {
   useEffect(() => {
     void loadExtensionSettings(storage)
       .then((loadedSettings) => {
+        document.documentElement.dataset.theme = loadedSettings.theme;
+        document.documentElement.dataset.reducedMotion = loadedSettings.reducedMotion;
         setSettings(loadedSettings);
         setCanPersist(true);
       })
@@ -72,14 +74,16 @@ function NavodeExtensionApp() {
   }, []);
 
   useEffect(() => {
-    document.documentElement.dataset.theme = settings.theme;
-    document.documentElement.dataset.reducedMotion = settings.reducedMotion;
-    if (hasLoadedSettings && canPersist) {
-      void saveExtensionSettings(storage, settings).catch(() => {
-        setStorageNotice(
-          'Navode could not save a recent change. Check browser storage availability before closing this tab.',
-        );
-      });
+    if (hasLoadedSettings) {
+      document.documentElement.dataset.theme = settings.theme;
+      document.documentElement.dataset.reducedMotion = settings.reducedMotion;
+      if (canPersist) {
+        void saveExtensionSettings(storage, settings).catch(() => {
+          setStorageNotice(
+            'Navode could not save a recent change. Check browser storage availability before closing this tab.',
+          );
+        });
+      }
     }
   }, [canPersist, hasLoadedSettings, settings]);
 
@@ -124,6 +128,10 @@ function NavodeExtensionApp() {
         ? { ...current, recentExecutions: recordRecentExecution(current.recentExecutions, result) }
         : current,
     );
+  }
+
+  if (!hasLoadedSettings) {
+    return <div className="navode-shell-skeleton" aria-hidden="true" />;
   }
 
   return (
