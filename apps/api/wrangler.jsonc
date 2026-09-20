@@ -3,5 +3,12 @@
   "name": "navode-api",
   "main": "src/index.ts",
   "compatibility_date": "2025-06-17",
-  "vars": { "APP_ENV": "development", "APP_VERSION": "1.0.0" },
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "APP_ENV": "development",
+    "APP_VERSION": "1.0.0",
+    "CORS_ALLOWED_ORIGINS": "http://localhost:5173",
+  },
+  // Bind a production Hyperdrive configuration here; do not put DATABASE_URL in Worker vars.
+  // "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "replace-at-deployment" }],
 }

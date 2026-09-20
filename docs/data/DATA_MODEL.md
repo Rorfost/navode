@@ -22,6 +22,18 @@ Quick links carry an enabled state, display order, optional grouping/alias/icon,
 
 `IntegrationWidgetPreferences` records which optional Calendar, GitHub, competitive-programming, and project-health widgets appear on the home screen. All begin disabled; this setting and every provider cache remain device-local.
 
+## V3 cloud foundation
+
+The optional V3 server schema adds `users`, `auth_accounts`, `devices`,
+`sync_documents`, `sync_revisions`, `document_mutation_keys`,
+`credential_references`, and `security_events`. All cloud records containing
+user data have a non-null `user_id` and supporting ownership index. A sync
+document is one account-owned, typed settings replica; revisions are
+server-ordered and mutation keys make device retries idempotent. Credential
+references are opaque pointers only—never provider tokens. The physical typed
+schema and SQL migration are in `apps/api/src/db/schema.ts` and
+`apps/api/migrations/`.
+
 Calendar context is stored under the Google Calendar integration cache and contains only daily event title, all-day state, start/end values, safe event link, generated timestamp, and timezone. It is never sent to Navode infrastructure and excludes access tokens, attendees, descriptions, locations, reminders, attachments, and conferencing details.
 
 Codeforces context is stored under the competitive-programming integration cache and contains only public contest identifiers/names/start times/durations, an optional configured public handle with public rating/title, and up to five public submission summaries. It excludes API keys, source code, and private account data.
