@@ -1,11 +1,14 @@
 import { Hono } from 'hono';
 import { NAVODE_VERSION } from '@navode/config';
 import { createAuthRuntime, RejectingAuthenticator, type Authenticator } from './auth';
-import { verifyDatabaseConnection } from './db/database';
+import { createCloudBackupRepository } from './db/backups';
+import { createDatabase, verifyDatabaseConnection } from './db/database';
+import { createDeviceRepository } from './db/devices';
 import { parseEnvironment, type ApiEnvironment } from './environment';
 import { ApiError } from './errors';
 import { consoleLogger, type ApiLogger } from './logging';
 import { allowAllRateLimiter, type RateLimiter } from './rate-limit';
+import { z } from 'zod';
 
 type HyperdriveBinding = { connectionString: string };
 
@@ -14,6 +17,7 @@ type Bindings = {
   APP_VERSION?: string;
   AUTH_BASE_URL?: string;
   AUTH_SECRET?: string;
+  CREDENTIAL_ENCRYPTION_KEYS?: string;
   CORS_ALLOWED_ORIGINS?: string;
   HYPERDRIVE?: HyperdriveBinding;
 };
@@ -27,6 +31,17 @@ export type ApiDependencies = {
   logger?: ApiLogger;
   rateLimiter?: RateLimiter;
 };
+
+const deviceInputSchema = z.object({
+  installationId: z.uuid(),
+  label: z.string().trim().min(1).max(80),
+});
+const renameDeviceSchema = z.object({ label: z.string().trim().min(1).max(80) });
+const cloudBackupSchema = z.object({
+  sourceRevision: z.number().int().nonnegative(),
+  snapshot: z.record(z.string(), z.unknown()),
+});
+const restoreSchema = z.object({ confirmation: z.literal('REPLACE_LOCAL_DATA') });
 
 function requestIdFrom(request: Request): string {
   const suppliedId = request.headers.get('x-request-id');
@@ -67,6 +82,7 @@ function environmentBindings(bindings: Bindings): Record<string, string | undefi
     CORS_ALLOWED_ORIGINS: bindings.CORS_ALLOWED_ORIGINS,
     AUTH_BASE_URL: bindings.AUTH_BASE_URL,
     AUTH_SECRET: bindings.AUTH_SECRET,
+    CREDENTIAL_ENCRYPTION_KEYS: bindings.CREDENTIAL_ENCRYPTION_KEYS,
   };
 }
 
@@ -74,6 +90,40 @@ export function createApp(dependencies: ApiDependencies = {}) {
   const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
   const logger = dependencies.logger ?? consoleLogger;
   const rateLimiter = dependencies.rateLimiter ?? allowAllRateLimiter;
+
+  async function authenticate(context: {
+    env: Bindings;
+    req: { raw: Request };
+  }): Promise<Awaited<ReturnType<Authenticator['authenticate']>>> {
+    if (dependencies.authenticator || !context.env?.HYPERDRIVE) {
+      return (dependencies.authenticator ?? new RejectingAuthenticator()).authenticate(
+        context.req.raw,
+      );
+    }
+    const environment =
+      dependencies.environment ?? parseEnvironment(environmentBindings(context.env));
+    const runtime = createRuntimeAuth(context.env, environment);
+    try {
+      return await runtime.authenticate(context.req.raw);
+    } finally {
+      await runtime.close();
+    }
+  }
+
+  async function withDatabase<T>(
+    context: { env: Bindings },
+    operation: (database: ReturnType<typeof createDatabase>['database']) => Promise<T>,
+  ): Promise<T> {
+    if (!context.env?.HYPERDRIVE) {
+      throw new ApiError('database_unavailable', 'Database is unavailable.', 503);
+    }
+    const connection = createDatabase(context.env.HYPERDRIVE.connectionString);
+    try {
+      return await operation(connection.database);
+    } finally {
+      await connection.close();
+    }
+  }
 
   app.use('*', async (context, next) => {
     const requestId = requestIdFrom(context.req.raw);
@@ -222,28 +272,120 @@ export function createApp(dependencies: ApiDependencies = {}) {
   );
 
   v1.get('/me', async (context) => {
-    if (dependencies.authenticator || !context.env?.HYPERDRIVE) {
-      const actor = await (dependencies.authenticator ?? new RejectingAuthenticator()).authenticate(
-        context.req.raw,
-      );
-      return context.json({
-        userId: actor.userId,
-        ...(actor.deviceId ? { deviceId: actor.deviceId } : {}),
-      });
-    }
+    const actor = await authenticate(context);
+    return context.json({
+      userId: actor.userId,
+      ...(actor.deviceId ? { deviceId: actor.deviceId } : {}),
+    });
+  });
 
-    const environment =
-      dependencies.environment ?? parseEnvironment(environmentBindings(context.env));
-    const runtime = createRuntimeAuth(context.env, environment);
-    try {
-      const actor = await runtime.authenticate(context.req.raw);
+  v1.get('/sync/status', async (context) => {
+    const actor = await authenticate(context);
+    return withDatabase(context, async (database) => {
+      const devices = await createDeviceRepository(database).listForUser(actor.userId);
       return context.json({
-        userId: actor.userId,
-        ...(actor.deviceId ? { deviceId: actor.deviceId } : {}),
+        connectedDevices: devices.filter((device) => device.status === 'active').length,
+        currentDeviceId: actor.deviceId ?? null,
+        lastSuccessfulSyncAt:
+          devices.find((device) => device.id === actor.deviceId)?.lastSeenAt ?? null,
+        status: 'synced',
       });
-    } finally {
-      await runtime.close();
+    });
+  });
+
+  v1.get('/devices', async (context) => {
+    const actor = await authenticate(context);
+    return withDatabase(context, async (database) => {
+      const devices = await createDeviceRepository(database).listForUser(actor.userId);
+      return context.json(
+        devices.map((device) => ({ ...device, isCurrent: device.id === actor.deviceId })),
+      );
+    });
+  });
+
+  v1.post('/devices', async (context) => {
+    const actor = await authenticate(context);
+    const parsed = deviceInputSchema.safeParse(await context.req.json());
+    if (!parsed.success)
+      throw new ApiError('invalid_request', 'Device registration is invalid.', 400);
+    return withDatabase(context, async (database) => {
+      const device = await createDeviceRepository(database).register({
+        id: crypto.randomUUID(),
+        userId: actor.userId,
+        ...parsed.data,
+      });
+      return context.json({ ...device, isCurrent: device.id === actor.deviceId }, 201);
+    });
+  });
+
+  v1.patch('/devices/:deviceId', async (context) => {
+    const actor = await authenticate(context);
+    const parsed = renameDeviceSchema.safeParse(await context.req.json());
+    if (!parsed.success) throw new ApiError('invalid_request', 'Device name is invalid.', 400);
+    return withDatabase(context, async (database) => {
+      const device = await createDeviceRepository(database).rename(
+        actor.userId,
+        context.req.param('deviceId'),
+        parsed.data.label,
+      );
+      if (!device) throw new ApiError('not_found', 'Device was not found.', 404);
+      return context.json({ ...device, isCurrent: device.id === actor.deviceId });
+    });
+  });
+
+  v1.delete('/devices/:deviceId', async (context) => {
+    const actor = await authenticate(context);
+    if (actor.deviceId === context.req.param('deviceId')) {
+      throw new ApiError('invalid_request', 'Use sign-out to remove the current device.', 400);
     }
+    return withDatabase(context, async (database) => {
+      const device = await createDeviceRepository(database).revoke(
+        actor.userId,
+        context.req.param('deviceId'),
+      );
+      if (!device) throw new ApiError('not_found', 'Active device was not found.', 404);
+      return context.body(null, 204);
+    });
+  });
+
+  v1.get('/backups', async (context) => {
+    const actor = await authenticate(context);
+    return withDatabase(context, async (database) => {
+      const backups = await createCloudBackupRepository(database).listForUser(actor.userId);
+      return context.json(backups.map(({ snapshot: _snapshot, ...backup }) => backup));
+    });
+  });
+
+  v1.post('/backups', async (context) => {
+    const actor = await authenticate(context);
+    const parsed = cloudBackupSchema.safeParse(await context.req.json());
+    if (!parsed.success) throw new ApiError('invalid_request', 'Cloud backup is invalid.', 400);
+    return withDatabase(context, async (database) => {
+      const backup = await createCloudBackupRepository(database).create({
+        id: crypto.randomUUID(),
+        userId: actor.userId,
+        ...parsed.data,
+      });
+      return context.json({ id: backup.id, createdAt: backup.createdAt }, 201);
+    });
+  });
+
+  v1.post('/backups/:backupId/restore', async (context) => {
+    const actor = await authenticate(context);
+    const parsed = restoreSchema.safeParse(await context.req.json());
+    if (!parsed.success) {
+      throw new ApiError('invalid_request', 'Explicit restore confirmation is required.', 400);
+    }
+    return withDatabase(context, async (database) => {
+      const backup = await createCloudBackupRepository(database).getForUser(
+        actor.userId,
+        context.req.param('backupId'),
+      );
+      if (!backup) throw new ApiError('not_found', 'Cloud backup was not found.', 404);
+      // The server returns a snapshot only after confirmation. Local replacement
+      // remains a client-side, user-controlled operation and is never automatic.
+      return context.json({ backupId: backup.id, snapshot: backup.snapshot });
+    });
   });
 
   app.route('/api/v1', v1);

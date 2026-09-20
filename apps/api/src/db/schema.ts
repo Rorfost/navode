@@ -167,6 +167,44 @@ export const credentialReferences = pgTable(
   ],
 );
 
+export const cloudBackups = pgTable(
+  'cloud_backups',
+  {
+    id: uuid('id').primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    sourceRevision: bigint('source_revision', { mode: 'number' }).notNull(),
+    snapshot: jsonb('snapshot').notNull(),
+    createdAt,
+  },
+  (table) => [index('cloud_backups_user_created_idx').on(table.userId, table.createdAt)],
+);
+
+// This table deliberately contains ciphertext only. Provider secrets must never
+// be placed in sync documents, credential_references, or application logs.
+export const providerCredentials = pgTable(
+  'provider_credentials',
+  {
+    id: uuid('id').primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    provider: text('provider').notNull(),
+    credentialType: text('credential_type').notNull(),
+    keyVersion: text('key_version').notNull(),
+    ciphertext: text('ciphertext').notNull(),
+    initializationVector: text('initialization_vector').notNull(),
+    createdAt,
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex('provider_credentials_user_provider_unique').on(table.userId, table.provider),
+    index('provider_credentials_user_active_idx').on(table.userId, table.revokedAt),
+  ],
+);
+
 export const securityEvents = pgTable(
   'security_events',
   {

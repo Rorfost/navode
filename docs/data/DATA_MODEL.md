@@ -26,7 +26,8 @@ Quick links carry an enabled state, display order, optional grouping/alias/icon,
 
 The optional V3 server schema adds `users`, `auth_accounts`, `devices`,
 `sync_documents`, `sync_revisions`, `document_mutation_keys`,
-`credential_references`, and `security_events`. All cloud records containing
+`credential_references`, `cloud_backups`, `provider_credentials`, and
+`security_events`. All cloud records containing
 user data have a non-null `user_id` and supporting ownership index. A sync
 document is one account-owned, typed settings replica; revisions are
 server-ordered and mutation keys make device retries idempotent. Credential

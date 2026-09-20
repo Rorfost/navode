@@ -15,6 +15,13 @@
       "when": 1789923000000,
       "tag": "0002_authentication_lifecycle",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789926000000,
+      "tag": "0003_backup_and_credentials",
+      "breakpoints": true
     }
   ]
 }

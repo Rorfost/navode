@@ -57,7 +57,7 @@ private freeform content or activity metadata automatically.
 
 ## Conflicts, deletion, and backups
 
-V3.4 will use operation IDs, base revisions and per-record modification times.
+V3.4 uses operation IDs, base revisions and per-record modification times.
 Independent records merge automatically; the same record changed concurrently
 uses a deterministic latest-write rule, preserves the losing revision for a
 short recovery window, and tells the user what happened. Destructive operations
@@ -65,8 +65,10 @@ write tombstones rather than immediately erasing data. A client must never
 silently overwrite an unseen server revision.
 
 V3.5 owns user-visible cloud backups and restore. Backups are immutable,
-versioned snapshots with a documented retention policy. Restore creates a new
-revision; it does not mutate history in place. Account deletion starts a
+account-scoped snapshots. Their list endpoint omits snapshot contents; restore
+requires an explicit confirmation and returns data for a client-controlled
+local replacement, rather than silently mutating a device. They remain until
+account-data deletion while no automatic expiry policy is configured. Account deletion starts a
 verifiable grace-period workflow, revokes devices and sessions, then deletes
 primary data, backups, credential references, and permitted audit metadata on
 their documented schedules.
@@ -74,11 +76,13 @@ their documented schedules.
 ## Provider credentials
 
 Provider credentials remain out of browser storage where the provider and
-platform permit it. The future credential service receives only a narrowly
-scoped authorization flow, encrypts a provider secret with managed keys, and
-returns opaque `credential_references` to other Navode services. Sync documents
-contain neither tokens nor token-like values. Existing extension-only provider
-flows remain local until V3.6 deliberately migrates them with user consent.
+platform permit it. V3.6 provides a narrowly typed credential boundary for
+GitHub and Google Calendar OAuth refresh tokens: it AES-GCM encrypts them with
+versioned Worker-managed keys, binds ciphertext to its owner and provider as
+additional authenticated data, and persists ciphertext in `provider_credentials`.
+The boundary has no endpoint that returns a secret. Sync documents contain
+neither tokens nor token-like values. Existing V2 extension-only provider flows
+remain local until a provider-specific migration with user consent is approved.
 
 ## Deployment boundaries
 

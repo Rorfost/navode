@@ -6,6 +6,7 @@ const rawEnvironmentSchema = z.object({
   CORS_ALLOWED_ORIGINS: z.string().trim().default('http://localhost:5173'),
   AUTH_BASE_URL: z.url().default('http://localhost:8787'),
   AUTH_SECRET: z.string().min(32).optional(),
+  CREDENTIAL_ENCRYPTION_KEYS: z.string().trim().min(1).optional(),
 });
 
 export type ApiEnvironment = {
@@ -13,6 +14,7 @@ export type ApiEnvironment = {
   appVersion: string;
   authBaseUrl: string;
   authSecret?: string;
+  credentialEncryptionKeys?: string;
   corsAllowedOrigins: ReadonlySet<string>;
 };
 
@@ -63,6 +65,9 @@ export function parseEnvironment(bindings: Record<string, string | undefined>): 
     appVersion: parsed.data.APP_VERSION,
     authBaseUrl: parsed.data.AUTH_BASE_URL,
     ...(parsed.data.AUTH_SECRET ? { authSecret: parsed.data.AUTH_SECRET } : {}),
+    ...(parsed.data.CREDENTIAL_ENCRYPTION_KEYS
+      ? { credentialEncryptionKeys: parsed.data.CREDENTIAL_ENCRYPTION_KEYS }
+      : {}),
     corsAllowedOrigins: new Set(origins),
   };
 }

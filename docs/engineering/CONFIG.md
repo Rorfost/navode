@@ -14,6 +14,10 @@
   redirects and secure cookies.
 - `AUTH_SECRET`: a 32+-character server secret for Better Auth; mandatory in
   production and stored only as a Worker secret.
+- `CREDENTIAL_ENCRYPTION_KEYS`: a Worker secret used only when a V3.6
+  credential boundary. It is a comma-separated, versioned AES-256 keyring in
+  `version:base64url-key` form. The first key encrypts new values; retained
+  keys decrypt values during a deliberate rotation.
 
 Never commit `.env` files or service credentials. OAuth secrets, service tokens,
 Hyperdrive database credentials, and deployment credentials must remain outside

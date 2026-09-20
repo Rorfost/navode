@@ -935,3 +935,12 @@ export {
   type SyncState,
   type SyncStatus,
 } from './sync';
+
+export {
+  canReplaceLocalData,
+  createRestorePlan,
+  normalizeDeviceLabel,
+  type CloudRestorePlan,
+  type ManagedDevice,
+  type SyncHealth,
+} from './sync-management';

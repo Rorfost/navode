@@ -3,7 +3,7 @@
 ## Scope
 
 This model covers the optional Navode account, API, PostgreSQL data store,
-device registry, sync queue, backups, and future provider credential service.
+device registry, sync queue, backups, and provider credential service.
 It does not change the V1/V2 local-only behavior for people who do not opt in.
 
 | Threat                        | Primary controls                                                                                                                                             | Detection and recovery                                                                              |
@@ -31,3 +31,8 @@ It does not change the V1/V2 local-only behavior for people who do not opt in.
   credentials, cookies, authorization values, or full external URLs.
 - Cloud data is an optional replica. It cannot cause local unsynced work to be
   discarded merely because a device is offline.
+- A cloud restore needs an explicit replacement confirmation and returns a
+  snapshot for a client-controlled local operation; the API never replaces a
+  device's local data automatically.
+- Provider ciphertext can be decrypted only with a configured key version and
+  the same owner/provider/type authenticated-data binding that encrypted it.
