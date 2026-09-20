@@ -25,10 +25,19 @@ import {
   type TodayItem,
   createSnippet,
 } from './productivity';
+import {
+  NAVODE_INTEGRATIONS,
+  type IntegrationCacheState,
+  type IntegrationConnection,
+  type IntegrationId,
+  createProjectHealthTarget,
+  MAX_PROJECT_HEALTH_TARGETS,
+  type ProjectHealthTarget,
+} from '@navode/integrations';
 
 export type CommandKind = 'url' | 'search' | 'project' | 'focus';
 
-export const NAVODE_STORAGE_SCHEMA_VERSION = 4;
+export const NAVODE_STORAGE_SCHEMA_VERSION = 9;
 export const NAVODE_SETTINGS_STORAGE_KEY = 'navode.settings';
 
 export type ThemePreference = 'dark' | 'light' | 'system';
@@ -51,6 +60,30 @@ export const DEFAULT_HOME_SECTIONS: HomeSections = {
 
 export const DEFAULT_FOCUS_PRESETS = [25, 50, 60];
 
+export interface CompetitiveProgrammingSettings {
+  codeforcesHandle?: string;
+  showWidget: boolean;
+}
+
+export const DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS: CompetitiveProgrammingSettings = {
+  showWidget: true,
+};
+
+export interface IntegrationWidgetPreferences {
+  calendar: boolean;
+  competitiveProgramming: boolean;
+  github: boolean;
+  projectHealth: boolean;
+}
+
+/** Live data is opt-in on the home screen; local V1 content remains the default. */
+export const DEFAULT_INTEGRATION_WIDGET_PREFERENCES: IntegrationWidgetPreferences = {
+  calendar: false,
+  competitiveProgramming: false,
+  github: false,
+  projectHealth: false,
+};
+
 export interface StoredSettings {
   schemaVersion: typeof NAVODE_STORAGE_SCHEMA_VERSION;
 }
@@ -60,6 +93,11 @@ export interface NavodeSettings extends StoredSettings {
   onboardingCompleted: boolean;
   defaultSearchProvider: DefaultSearchProvider;
   initialQuickLinks: boolean;
+  integrationCache: Partial<Record<IntegrationId, IntegrationCacheState>>;
+  integrations: Partial<Record<IntegrationId, IntegrationConnection>>;
+  integrationWidgets: IntegrationWidgetPreferences;
+  projectHealthTargets: ProjectHealthTarget[];
+  competitiveProgramming: CompetitiveProgrammingSettings;
   customAliases: CommandAlias[];
   projects: Project[];
   quickLinks: QuickLink[];
@@ -81,6 +119,11 @@ export const DEFAULT_NAVODE_SETTINGS: NavodeSettings = {
   onboardingCompleted: false,
   defaultSearchProvider: 'google',
   initialQuickLinks: true,
+  integrationCache: {},
+  integrations: {},
+  integrationWidgets: DEFAULT_INTEGRATION_WIDGET_PREFERENCES,
+  projectHealthTargets: [],
+  competitiveProgramming: DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS,
   customAliases: [],
   projects: [],
   quickLinks: createStarterQuickLinks(),
@@ -102,6 +145,11 @@ export function parseNavodeSettings(value: unknown): NavodeSettings {
   if (value.schemaVersion === 1) return migrateV1Settings(value);
   if (value.schemaVersion === 2) return migrateV2Settings(value);
   if (value.schemaVersion === 3) return migrateV3Settings(value);
+  if (value.schemaVersion === 4) return migrateV4Settings(value);
+  if (value.schemaVersion === 5) return migrateV5Settings(value);
+  if (value.schemaVersion === 6) return migrateV6Settings(value);
+  if (value.schemaVersion === 7) return migrateV7Settings(value);
+  if (value.schemaVersion === 8) return migrateV8Settings(value);
   if (value.schemaVersion !== NAVODE_STORAGE_SCHEMA_VERSION) return DEFAULT_NAVODE_SETTINGS;
 
   return {
@@ -118,6 +166,11 @@ export function parseNavodeSettings(value: unknown): NavodeSettings {
       typeof value.initialQuickLinks === 'boolean'
         ? value.initialQuickLinks
         : DEFAULT_NAVODE_SETTINGS.initialQuickLinks,
+    integrationCache: parseIntegrationCache(value.integrationCache),
+    integrations: parseIntegrationConnections(value.integrations),
+    integrationWidgets: parseIntegrationWidgetPreferences(value.integrationWidgets),
+    projectHealthTargets: parseProjectHealthTargets(value.projectHealthTargets),
+    competitiveProgramming: parseCompetitiveProgrammingSettings(value.competitiveProgramming),
     customAliases: parseCustomAliases(value.customAliases),
     projects: parseProjects(value.projects),
     quickLinks: parseQuickLinks(value.quickLinks),
@@ -150,6 +203,11 @@ export function migrateV1Settings(value: Record<string, unknown>): NavodeSetting
       typeof value.initialQuickLinks === 'boolean'
         ? value.initialQuickLinks
         : DEFAULT_NAVODE_SETTINGS.initialQuickLinks,
+    integrationCache: {},
+    integrations: {},
+    integrationWidgets: DEFAULT_INTEGRATION_WIDGET_PREFERENCES,
+    projectHealthTargets: [],
+    competitiveProgramming: DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS,
     customAliases: parseCustomAliases(value.customAliases),
     projects: [],
     quickLinks: value.initialQuickLinks === false ? [] : createStarterQuickLinks(),
@@ -170,6 +228,11 @@ export function migrateV2Settings(value: Record<string, unknown>): NavodeSetting
   return {
     ...parseV2Base(value),
     schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
+    integrationCache: {},
+    integrations: {},
+    integrationWidgets: DEFAULT_INTEGRATION_WIDGET_PREFERENCES,
+    projectHealthTargets: [],
+    competitiveProgramming: DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS,
     scratchpad: DEFAULT_SCRATCHPAD,
     snippets: [],
     focusTimer: DEFAULT_FOCUS_TIMER,
@@ -185,6 +248,11 @@ export function migrateV3Settings(value: Record<string, unknown>): NavodeSetting
   return {
     ...parseV3Base(value),
     schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
+    integrationCache: {},
+    integrations: {},
+    integrationWidgets: DEFAULT_INTEGRATION_WIDGET_PREFERENCES,
+    projectHealthTargets: [],
+    competitiveProgramming: DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS,
     focusPresets: DEFAULT_FOCUS_PRESETS,
     homeSections: DEFAULT_HOME_SECTIONS,
     recordRecentActions: true,
@@ -192,11 +260,54 @@ export function migrateV3Settings(value: Record<string, unknown>): NavodeSetting
   };
 }
 
+/** V2.1 adds non-secret connection metadata and provider caches; V1 data stays untouched. */
+export function migrateV4Settings(value: Record<string, unknown>): NavodeSettings {
+  return {
+    ...parseV3Base(value),
+    schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
+    focusPresets: parseFocusPresets(value.focusPresets),
+    homeSections: parseHomeSections(value.homeSections),
+    recordRecentActions:
+      typeof value.recordRecentActions === 'boolean' ? value.recordRecentActions : true,
+    reducedMotion: isReducedMotionPreference(value.reducedMotion) ? value.reducedMotion : 'system',
+    integrationCache: {},
+    integrations: {},
+    integrationWidgets: DEFAULT_INTEGRATION_WIDGET_PREFERENCES,
+    projectHealthTargets: [],
+    competitiveProgramming: DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS,
+  };
+}
+
+/** V2.2 adds an optional validated GitHub repository reference to each project. */
+export function migrateV5Settings(value: Record<string, unknown>): NavodeSettings {
+  return parseNavodeSettings({ ...value, schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION });
+}
+
+/** V2.4 adds an optional public Codeforces handle and a removable contest widget preference. */
+export function migrateV6Settings(value: Record<string, unknown>): NavodeSettings {
+  return parseNavodeSettings({ ...value, schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION });
+}
+
+/** V2.5 adds local project-health target configuration; no remote data is introduced. */
+export function migrateV7Settings(value: Record<string, unknown>): NavodeSettings {
+  return parseNavodeSettings({ ...value, schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION });
+}
+
+/** V2.6 keeps live home widgets opt-in so existing local-first layouts stay quiet. */
+export function migrateV8Settings(value: Record<string, unknown>): NavodeSettings {
+  return parseNavodeSettings({ ...value, schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION });
+}
+
 function parseV2Base(
   value: Record<string, unknown>,
 ): Omit<
   NavodeSettings,
   | 'schemaVersion'
+  | 'integrationCache'
+  | 'integrations'
+  | 'integrationWidgets'
+  | 'projectHealthTargets'
+  | 'competitiveProgramming'
   | 'scratchpad'
   | 'snippets'
   | 'focusTimer'
@@ -231,7 +342,16 @@ function parseV3Base(
   value: Record<string, unknown>,
 ): Omit<
   NavodeSettings,
-  'schemaVersion' | 'focusPresets' | 'homeSections' | 'recordRecentActions' | 'reducedMotion'
+  | 'schemaVersion'
+  | 'integrationCache'
+  | 'integrations'
+  | 'integrationWidgets'
+  | 'projectHealthTargets'
+  | 'competitiveProgramming'
+  | 'focusPresets'
+  | 'homeSections'
+  | 'recordRecentActions'
+  | 'reducedMotion'
 > {
   return {
     theme: isThemePreference(value.theme) ? value.theme : DEFAULT_NAVODE_SETTINGS.theme,
@@ -272,6 +392,16 @@ function isDefaultSearchProvider(value: unknown): value is DefaultSearchProvider
 
 function isReducedMotionPreference(value: unknown): value is ReducedMotionPreference {
   return value === 'system' || value === 'reduce';
+}
+
+function parseIntegrationWidgetPreferences(value: unknown): IntegrationWidgetPreferences {
+  if (!isRecord(value)) return DEFAULT_INTEGRATION_WIDGET_PREFERENCES;
+  return {
+    calendar: value.calendar === true,
+    competitiveProgramming: value.competitiveProgramming === true,
+    github: value.github === true,
+    projectHealth: value.projectHealth === true,
+  };
 }
 
 function parseCustomAliases(value: unknown): CommandAlias[] {
@@ -360,6 +490,8 @@ function parseProjects(value: unknown): Project[] {
     const project = createProject(
       {
         description: typeof candidate.description === 'string' ? candidate.description : undefined,
+        githubRepository:
+          typeof candidate.githubRepository === 'string' ? candidate.githubRepository : undefined,
         icon: typeof candidate.icon === 'string' ? candidate.icon : undefined,
         name: typeof candidate.name === 'string' ? candidate.name : '',
         showOnHome: typeof candidate.showOnHome === 'boolean' ? candidate.showOnHome : false,
@@ -389,6 +521,20 @@ function parseProjects(value: unknown): Project[] {
       : [];
     return [{ ...project, actions }];
   });
+}
+
+function parseProjectHealthTargets(value: unknown): ProjectHealthTarget[] {
+  if (!Array.isArray(value)) return [];
+  const ids = new Set<string>();
+  const targets: ProjectHealthTarget[] = [];
+  for (const candidate of value) {
+    const target = createProjectHealthTarget(candidate);
+    if (!target || ids.has(target.id)) continue;
+    ids.add(target.id);
+    targets.push(target);
+    if (targets.length === MAX_PROJECT_HEALTH_TARGETS) break;
+  }
+  return targets;
 }
 
 function parseWorkspaces(value: unknown): Workspace[] {
@@ -513,6 +659,19 @@ function parseHomeSections(value: unknown): HomeSections {
   };
 }
 
+function parseCompetitiveProgrammingSettings(value: unknown): CompetitiveProgrammingSettings {
+  if (!isRecord(value)) return DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS;
+  const codeforcesHandle =
+    typeof value.codeforcesHandle === 'string' &&
+    /^[A-Za-z0-9][A-Za-z0-9_.-]{0,23}$/.test(value.codeforcesHandle.trim())
+      ? value.codeforcesHandle.trim()
+      : undefined;
+  return {
+    ...(codeforcesHandle ? { codeforcesHandle } : {}),
+    showWidget: typeof value.showWidget === 'boolean' ? value.showWidget : true,
+  };
+}
+
 function parseTodayItems(value: unknown): TodayItem[] {
   if (!Array.isArray(value)) return [];
   return value.slice(0, 3).flatMap((candidate) =>
@@ -529,6 +688,99 @@ function parseTodayItems(value: unknown): TodayItem[] {
         ]
       : [],
   );
+}
+
+function parseIntegrationConnections(
+  value: unknown,
+): Partial<Record<IntegrationId, IntegrationConnection>> {
+  if (!isRecord(value)) return {};
+  const result: Partial<Record<IntegrationId, IntegrationConnection>> = {};
+  for (const definition of NAVODE_INTEGRATIONS.all()) {
+    const candidate = value[definition.id];
+    if (!isRecord(candidate)) continue;
+    const status = candidate.status;
+    if (
+      typeof candidate.enabled !== 'boolean' ||
+      (status !== 'disconnected' &&
+        status !== 'connecting' &&
+        status !== 'connected' &&
+        status !== 'error')
+    )
+      continue;
+    const grantedPermissionIds = Array.isArray(candidate.grantedPermissionIds)
+      ? candidate.grantedPermissionIds
+          .filter((id): id is string => typeof id === 'string')
+          .filter((id) => definition.permissions.some((permission) => permission.id === id))
+      : [];
+    const lastRefreshAt = parseIsoDate(candidate.lastRefreshAt);
+    const error = parseIntegrationError(candidate.error);
+    result[definition.id] = {
+      enabled: candidate.enabled,
+      status,
+      grantedPermissionIds,
+      ...(lastRefreshAt ? { lastRefreshAt } : {}),
+      ...(error ? { error } : {}),
+    };
+  }
+  return result;
+}
+
+function parseIntegrationCache(
+  value: unknown,
+): Partial<Record<IntegrationId, IntegrationCacheState>> {
+  if (!isRecord(value)) return {};
+  const result: Partial<Record<IntegrationId, IntegrationCacheState>> = {};
+  for (const definition of NAVODE_INTEGRATIONS.all()) {
+    const candidate = value[definition.id];
+    if (!isRecord(candidate) || !isRecord(candidate.entries)) continue;
+    const entries: IntegrationCacheState['entries'] = {};
+    for (const [key, entry] of Object.entries(candidate.entries).slice(0, 20)) {
+      if (!isSafeRecordKey(key) || !isRecord(entry)) continue;
+      const cachedAt = parseIsoDate(entry.cachedAt);
+      if (!cachedAt || !isCacheValue(entry.value)) continue;
+      entries[key.slice(0, 100)] = { cachedAt, value: entry.value };
+    }
+    result[definition.id] = { entries };
+  }
+  return result;
+}
+
+function parseIntegrationError(value: unknown): IntegrationConnection['error'] | undefined {
+  if (!isRecord(value) || typeof value.code !== 'string' || typeof value.message !== 'string') {
+    return undefined;
+  }
+  const occurredAt = parseIsoDate(value.occurredAt);
+  const retryAt = parseIsoDate(value.retryAt);
+  if (!occurredAt) return undefined;
+  return {
+    code: value.code.slice(0, 100),
+    message: value.message.slice(0, 500),
+    occurredAt,
+    ...(retryAt ? { retryAt } : {}),
+  };
+}
+
+function parseIsoDate(value: unknown): string | undefined {
+  return typeof value === 'string' && Number.isFinite(Date.parse(value)) ? value : undefined;
+}
+
+function isCacheValue(value: unknown, depth = 0): boolean {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
+    return true;
+  }
+  if (typeof value === 'number') return Number.isFinite(value);
+  if (depth >= 4) return false;
+  if (Array.isArray(value))
+    return value.length <= 100 && value.every((item) => isCacheValue(item, depth + 1));
+  return (
+    isRecord(value) &&
+    Object.keys(value).length <= 100 &&
+    Object.values(value).every((item) => isCacheValue(item, depth + 1))
+  );
+}
+
+function isSafeRecordKey(value: string): boolean {
+  return value !== '__proto__' && value !== 'constructor' && value !== 'prototype';
 }
 
 function numericValue(value: unknown): number {

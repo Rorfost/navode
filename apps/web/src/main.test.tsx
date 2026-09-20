@@ -42,6 +42,33 @@ describe('Navode shell', () => {
     expect(onSettingsChange).toHaveBeenCalledWith({ ...settings, theme: 'light' });
   });
 
+  it('shows the integration connection inventory without requesting access', () => {
+    renderShell();
+    fireEvent.click(screen.getByRole('button', { name: 'Open settings' }));
+    const dialog = screen.getByRole('dialog', { name: 'Navode settings' });
+
+    expect(screen.getByRole('heading', { name: 'Integrations' })).toBeVisible();
+    expect(within(dialog).getByText('GitHub')).toBeVisible();
+    expect(within(dialog).queryByText('No permissions requested yet')).not.toBeInTheDocument();
+    expect(within(dialog).queryByText('Coming in a later V2 step')).not.toBeInTheDocument();
+  });
+
+  it('keeps live widgets opt-in and explains a disconnected widget state', () => {
+    renderShell({
+      ...DEFAULT_NAVODE_SETTINGS,
+      onboardingCompleted: true,
+      integrationWidgets: {
+        calendar: true,
+        competitiveProgramming: false,
+        github: false,
+        projectHealth: false,
+      },
+    });
+
+    expect(screen.getByRole('heading', { name: 'Calendar' })).toBeVisible();
+    expect(screen.getByText(/Disconnected. Connect this integration/i)).toBeVisible();
+  });
+
   it('offers onboarding choices and allows a user to skip them', () => {
     const { onSettingsChange } = renderShell(DEFAULT_NAVODE_SETTINGS);
 

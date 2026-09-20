@@ -1,4 +1,5 @@
 import {
+  NAVODE_STORAGE_SCHEMA_VERSION,
   createProject,
   createProjectAction,
   createQuickLink,
@@ -79,6 +80,15 @@ describe('projects and workspaces', () => {
     ).toBeNull();
   });
 
+  it('allows a project to reference a validated GitHub repository', () => {
+    expect(
+      createProject({ name: 'Navode', githubRepository: 'Rorfost/navode' }, 'navode'),
+    ).toMatchObject({ githubRepository: 'Rorfost/navode' });
+    expect(
+      createProject({ name: 'Unsafe', githubRepository: 'javascript:alert(1)' }, 'unsafe'),
+    ).toBeNull();
+  });
+
   it('builds a deliberate workspace launch plan from valid items', () => {
     const workspace = createWorkspace({ name: 'Morning' }, 'morning', 0)!;
     const news = createWorkspaceItem({ label: 'News', url: 'https://example.com/news' }, 'news')!;
@@ -112,14 +122,14 @@ describe('organizational settings migration', () => {
     });
 
     expect(migrated).toMatchObject({
-      schemaVersion: 4,
+      schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
       theme: 'light',
       defaultSearchProvider: 'youtube',
       projects: [],
       workspaces: [],
     });
     expect(migrated.quickLinks.map((link) => link.name)).toEqual(['Google', 'YouTube', 'GitHub']);
-    expect(DEFAULT_NAVODE_SETTINGS.schemaVersion).toBe(4);
+    expect(DEFAULT_NAVODE_SETTINGS.schemaVersion).toBe(NAVODE_STORAGE_SCHEMA_VERSION);
     expect(parseNavodeSettings({ schemaVersion: 1, initialQuickLinks: false }).quickLinks).toEqual(
       [],
     );

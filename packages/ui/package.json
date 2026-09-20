@@ -9,6 +9,10 @@
   "peerDependencies": {
     "react": "^19.1.0"
   },
+  "dependencies": {
+    "@navode/core": "workspace:*",
+    "@navode/integrations": "workspace:*"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },

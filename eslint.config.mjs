@@ -16,7 +16,7 @@ export default [
     languageOptions: {
       parser: tsparser,
       parserOptions: { ecmaVersion: 'latest', sourceType: 'module' },
-      globals: { ...globals.browser, ...globals.node },
+      globals: { ...globals.browser, ...globals.node, ResponseInit: 'readonly' },
     },
     plugins: { '@typescript-eslint': tseslint },
     rules: {

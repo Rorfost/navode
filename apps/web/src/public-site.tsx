@@ -103,33 +103,40 @@ function LandingPage() {
 function PrivacyPage() {
   return (
     <article className="public-prose" aria-labelledby="privacy-title">
-      <p className="eyebrow">PRIVACY POLICY · V1</p>
+      <p className="eyebrow">PRIVACY POLICY · V2.0</p>
       <h1 id="privacy-title">Your Navode data stays local.</h1>
       <p>Last updated: September 19, 2026.</p>
       <h2>What Navode stores</h2>
       <p>
         Navode stores the settings and content you create: theme and motion preferences, search
         provider, aliases, quick links, projects, workspaces, scratchpad text, snippets, focus timer
-        state, Today priorities, and a bounded recent-action list. Recent actions contain labels and
-        timestamps, not search queries or snippet contents.
+        state, Today priorities, a bounded recent-action list, non-secret integration status, and a
+        configured GitHub repository reference, short-lived Google Calendar daily context, an
+        optional public Codeforces handle with short-lived public contest and profile context, and
+        configured project-health URLs with short-lived local check results. Recent actions contain
+        labels and timestamps, not search queries or snippet contents.
       </p>
       <h2>Where it is stored</h2>
       <p>
         The Chrome extension stores this data in Chrome local storage. The optional web companion
-        stores it in that browser’s local storage. V1 does not provide cloud sync, accounts, or a
-        Navode-hosted database.
+        stores it in that browser’s local storage. V2.0 does not provide cloud sync, accounts, or a
+        Navode-hosted database, and does not store provider credentials in Navode settings.
       </p>
       <h2>When data leaves your device</h2>
       <p>
         Navode does not send your configuration, notes, snippets, or activity to Navode servers.
-        When you intentionally run a search, open a link, launch a workspace, or use a configured
-        command, your browser opens the selected external destination. That site receives the
-        information normally included in that navigation, such as a search query sent to Google,
-        YouTube, GitHub, Codeforces, or LeetCode, or the URL you chose.
+        GitHub, Google Calendar, and Codeforces are contacted only after you explicitly connect
+        them. Calendar requests are read-only; Codeforces uses only public documented API endpoints
+        and never asks for an API key. Neither reaches Navode infrastructure. When you intentionally
+        run a search, open a link, launch a workspace, or use a configured command, your browser
+        opens the selected external destination. That site receives the information normally
+        included in that navigation, such as a search query sent to Google, YouTube, GitHub,
+        Codeforces, or LeetCode, or the URL you chose.
       </p>
       <h2>Analytics and accounts</h2>
       <p>
-        V1 has no analytics, telemetry, advertising identifiers, user accounts, or authentication.
+        V2.0 has no analytics, telemetry, advertising identifiers, user accounts, or Navode
+        authentication.
       </p>
       <h2>Delete or recover data</h2>
       <p>

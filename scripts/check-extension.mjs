@@ -14,15 +14,29 @@ if (JSON.stringify(manifest.permissions) !== JSON.stringify(['storage'])) {
   );
 }
 
+if (JSON.stringify(manifest.optional_permissions) !== JSON.stringify(['identity'])) {
+  throw new Error(
+    'Extension optional permissions must be limited to identity for Google Calendar authorization.',
+  );
+}
+
 if (
-  manifest.optional_permissions ||
-  manifest.host_permissions ||
-  manifest.optional_host_permissions ||
-  manifest.content_scripts
+  JSON.stringify(manifest.optional_host_permissions) !==
+  JSON.stringify([
+    'https://api.github.com/*',
+    'https://www.googleapis.com/*',
+    'https://codeforces.com/*',
+    'http://*/*',
+    'https://*/*',
+  ])
 ) {
   throw new Error(
-    'Extension must not declare optional, host, or content-script permissions for V1.',
+    'Extension optional host permissions must be limited to known providers and user-selected project health origins.',
   );
+}
+
+if (manifest.host_permissions || manifest.content_scripts) {
+  throw new Error('Extension must not declare install-time host permissions or content scripts.');
 }
 
 if (manifest.content_security_policy?.extension_pages !== "script-src 'self'; object-src 'self'") {

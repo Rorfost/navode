@@ -11,6 +11,9 @@ export default defineConfig({
         new URL('../../packages/config/src/index.ts', import.meta.url),
       ),
       '@navode/core': fileURLToPath(new URL('../../packages/core/src/index.ts', import.meta.url)),
+      '@navode/integrations': fileURLToPath(
+        new URL('../../packages/integrations/src/index.ts', import.meta.url),
+      ),
       '@navode/ui': fileURLToPath(new URL('../../packages/ui/src/index.ts', import.meta.url)),
     },
   },

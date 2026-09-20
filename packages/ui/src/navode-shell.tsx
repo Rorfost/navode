@@ -11,6 +11,21 @@ import {
   type Workspace,
 } from '@navode/core';
 import {
+  getNextCalendarEvent,
+  getNextCodeforcesContest,
+  isCacheStale,
+  isCodeforcesCacheStale,
+  NAVODE_INTEGRATIONS,
+  parseGitHubRepositoryReference,
+  readCalendarCachedContext,
+  readCodeforcesCachedContext,
+  readGitHubCachedStatus,
+  readProjectHealthCheck,
+  type IntegrationConnection,
+  type IntegrationId,
+  type ProjectHealthTarget,
+} from '@navode/integrations';
+import {
   lazy,
   Suspense,
   type FormEvent,
@@ -34,6 +49,7 @@ import {
 } from './primitives';
 import type { OrganizationScreen } from './organization-manager';
 import type { ProductivityScreen } from './productivity-manager';
+import { IntegrationSettings } from './integration-settings';
 
 const OrganizationManager = lazy(() =>
   import('./organization-manager').then((module) => ({ default: module.OrganizationManager })),
@@ -67,6 +83,17 @@ export interface NavodeShellProps {
   onWorkspaceLaunch?: (workspace: Workspace) => void;
   resolveCommandResults?: (input: string) => readonly CommandResult[];
   onSettingsChange?: (settings: NavodeSettings) => void;
+  onIntegrationConnect?: (
+    providerId: Extract<IntegrationId, 'github' | 'google-calendar' | 'competitive-programming'>,
+  ) => void;
+  onIntegrationDisconnect?: (
+    providerId: Extract<IntegrationId, 'github' | 'google-calendar' | 'competitive-programming'>,
+  ) => void;
+  onIntegrationRefresh?: (
+    providerId: Extract<IntegrationId, 'github' | 'google-calendar' | 'competitive-programming'>,
+  ) => void;
+  onProjectHealthRefresh?: () => void;
+  onProjectHealthTargetSave?: (target: ProjectHealthTarget) => Promise<boolean>;
   settings?: NavodeSettings;
   startupNotice?: string;
 }
@@ -77,6 +104,11 @@ export function NavodeShell({
   onWorkspaceLaunch,
   resolveCommandResults,
   onSettingsChange,
+  onIntegrationConnect,
+  onIntegrationDisconnect,
+  onIntegrationRefresh,
+  onProjectHealthRefresh,
+  onProjectHealthTargetSave,
   settings = DEFAULT_NAVODE_SETTINGS,
   startupNotice,
 }: NavodeShellProps) {
@@ -94,6 +126,8 @@ export function NavodeShell({
   const [organizationScreen, setOrganizationScreen] = useState<OrganizationScreen | null>(null);
   const [workspaceToLaunch, setWorkspaceToLaunch] = useState<Workspace | null>(null);
   const [productivityScreen, setProductivityScreen] = useState<ProductivityScreen | null>(null);
+  const [healthProjectId, setHealthProjectId] = useState<string | undefined>();
+  const [isHealthOpen, setIsHealthOpen] = useState(false);
   const commandInput = useRef<HTMLInputElement>(null);
   const provider = searchProviders[settings.defaultSearchProvider];
   const results = useMemo(() => {
@@ -178,6 +212,10 @@ export function NavodeShell({
         return;
       }
       if (action.type === 'open-view' && action.view === 'settings') setIsSettingsOpen(true);
+      if (action.type === 'open-view' && action.view === 'health') {
+        setHealthProjectId(action.projectId);
+        setIsHealthOpen(true);
+      }
       if (
         action.type === 'open-view' &&
         (action.view === 'links' || action.view === 'projects' || action.view === 'workspaces')
@@ -436,7 +474,7 @@ export function NavodeShell({
                   </span>
                   <span>
                     <strong>{project.name}</strong>
-                    <small>{project.actions.length} actions</small>
+                    <small>{formatProjectStatus(project, settings.integrationCache.github)}</small>
                   </span>
                 </div>
               ))}
@@ -449,6 +487,101 @@ export function NavodeShell({
               </div>
             )}
             <Button onClick={() => setOrganizationScreen('projects')}>Manage projects</Button>
+          </Card>
+        )}
+
+        {settings.integrationWidgets.calendar && (
+          <Card aria-labelledby="calendar-title">
+            <div className="section-heading">
+              <div>
+                <p className="section-kicker">DAILY CONTEXT</p>
+                <h2 id="calendar-title">Calendar</h2>
+              </div>
+              <a
+                className="quick-link"
+                href="https://calendar.google.com"
+                rel="noreferrer"
+                target="_blank"
+              >
+                Open
+              </a>
+            </div>
+            <CalendarPreview
+              cache={settings.integrationCache['google-calendar']}
+              {...(settings.integrations['google-calendar']
+                ? { connection: settings.integrations['google-calendar'] }
+                : {})}
+            />
+          </Card>
+        )}
+
+        {settings.integrationWidgets.github && (
+          <Card aria-labelledby="github-widget-title">
+            <div className="section-heading">
+              <div>
+                <p className="section-kicker">REPOSITORY CONTEXT</p>
+                <h2 id="github-widget-title">GitHub</h2>
+              </div>
+              <Button onClick={() => onIntegrationRefresh?.('github')} variant="quiet">
+                Refresh
+              </Button>
+            </div>
+            <GitHubPreview
+              cache={settings.integrationCache.github}
+              {...(settings.integrations.github
+                ? { connection: settings.integrations.github }
+                : {})}
+              projects={settings.projects}
+            />
+          </Card>
+        )}
+
+        {settings.integrationWidgets.competitiveProgramming && (
+          <Card aria-labelledby="contests-title">
+            <div className="section-heading">
+              <div>
+                <p className="section-kicker">COMPETITIVE PROGRAMMING</p>
+                <h2 id="contests-title">Contests</h2>
+              </div>
+              <Button
+                onClick={() => onIntegrationRefresh?.('competitive-programming')}
+                variant="quiet"
+              >
+                Refresh
+              </Button>
+            </div>
+            <CodeforcesPreview
+              cache={settings.integrationCache['competitive-programming']}
+              {...(settings.integrations['competitive-programming']
+                ? { connection: settings.integrations['competitive-programming'] }
+                : {})}
+              now={now}
+            />
+          </Card>
+        )}
+
+        {settings.integrationWidgets.projectHealth && (
+          <Card aria-labelledby="project-health-preview-title">
+            <div className="section-heading">
+              <div>
+                <p className="section-kicker">LIVE SERVICES</p>
+                <h2 id="project-health-preview-title">Project health</h2>
+              </div>
+              <Button
+                onClick={() => {
+                  setHealthProjectId(undefined);
+                  setIsHealthOpen(true);
+                }}
+                variant="quiet"
+              >
+                View all
+              </Button>
+            </div>
+            <ProjectHealthPreview
+              cache={settings.integrationCache['project-health']}
+              projects={settings.projects}
+              targets={settings.projectHealthTargets}
+            />
           </Card>
         )}
 
@@ -675,6 +808,24 @@ export function NavodeShell({
             </p>
           )}
         </section>
+        <IntegrationSettings
+          {...(onIntegrationConnect ? { onConnect: onIntegrationConnect } : {})}
+          {...(onIntegrationDisconnect ? { onDisconnect: onIntegrationDisconnect } : {})}
+          {...(onIntegrationRefresh
+            ? {
+                onRefresh: onIntegrationRefresh,
+                onRefreshAll: () => {
+                  onIntegrationRefresh('github');
+                  onIntegrationRefresh('google-calendar');
+                  onIntegrationRefresh('competitive-programming');
+                  onProjectHealthRefresh?.();
+                },
+              }
+            : {})}
+          {...(onProjectHealthTargetSave ? { onProjectHealthTargetSave } : {})}
+          onSettingsChange={(next) => onSettingsChange?.(next)}
+          settings={settings}
+        />
         {isSettingsOpen && (
           <Suspense fallback={<p className="muted">Loading recovery controls…</p>}>
             <SettingsDataControls
@@ -693,6 +844,25 @@ export function NavodeShell({
         )}
         <div className="dialog-actions">
           <Button onClick={() => setIsSettingsOpen(false)} variant="primary">
+            Done
+          </Button>
+        </div>
+      </Dialog>
+
+      <Dialog label="Project health" onClose={() => setIsHealthOpen(false)} open={isHealthOpen}>
+        <p className="eyebrow">SERVICE STATUS</p>
+        <h2>Project health</h2>
+        <ProjectHealthPreview
+          cache={settings.integrationCache['project-health']}
+          {...(healthProjectId ? { projectId: healthProjectId } : {})}
+          projects={settings.projects}
+          targets={settings.projectHealthTargets}
+        />
+        <div className="dialog-actions">
+          <Button disabled={!settings.projectHealthTargets.length} onClick={onProjectHealthRefresh}>
+            Refresh checks
+          </Button>
+          <Button onClick={() => setIsHealthOpen(false)} variant="primary">
             Done
           </Button>
         </div>
@@ -825,6 +995,220 @@ function formatDate(date: Date) {
 
 function formatTime(date: Date) {
   return new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(date);
+}
+
+function formatProjectStatus(
+  project: NavodeSettings['projects'][number],
+  cache: NavodeSettings['integrationCache']['github'],
+): string {
+  if (!project.githubRepository) return `${project.actions.length} actions`;
+  const reference = parseGitHubRepositoryReference(project.githubRepository);
+  const status = reference ? readGitHubCachedStatus(cache, reference) : undefined;
+  if (!status) return `${project.githubRepository} · Cached status unavailable`;
+  const workflow = status.workflow
+    ? ` · ${status.workflow.name}: ${status.workflow.conclusion ?? status.workflow.status}`
+    : '';
+  return `${status.openPullRequestCount} PRs · ${status.issueCount} issues${workflow}`;
+}
+
+function ProjectHealthPreview({
+  cache,
+  projectId,
+  projects,
+  targets,
+}: {
+  cache: NavodeSettings['integrationCache']['project-health'];
+  projectId?: string;
+  projects: NavodeSettings['projects'];
+  targets: readonly ProjectHealthTarget[];
+}) {
+  const visibleTargets = projectId
+    ? targets.filter((target) => target.projectId === projectId)
+    : targets;
+  if (!visibleTargets.length)
+    return <p className="empty-text">No service health checks configured for this project.</p>;
+  return (
+    <div className="calendar-preview">
+      {visibleTargets.map((target) => {
+        const check = readProjectHealthCheck(cache, target.id);
+        const project = projects.find((candidate) => candidate.id === target.projectId);
+        return (
+          <div className="preview-row" key={target.id}>
+            <span>
+              <strong>{target.label}</strong>
+              <small>{formatHealthCheck(check, target.expectedStatus, project?.name)}</small>
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function formatHealthCheck(
+  check: ReturnType<typeof readProjectHealthCheck>,
+  expectedStatus: number,
+  projectName?: string,
+): string {
+  const project = projectName ? `${projectName} · ` : '';
+  if (!check) return `${project}Not checked yet · expected HTTP ${expectedStatus}`;
+  const checkedAt = new Date(check.checkedAt);
+  const timestamp = Number.isFinite(checkedAt.getTime()) ? ` · ${formatTime(checkedAt)}` : '';
+  if (check.status === 'reachable')
+    return `${project}Reachable · HTTP ${check.statusCode} · ${check.responseTimeMs ?? 0} ms${timestamp}`;
+  if (check.status === 'unexpected-status')
+    return `${project}Unexpected HTTP ${check.statusCode} · expected ${check.expectedStatus}${timestamp}`;
+  if (check.status === 'offline') return `${project}Offline · last check deferred${timestamp}`;
+  return `${project}Unreachable${timestamp}`;
+}
+
+function GitHubPreview({
+  cache,
+  connection,
+  projects,
+}: {
+  cache: NavodeSettings['integrationCache']['github'];
+  connection?: IntegrationConnection;
+  projects: NavodeSettings['projects'];
+}) {
+  const state = getProviderWidgetState('github', cache, connection);
+  const linkedProjects = projects.filter((project) => project.githubRepository);
+  if (!linkedProjects.length)
+    return <p className="empty-text">{state ?? 'No project is linked to a GitHub repository.'}</p>;
+  return (
+    <div className="calendar-preview">
+      {state && <p className="muted">{state}</p>}
+      {linkedProjects.slice(0, 3).map((project) => (
+        <div className="preview-row" key={project.id}>
+          <span>
+            <strong>{project.name}</strong>
+            <small>{formatProjectStatus(project, cache)}</small>
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function getProviderWidgetState(
+  providerId: Extract<IntegrationId, 'github' | 'google-calendar' | 'competitive-programming'>,
+  cache: NavodeSettings['integrationCache'][IntegrationId],
+  connection?: IntegrationConnection,
+): string | undefined {
+  if (!connection || connection.status === 'disconnected')
+    return 'Disconnected. Connect this integration to load live data.';
+  if (connection.status === 'connecting') return 'Loading live data…';
+  if (connection.status === 'error')
+    return connection.error?.message ?? 'Could not refresh. Cached data remains available.';
+  const definition = NAVODE_INTEGRATIONS.get(providerId);
+  if (!definition || !cache) return 'Loading live data…';
+  if (
+    providerId === 'competitive-programming'
+      ? isCodeforcesCacheStale(cache)
+      : isCacheStale(cache, definition.refreshPolicy)
+  )
+    return 'Showing stale cached data. Refresh when ready.';
+  return 'Showing cached data.';
+}
+
+function CalendarPreview({
+  cache,
+  connection,
+}: {
+  cache: NavodeSettings['integrationCache']['google-calendar'];
+  connection?: IntegrationConnection;
+}) {
+  const context = readCalendarCachedContext(cache);
+  const state = getProviderWidgetState('google-calendar', cache, connection);
+  if (!context && state) return <p className="empty-text">{state}</p>;
+  if (!context) return <p className="empty-text">Connect Google Calendar to see today’s events.</p>;
+  const next = getNextCalendarEvent(context);
+  return (
+    <div className="calendar-preview">
+      {state && <p className="muted">{state}</p>}
+      <p className="muted">
+        {next
+          ? `Next: ${next.title} · ${formatCalendarTime(next.startAt)} · ${formatTimeUntil(next.startAt)}`
+          : 'No more timed events today.'}
+      </p>
+      {context.events.slice(0, 3).map((event) => (
+        <div className="preview-row" key={event.id}>
+          <span>
+            <strong>{event.title}</strong>
+            <small>{event.allDay ? 'All day' : formatCalendarTime(event.startAt)}</small>
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CodeforcesPreview({
+  cache,
+  connection,
+  now,
+}: {
+  cache: NavodeSettings['integrationCache']['competitive-programming'];
+  connection?: IntegrationConnection;
+  now: Date;
+}) {
+  const context = readCodeforcesCachedContext(cache);
+  const state = getProviderWidgetState('competitive-programming', cache, connection);
+  if (!context && state) return <p className="empty-text">{state}</p>;
+  if (!context)
+    return (
+      <p className="empty-text">Connect Competitive programming to see Codeforces contests.</p>
+    );
+  const next = getNextCodeforcesContest(context, now);
+  return (
+    <div className="calendar-preview">
+      {state && <p className="muted">{state}</p>}
+      <p className="muted">
+        {next
+          ? `Next: ${next.name} · ${formatCalendarTime(next.startAt)} · ${formatTimeUntil(next.startAt)}`
+          : 'No upcoming Codeforces contests.'}
+      </p>
+      {context.profile && (
+        <p className="muted">
+          {context.profile.handle} · {context.profile.title ?? 'Unrated'}
+          {context.profile.rating ? ` · ${context.profile.rating}` : ''}
+        </p>
+      )}
+      {context.submissions.slice(0, 2).map((submission) => (
+        <div className="preview-row" key={submission.id}>
+          <span>
+            <strong>{submission.problemName}</strong>
+            <small>{submission.verdict}</small>
+          </span>
+        </div>
+      ))}
+      <a
+        className="quick-link"
+        href="https://codeforces.com/problemset"
+        rel="noreferrer"
+        target="_blank"
+      >
+        Practice Codeforces
+      </a>
+    </div>
+  );
+}
+
+function formatCalendarTime(value: string | undefined): string {
+  if (!value) return 'Time unavailable';
+  const date = new Date(value);
+  return Number.isFinite(date.getTime())
+    ? new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(date)
+    : 'All day';
+}
+
+function formatTimeUntil(value: string | undefined): string {
+  const target = value ? Date.parse(value) : Number.NaN;
+  if (!Number.isFinite(target)) return 'Time unavailable';
+  const minutes = Math.max(0, Math.round((target - Date.now()) / 60_000));
+  if (minutes < 60) return `in ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  return `in ${hours}h ${minutes % 60}m`;
 }
 
 function initials(name: string): string {

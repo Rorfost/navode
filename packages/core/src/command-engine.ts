@@ -6,7 +6,8 @@ export type InternalCommandView =
   | 'workspaces'
   | 'snippets'
   | 'note'
-  | 'today';
+  | 'today'
+  | 'health';
 export type CommandSource =
   | 'alias'
   | 'direct-url'
@@ -39,6 +40,7 @@ export interface QuickLinkCommandTarget {
 }
 
 export interface ProjectCommandTarget {
+  githubRepository?: string;
   id: string;
   label: string;
   aliases?: readonly string[];
@@ -57,6 +59,7 @@ export interface SnippetCommandTarget {
 }
 
 export interface CommandCatalog {
+  codeforcesHandle?: string;
   customAliases?: readonly CommandAlias[];
   defaultSearchProvider?: SearchProviderId;
   projects?: readonly ProjectCommandTarget[];
@@ -67,7 +70,7 @@ export interface CommandCatalog {
 
 export type CommandAction =
   | { type: 'open-url'; url: string }
-  | { type: 'open-view'; view: InternalCommandView }
+  | { type: 'open-view'; view: InternalCommandView; projectId?: string }
   | { type: 'run-snippet'; snippetId: string }
   | { type: 'launch-workspace'; workspaceId: string }
   | { type: 'start-focus'; durationMinutes?: number }
@@ -164,6 +167,48 @@ export function resolveCommand(input: string, catalog: CommandCatalog = {}): Com
   const parsed = parseCommandInput(normalized);
   if (!parsed) return createHelpResult(normalized);
 
+  if (parsed.name === 'calendar' && !parsed.argument) {
+    return createResult({
+      action: { type: 'open-url', url: 'https://calendar.google.com' },
+      command: normalized,
+      description: 'Open Google Calendar',
+      id: 'calendar:open',
+      label: 'Open Google Calendar',
+      score: 100,
+      source: 'internal',
+    });
+  }
+  if (parsed.name === 'next' && parsed.argument === 'event') {
+    return createResult({
+      action: { type: 'open-url', url: 'https://calendar.google.com' },
+      command: normalized,
+      description: 'Open Google Calendar for your next event',
+      id: 'calendar:next-event',
+      label: 'Open next calendar event',
+      score: 100,
+      source: 'internal',
+    });
+  }
+
+  const healthResult = resolveProjectHealthCommand(
+    parsed.name,
+    parsed.argument,
+    normalized,
+    catalog,
+  );
+  if (healthResult) return healthResult;
+
+  const codeforcesResult = resolveCodeforcesCommand(
+    parsed.name,
+    parsed.argument,
+    normalized,
+    catalog,
+  );
+  if (codeforcesResult) return codeforcesResult;
+
+  const githubResult = resolveGitHubCommand(parsed.argument, parsed.name, normalized, catalog);
+  if (githubResult) return githubResult;
+
   const aliasResult = resolveAlias(parsed.name, parsed.argument, normalized, catalog);
   if (aliasResult) return aliasResult;
 
@@ -209,6 +254,112 @@ export function resolveCommand(input: string, catalog: CommandCatalog = {}): Com
   if (bestMatch && bestMatch.score >= 80) return bestMatch;
 
   return createFallbackSearchResult(normalized, catalog.defaultSearchProvider ?? 'google');
+}
+
+function resolveProjectHealthCommand(
+  name: string,
+  argument: string,
+  command: string,
+  catalog: CommandCatalog,
+): CommandResult | null {
+  if (name !== 'status' && name !== 'health') return null;
+  const projectName = argument.trim().toLowerCase();
+  if (!projectName) {
+    return createResult({
+      action: { type: 'open-view', view: 'health' },
+      command,
+      description: 'View configured project and service health checks',
+      id: 'project-health:all',
+      label: 'Open project health',
+      score: 100,
+      source: 'internal',
+    });
+  }
+  const project = catalog.projects?.find(
+    (candidate) => candidate.label.toLowerCase() === projectName,
+  );
+  if (!project) {
+    return createResult({
+      action: { type: 'error', message: 'No configured project matches that health command.' },
+      command,
+      description: 'Use status to view all configured service checks.',
+      id: 'error:project-health-project',
+      label: 'Project health target not found',
+      score: 100,
+      source: 'internal',
+    });
+  }
+  return createResult({
+    action: { type: 'open-view', view: 'health', projectId: project.id },
+    command,
+    description: `View health checks for ${project.label}`,
+    id: `project-health:${project.id}`,
+    label: `View ${project.label} health`,
+    score: 100,
+    source: 'project',
+  });
+}
+
+function resolveCodeforcesCommand(
+  name: string,
+  argument: string,
+  command: string,
+  catalog: CommandCatalog,
+): CommandResult | null {
+  if (name !== 'cf' && name !== 'codeforces') return null;
+  const normalizedArgument = argument.trim().toLowerCase();
+  if (!normalizedArgument || normalizedArgument === 'contests') {
+    return createResult({
+      action: { type: 'open-url', url: 'https://codeforces.com/contests' },
+      command,
+      description: 'Open upcoming Codeforces contests',
+      id: 'codeforces:contests',
+      label: 'Open Codeforces contests',
+      score: 100,
+      source: 'internal',
+    });
+  }
+  if (normalizedArgument === 'profile') {
+    if (!catalog.codeforcesHandle) {
+      return createResult({
+        action: {
+          type: 'error',
+          message: 'Add your public Codeforces handle in Integrations before opening your profile.',
+        },
+        command,
+        description: 'A public Codeforces handle is required for this command.',
+        id: 'error:codeforces-handle',
+        label: 'Configure Codeforces handle',
+        score: 100,
+        source: 'internal',
+      });
+    }
+    return createResult({
+      action: {
+        type: 'open-url',
+        url: `https://codeforces.com/profile/${encodeURIComponent(catalog.codeforcesHandle)}`,
+      },
+      command,
+      description: `Open ${catalog.codeforcesHandle}'s Codeforces profile`,
+      id: 'codeforces:profile',
+      label: 'Open Codeforces profile',
+      score: 100,
+      source: 'internal',
+    });
+  }
+  const rating =
+    /^problem\s+(\d{3,4})$/.exec(normalizedArgument)?.[1] ??
+    /^(\d{3,4})$/.exec(normalizedArgument)?.[1];
+  if (!rating) return null;
+  return createResult({
+    action: { type: 'open-url', url: `https://codeforces.com/problemset?tags=${rating}-${rating}` },
+    command,
+    description: `Open Codeforces problems around ${rating} rating`,
+    id: `codeforces:practice:${rating}`,
+    label: `Practice Codeforces ${rating}`,
+    score: 100,
+    source: 'internal',
+  });
 }
 
 export function getCommandResults(input: string, catalog: CommandCatalog = {}): CommandResult[] {
@@ -331,6 +482,47 @@ function resolveAlias(
     label: alias.label,
     score: 100,
     source: 'alias',
+  });
+}
+
+function resolveGitHubCommand(
+  argument: string,
+  name: string,
+  command: string,
+  catalog: CommandCatalog,
+): CommandResult | null {
+  if (name !== 'gh') return null;
+  const [section, ...repositoryParts] = argument.split(/\s+/).filter(Boolean);
+  const isSection = section === 'prs' || section === 'issues' || section === 'actions';
+  const repositoryInput = (isSection ? repositoryParts : [section, ...repositoryParts])
+    .join(' ')
+    .trim()
+    .toLowerCase();
+  if (!repositoryInput) return null;
+  const project = catalog.projects?.find(
+    (candidate) =>
+      candidate.githubRepository?.toLowerCase() === repositoryInput ||
+      candidate.label.toLowerCase() === repositoryInput,
+  );
+  if (!project?.githubRepository) return null;
+  const suffix = section === 'prs' ? '/pulls' : isSection ? `/${section}` : '';
+  const viewLabel =
+    section === 'prs'
+      ? 'pull requests'
+      : section === 'issues'
+        ? 'issues'
+        : section === 'actions'
+          ? 'workflow runs'
+          : 'repository';
+  const url = `https://github.com/${project.githubRepository}${suffix}`;
+  return createResult({
+    action: { type: 'open-url', url },
+    command,
+    description: `Open ${viewLabel} for ${project.githubRepository}`,
+    id: `github:${project.id}:${section ?? 'repository'}`,
+    label: `Open ${project.githubRepository}${suffix}`,
+    score: 100,
+    source: 'project',
   });
 }
 
