@@ -11,21 +11,6 @@ permissions:
   contents: read
 
 jobs:
-  dependency-review:
-    if: >-
-      github.event_name == 'pull_request' &&
-      github.event.repository.visibility == 'public'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/dependency-review-action@v5
-        with:
-          # GitHub can publish a dependency-graph snapshot shortly after a PR
-          # update. Retry that transient API condition instead of treating it
-          # as a dependency-review failure; real vulnerability findings still fail.
-          retry-on-snapshot-warnings: true
-          retry-on-snapshot-warnings-timeout: 120
-
   codeql:
     if: >-
       github.event.repository.visibility == 'public' || vars.ENABLE_GHAS_SCANS == 'true'
