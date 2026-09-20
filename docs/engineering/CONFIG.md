@@ -5,8 +5,24 @@
 - `VITE_API_BASE_URL`: public web build-time API base URL. Because it begins with `VITE_`, it is client/public and may be included in the browser bundle.
 - `APP_ENV`: non-secret API runtime environment label.
 - `APP_VERSION`: non-secret API build/version metadata.
+- `CORS_ALLOWED_ORIGINS`: comma-separated explicit public web and production
+  extension origins allowed to call the API. Wildcards are invalid; production
+  HTTP origins are rejected.
+- `DATABASE_URL`: direct PostgreSQL URL for an authorized migration runner only.
+  It must never be set as a Worker variable, sent to clients, or committed.
+- `AUTH_BASE_URL`: explicit public API origin used by Better Auth when building
+  redirects and secure cookies.
+- `AUTH_SECRET`: a 32+-character server secret for Better Auth; mandatory in
+  production and stored only as a Worker secret.
+- `CREDENTIAL_ENCRYPTION_KEYS`: a Worker secret used only when a V3.6
+  credential boundary. It is a comma-separated, versioned AES-256 keyring in
+  `version:base64url-key` form. The first key encrypts new values; retained
+  keys decrypt values during a deliberate rotation.
 
-There are no server-side secrets required by V1. Never commit `.env` files or service credentials. OAuth secrets, service tokens, and deployment credentials must remain outside client bundles and source control. Add configuration only with startup/build validation and accompanying documentation.
+Never commit `.env` files or service credentials. OAuth secrets, service tokens,
+Hyperdrive database credentials, and deployment credentials must remain outside
+client bundles and source control. Add configuration only with startup/build
+validation and accompanying documentation.
 
 ## Project health
 

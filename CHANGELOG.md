@@ -9,6 +9,12 @@ All notable changes to Navode are documented here.
 - Optional GitHub, Google Calendar, Codeforces, and project-health integrations with cached, failure-isolated home widgets.
 - Provider-aware commands, manual refresh controls, and configurable opt-in live-widget visibility.
 - Secure disconnect behavior that removes integration caches and clears the in-memory Calendar token.
+- V3 sync-phase foundations: optional accounts, PostgreSQL-backed API,
+  local-first sync state, account-owned devices, immutable cloud backups, and
+  encrypted provider credential storage.
+- Operations guidance for database migration, restore, health/readiness,
+  content-free observability, explicit first-sync enrollment, and verified
+  account-data cascade deletion.
 
 ### Changed
 

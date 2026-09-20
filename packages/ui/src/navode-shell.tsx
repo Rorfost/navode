@@ -8,6 +8,7 @@ import {
   type CommandResult,
   type DefaultSearchProvider,
   type NavodeSettings,
+  type SyncStatus,
   type Workspace,
 } from '@navode/core';
 import {
@@ -96,6 +97,7 @@ export interface NavodeShellProps {
   onProjectHealthTargetSave?: (target: ProjectHealthTarget) => Promise<boolean>;
   settings?: NavodeSettings;
   startupNotice?: string;
+  syncStatus?: SyncStatus;
 }
 
 export function NavodeShell({
@@ -111,6 +113,7 @@ export function NavodeShell({
   onProjectHealthTargetSave,
   settings = DEFAULT_NAVODE_SETTINGS,
   startupNotice,
+  syncStatus = 'local-only',
 }: NavodeShellProps) {
   const [command, setCommand] = useState('');
   const [selectedResult, setSelectedResult] = useState(0);
@@ -322,6 +325,17 @@ export function NavodeShell({
           <time dateTime={now.toISOString()}>{formatDate(now)}</time>
           <span>{formatTime(now)}</span>
         </div>
+        <p aria-live="polite" className="muted sync-status">
+          {syncStatus === 'local-only'
+            ? 'Local only'
+            : syncStatus === 'synced'
+              ? 'Signed in / synced'
+              : syncStatus === 'syncing'
+                ? 'Syncing'
+                : syncStatus === 'paused'
+                  ? 'Sync paused'
+                  : 'Sync error'}
+        </p>
         <Button
           aria-label="Open settings"
           onClick={(event) => {

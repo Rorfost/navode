@@ -7,3 +7,12 @@ V2 integration tests also cover provider registration, progressive permission re
 Project-health tests cover unsafe URLs, expected and unexpected statuses, offline mode, abortable timeout behavior, network/CORS limitations, cached-state freshness, schema migration, and `status` / `health <project>` command resolution. Browser permission checks verify that extension origin access is requested only for a saved target URL.
 
 Coverage is a signal, not a target. Critical workflows—command execution, persistence/migration, import validation, and new-tab startup—must have meaningful automated tests plus manual checks where browser behavior cannot be automated reliably.
+
+V3 API tests cover request IDs, explicit CORS rejection/allowance, typed error
+responses, fail-closed authentication, readiness behavior, and PostgreSQL
+schema integration through PGlite. The database integration suite must prove
+that an owner-scoped repository cannot return another user's document.
+
+The V3 sync core tests offline local writes, partial acknowledgements, duplicate
+retries, concurrent same-record edits, and deletion tombstones. Scratchpad and
+recent-action history are intentionally absent from the sync entity collector.

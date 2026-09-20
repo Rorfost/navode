@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1789919832501,
+      "tag": "0001_awesome_mandrill",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789923000000,
+      "tag": "0002_authentication_lifecycle",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789926000000,
+      "tag": "0003_backup_and_credentials",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789929000000,
+      "tag": "0004_account_deletion_audit_cleanup",
+      "breakpoints": true
+    }
+  ]
+}

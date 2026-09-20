@@ -7,3 +7,10 @@ Validate imported data and all externally opened URLs. Reject `javascript:`, `da
 V2.5 project health accepts only user-configured `http:` and `https:` URLs without embedded credentials. It performs direct browser requests with a short timeout and rejects redirects. The extension requests the exact target origin only after the user saves a check; it does not receive blanket active-site access. The web companion may be unable to inspect a CORS-protected endpoint, which is shown as an unavailable check rather than being routed through an unrestricted proxy. Do not add a backend URL fetcher without a separate SSRF threat model and a narrowly bounded allowlist.
 
 Import validation completes before settings are replaced, and failed validation leaves current data untouched. Clipboard writes use the browser clipboard API only after an explicit user command, do not require an extension permission, and show a local failure message when unavailable. Failed extension storage reads fall back to safe in-memory defaults with a visible recovery notice; they do not overwrite the original data.
+
+V3 cloud features remain opt-in. Its API rejects unknown browser origins, emits
+redacted structured logs with request IDs, and fails protected routes closed
+until the account/session implementation is ready. Every cloud data query must
+derive ownership from the authenticated actor and filter by `user_id`; user
+content, authorization values, cookies, tokens, and external URLs must never
+reach logs. See [V3_SYNC_THREAT_MODEL.md](V3_SYNC_THREAT_MODEL.md).
