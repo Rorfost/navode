@@ -13,11 +13,10 @@ keeps the origin connection string outside the Worker environment and manages
 the connection pool. `DATABASE_URL` exists only for an authorized migration
 runner and local database integration tests.
 
-Better Auth is intentionally selected now but is not mounted until V3.3. That
-prompt owns account registration, verified recovery, MFA decisions, session
-issuance and revocation. V3.2 accepts no homemade bearer token or client
-supplied user identifier: secured API routes fail closed until Better Auth
-supplies the auth context.
+Better Auth is mounted at `/api/auth/*` in V3.3. It owns email/password account
+registration, sign-in/out, database-backed sessions, session revocation,
+account settings, and account deletion. V3.2's secured API routes no longer
+accept a homemade bearer token or client-supplied user identifier.
 
 ## Data ownership and classification
 
@@ -48,11 +47,13 @@ minimum operational metadata necessary for support and incident response.
    reconciles it with its local copy. Network or server failure leaves the local
    state and queue intact.
 
-Initially Navode synchronizes one versioned settings document per account.
-Individual record IDs, field timestamps, and tombstones are retained inside the
-document so later prompts can merge collections without guessing from array
-position. The server is authoritative for revision order, not for the user’s
-ability to work offline.
+V3.4 synchronizes entity records—not one opaque global JSON blob—for quick
+links, projects, workspaces, aliases, snippets, Today items, preferences, and
+integration configuration metadata. Shared core logic retains per-entity
+version counters, operation IDs, tombstones, pending local operations, and
+explicit conflict records. Scratchpad and recent history deliberately remain
+local-only by default because their convenience value does not justify syncing
+private freeform content or activity metadata automatically.
 
 ## Conflicts, deletion, and backups
 

@@ -919,3 +919,19 @@ export {
   type BackupImportResult,
   type NavodeBackup,
 } from './backup';
+
+export {
+  acknowledgeSyncOperations,
+  collectSyncEntities,
+  compareEntityVersions,
+  createSyncState,
+  queueLocalEntity,
+  reconcileRemoteOperations,
+  type EntityVersion,
+  type SyncConflict,
+  type SyncEntity,
+  type SyncEntityKind,
+  type SyncOperation,
+  type SyncState,
+  type SyncStatus,
+} from './sync';

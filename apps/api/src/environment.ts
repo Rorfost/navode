@@ -4,11 +4,15 @@ const rawEnvironmentSchema = z.object({
   APP_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
   APP_VERSION: z.string().trim().min(1).max(100).default('0.0.0-dev'),
   CORS_ALLOWED_ORIGINS: z.string().trim().default('http://localhost:5173'),
+  AUTH_BASE_URL: z.url().default('http://localhost:8787'),
+  AUTH_SECRET: z.string().min(32).optional(),
 });
 
 export type ApiEnvironment = {
   appEnvironment: 'development' | 'test' | 'staging' | 'production';
   appVersion: string;
+  authBaseUrl: string;
+  authSecret?: string;
   corsAllowedOrigins: ReadonlySet<string>;
 };
 
@@ -50,9 +54,15 @@ export function parseEnvironment(bindings: Record<string, string | undefined>): 
     throw new Error('Production CORS origins must use HTTPS or chrome-extension URLs.');
   }
 
+  if (parsed.data.APP_ENV === 'production' && !parsed.data.AUTH_SECRET) {
+    throw new Error('AUTH_SECRET is required in production.');
+  }
+
   return {
     appEnvironment: parsed.data.APP_ENV,
     appVersion: parsed.data.APP_VERSION,
+    authBaseUrl: parsed.data.AUTH_BASE_URL,
+    ...(parsed.data.AUTH_SECRET ? { authSecret: parsed.data.AUTH_SECRET } : {}),
     corsAllowedOrigins: new Set(origins),
   };
 }

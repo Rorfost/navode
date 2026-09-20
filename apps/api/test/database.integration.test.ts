@@ -13,8 +13,10 @@ const documentB = '00000000-0000-4000-8000-000000000012';
 
 async function createIntegrationDatabase() {
   const client = new PGlite();
-  const migrationUrl = new URL('../migrations/0001_awesome_mandrill.sql', import.meta.url);
-  await client.exec(await readFile(fileURLToPath(migrationUrl), 'utf8'));
+  for (const migration of ['0001_awesome_mandrill.sql', '0002_authentication_lifecycle.sql']) {
+    const migrationUrl = new URL(`../migrations/${migration}`, import.meta.url);
+    await client.exec(await readFile(fileURLToPath(migrationUrl), 'utf8'));
+  }
   return { client, database: drizzle(client, { schema }) };
 }
 
@@ -30,7 +32,10 @@ describe('PostgreSQL sync foundation', () => {
     clients.push(client);
     const documents = createSyncDocumentRepository(database);
 
-    await database.insert(schema.users).values([{ id: userA }, { id: userB }]);
+    await database.insert(schema.users).values([
+      { id: userA, name: 'User A', email: 'user-a@example.test' },
+      { id: userB, name: 'User B', email: 'user-b@example.test' },
+    ]);
     await documents.create({
       id: documentA,
       userId: userA,

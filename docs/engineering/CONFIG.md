@@ -10,6 +10,10 @@
   HTTP origins are rejected.
 - `DATABASE_URL`: direct PostgreSQL URL for an authorized migration runner only.
   It must never be set as a Worker variable, sent to clients, or committed.
+- `AUTH_BASE_URL`: explicit public API origin used by Better Auth when building
+  redirects and secure cookies.
+- `AUTH_SECRET`: a 32+-character server secret for Better Auth; mandatory in
+  production and stored only as a Worker secret.
 
 Never commit `.env` files or service credentials. OAuth secrets, service tokens,
 Hyperdrive database credentials, and deployment credentials must remain outside

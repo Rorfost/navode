@@ -8,6 +8,13 @@
       "when": 1789919832501,
       "tag": "0001_awesome_mandrill",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789923000000,
+      "tag": "0002_authentication_lifecycle",
+      "breakpoints": true
     }
   ]
 }

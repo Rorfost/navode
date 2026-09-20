@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { NAVODE_VERSION } from '@navode/config';
-import { RejectingAuthenticator, type Authenticator } from './auth';
+import { createAuthRuntime, RejectingAuthenticator, type Authenticator } from './auth';
 import { verifyDatabaseConnection } from './db/database';
 import { parseEnvironment, type ApiEnvironment } from './environment';
 import { ApiError } from './errors';
@@ -12,6 +12,8 @@ type HyperdriveBinding = { connectionString: string };
 type Bindings = {
   APP_ENV?: string;
   APP_VERSION?: string;
+  AUTH_BASE_URL?: string;
+  AUTH_SECRET?: string;
   CORS_ALLOWED_ORIGINS?: string;
   HYPERDRIVE?: HyperdriveBinding;
 };
@@ -51,17 +53,25 @@ function defaultReadiness(bindings: Bindings): Promise<boolean> {
     : Promise.resolve(false);
 }
 
+function createRuntimeAuth(bindings: Bindings, environment: ApiEnvironment) {
+  if (!bindings.HYPERDRIVE) {
+    throw new ApiError('database_unavailable', 'Authentication is not configured.', 503);
+  }
+  return createAuthRuntime({ connectionString: bindings.HYPERDRIVE.connectionString, environment });
+}
+
 function environmentBindings(bindings: Bindings): Record<string, string | undefined> {
   return {
     APP_ENV: bindings.APP_ENV,
     APP_VERSION: bindings.APP_VERSION,
     CORS_ALLOWED_ORIGINS: bindings.CORS_ALLOWED_ORIGINS,
+    AUTH_BASE_URL: bindings.AUTH_BASE_URL,
+    AUTH_SECRET: bindings.AUTH_SECRET,
   };
 }
 
 export function createApp(dependencies: ApiDependencies = {}) {
   const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
-  const authenticator = dependencies.authenticator ?? new RejectingAuthenticator();
   const logger = dependencies.logger ?? consoleLogger;
   const rateLimiter = dependencies.rateLimiter ?? allowAllRateLimiter;
 
@@ -196,16 +206,44 @@ export function createApp(dependencies: ApiDependencies = {}) {
 
   const v1 = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
+  app.all('/api/auth/*', async (context) => {
+    const environment =
+      dependencies.environment ?? parseEnvironment(environmentBindings(context.env));
+    const runtime = createRuntimeAuth(context.env, environment);
+    try {
+      return await runtime.handle(context.req.raw);
+    } finally {
+      await runtime.close();
+    }
+  });
+
   v1.get('/status', (context) =>
     context.json({ service: 'navode-api', version: 'v1', sync: 'foundation' }),
   );
 
   v1.get('/me', async (context) => {
-    const actor = await authenticator.authenticate(context.req.raw);
-    return context.json({
-      userId: actor.userId,
-      ...(actor.deviceId ? { deviceId: actor.deviceId } : {}),
-    });
+    if (dependencies.authenticator || !context.env?.HYPERDRIVE) {
+      const actor = await (dependencies.authenticator ?? new RejectingAuthenticator()).authenticate(
+        context.req.raw,
+      );
+      return context.json({
+        userId: actor.userId,
+        ...(actor.deviceId ? { deviceId: actor.deviceId } : {}),
+      });
+    }
+
+    const environment =
+      dependencies.environment ?? parseEnvironment(environmentBindings(context.env));
+    const runtime = createRuntimeAuth(context.env, environment);
+    try {
+      const actor = await runtime.authenticate(context.req.raw);
+      return context.json({
+        userId: actor.userId,
+        ...(actor.deviceId ? { deviceId: actor.deviceId } : {}),
+      });
+    } finally {
+      await runtime.close();
+    }
   });
 
   app.route('/api/v1', v1);

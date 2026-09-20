@@ -12,3 +12,7 @@ V3 API tests cover request IDs, explicit CORS rejection/allowance, typed error
 responses, fail-closed authentication, readiness behavior, and PostgreSQL
 schema integration through PGlite. The database integration suite must prove
 that an owner-scoped repository cannot return another user's document.
+
+The V3 sync core tests offline local writes, partial acknowledgements, duplicate
+retries, concurrent same-record edits, and deletion tombstones. Scratchpad and
+recent-action history are intentionally absent from the sync entity collector.
