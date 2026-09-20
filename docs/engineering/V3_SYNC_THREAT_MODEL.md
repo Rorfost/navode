@@ -1,4 +1,4 @@
-# V3 sync threat model
+# V2 release: V3 sync threat model
 
 ## Scope
 

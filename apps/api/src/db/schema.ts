@@ -209,7 +209,7 @@ export const securityEvents = pgTable(
   'security_events',
   {
     id: uuid('id').primaryKey(),
-    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }),
     deviceId: uuid('device_id').references(() => devices.id, { onDelete: 'set null' }),
     eventType: text('event_type').notNull(),
     requestId: text('request_id').notNull(),

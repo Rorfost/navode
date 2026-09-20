@@ -1,6 +1,7 @@
 export type ApiErrorCode =
   | 'authentication_required'
   | 'configuration_error'
+  | 'conflict'
   | 'database_unavailable'
   | 'forbidden'
   | 'invalid_request'

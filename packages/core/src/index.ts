@@ -914,11 +914,16 @@ export {
 export {
   NAVODE_BACKUP_SCHEMA_VERSION,
   createNavodeBackup,
-  parseNavodeBackup,
   serializeNavodeBackup,
   type BackupImportResult,
   type NavodeBackup,
 } from './backup';
+
+import { parseNavodeBackup as parseBackup } from './backup';
+
+export function parseNavodeBackup(value: string) {
+  return parseBackup(value, parseNavodeSettings);
+}
 
 export {
   acknowledgeSyncOperations,
@@ -944,3 +949,10 @@ export {
   type ManagedDevice,
   type SyncHealth,
 } from './sync-management';
+
+export {
+  canStartInitialSync,
+  createSyncUploadPreview,
+  type SyncEnrollmentStage,
+  type SyncUploadPreview,
+} from './sync-enrollment';

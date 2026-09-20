@@ -1,5 +1,6 @@
 import { PGlite } from '@electric-sql/pglite';
 import { drizzle } from 'drizzle-orm/pglite';
+import { eq } from 'drizzle-orm';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -12,6 +13,8 @@ import {
   encryptProviderCredential,
 } from '../src/credentials';
 import { createProviderCredentialRepository } from '../src/db/credentials';
+import { createSecurityEventRepository } from '../src/db/security-events';
+import { createServerSyncRepository } from '../src/db/sync';
 import * as schema from '../src/db/schema';
 
 const userA = '00000000-0000-4000-8000-000000000001';
@@ -25,6 +28,7 @@ async function createIntegrationDatabase() {
     '0001_awesome_mandrill.sql',
     '0002_authentication_lifecycle.sql',
     '0003_backup_and_credentials.sql',
+    '0004_account_deletion_audit_cleanup.sql',
   ]) {
     const migrationUrl = new URL(`../migrations/${migration}`, import.meta.url);
     await client.exec(await readFile(fileURLToPath(migrationUrl), 'utf8'));
@@ -136,5 +140,92 @@ describe('PostgreSQL sync foundation', () => {
     await expect(credentials.getActiveForUser(userB, 'github')).resolves.toBeUndefined();
     await credentials.revoke(userA, 'github');
     await expect(credentials.getActiveForUser(userA, 'github')).resolves.toBeUndefined();
+  });
+
+  it('removes account-owned backups, credentials, devices, and audit events on deletion', async () => {
+    const { client, database } = await createIntegrationDatabase();
+    clients.push(client);
+    await database.insert(schema.users).values({
+      id: userA,
+      name: 'User A',
+      email: 'user-a@example.test',
+    });
+    const devices = createDeviceRepository(database);
+    const device = await devices.register({
+      id: '00000000-0000-4000-8000-000000000025',
+      installationId: '00000000-0000-4000-8000-000000000026',
+      label: 'Work laptop',
+      userId: userA,
+    });
+    await createCloudBackupRepository(database).create({
+      id: '00000000-0000-4000-8000-000000000027',
+      sourceRevision: 3,
+      snapshot: { schemaVersion: 9 },
+      userId: userA,
+    });
+    await createSecurityEventRepository(database).record({
+      deviceId: device.id,
+      eventType: 'device_revoked',
+      id: '00000000-0000-4000-8000-000000000028',
+      metadata: { source: 'test' },
+      requestId: 'request-id-for-delete-test',
+      userId: userA,
+    });
+
+    await database.delete(schema.users).where(eq(schema.users.id, userA));
+
+    await expect(devices.listForUser(userA)).resolves.toEqual([]);
+    await expect(createCloudBackupRepository(database).listForUser(userA)).resolves.toEqual([]);
+    await expect(createSecurityEventRepository(database).listForUser(userA)).resolves.toEqual([]);
+  });
+
+  it('applies cross-device operations once and rejects a stale revision', async () => {
+    const { client, database } = await createIntegrationDatabase();
+    clients.push(client);
+    await database.insert(schema.users).values([
+      { id: userA, name: 'User A', email: 'user-a@example.test' },
+      { id: userB, name: 'User B', email: 'user-b@example.test' },
+    ]);
+    const devices = createDeviceRepository(database);
+    const deviceA = await devices.register({
+      id: '00000000-0000-4000-8000-000000000031',
+      installationId: '00000000-0000-4000-8000-000000000032',
+      label: 'Laptop',
+      userId: userA,
+    });
+    const deviceB = await devices.register({
+      id: '00000000-0000-4000-8000-000000000033',
+      installationId: '00000000-0000-4000-8000-000000000034',
+      label: 'Phone',
+      userId: userA,
+    });
+    const sync = createServerSyncRepository(database);
+    const first = {
+      baseRevision: 0,
+      deviceId: deviceA.id,
+      documentId: '00000000-0000-4000-8000-000000000035',
+      operationId: '00000000-0000-4000-8000-000000000036',
+      payload: { entities: { 'quick-link:docs': { title: 'Docs' } } },
+      revisionId: '00000000-0000-4000-8000-000000000037',
+      userId: userA,
+    };
+
+    await expect(sync.applySettingsOperation(first)).resolves.toEqual({
+      kind: 'applied',
+      revision: 1,
+    });
+    await expect(sync.applySettingsOperation(first)).resolves.toEqual({
+      kind: 'duplicate',
+      revision: 1,
+    });
+    await expect(
+      sync.applySettingsOperation({
+        ...first,
+        deviceId: deviceB.id,
+        operationId: '00000000-0000-4000-8000-000000000038',
+        revisionId: '00000000-0000-4000-8000-000000000039',
+      }),
+    ).resolves.toEqual({ currentRevision: 1, kind: 'conflict' });
+    await expect(sync.getSettings(userB)).resolves.toBeUndefined();
   });
 });

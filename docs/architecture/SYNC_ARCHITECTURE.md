@@ -1,4 +1,4 @@
-# V3 sync architecture
+# V2 release: V3 sync architecture
 
 ## Status and decisions
 
@@ -55,6 +55,12 @@ explicit conflict records. Scratchpad and recent history deliberately remain
 local-only by default because their convenience value does not justify syncing
 private freeform content or activity metadata automatically.
 
+`GET` and `POST /api/v1/sync/settings` provide the account-owned server
+revision boundary. A write requires an active account device, a UUID operation
+ID, and its base revision. The database records idempotency keys and rejects a
+stale base revision with a typed conflict response; clients reconcile that
+response through the shared entity-level sync engine.
+
 ## Conflicts, deletion, and backups
 
 V3.4 uses operation IDs, base revisions and per-record modification times.
@@ -68,10 +74,10 @@ V3.5 owns user-visible cloud backups and restore. Backups are immutable,
 account-scoped snapshots. Their list endpoint omits snapshot contents; restore
 requires an explicit confirmation and returns data for a client-controlled
 local replacement, rather than silently mutating a device. They remain until
-account-data deletion while no automatic expiry policy is configured. Account deletion starts a
-verifiable grace-period workflow, revokes devices and sessions, then deletes
-primary data, backups, credential references, and permitted audit metadata on
-their documented schedules.
+account-data deletion while no automatic expiry policy is configured. Account
+deletion uses Better Auth's fresh-session/password guard and database cascades
+to remove account-owned sessions, devices, primary data, backups, credential
+records, and security events. It never removes a browser-local copy.
 
 ## Provider credentials
 

@@ -28,6 +28,14 @@ The deployed Worker never receives `DATABASE_URL`; Hyperdrive owns its database
 connection string. The migration role may alter schema only. Runtime roles get
 only the application operations required after V3.3's API endpoints exist.
 
+## CI/CD boundary
+
+Pull requests run `db:check` and PostgreSQL-compatible integration tests; they
+never receive a production `DATABASE_URL` or run migrations. A promotion job or
+authorized operator takes a verified backup, runs the reviewed migration once,
+then deploys the Worker. Record the migration version, backup identifier,
+operator, and post-deploy `/ready` result in the release record.
+
 ## Recovery
 
 Migrations are forward-only by default. Every migration review must state

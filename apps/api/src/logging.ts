@@ -13,6 +13,12 @@ export interface ApiLogger {
     requestId: string;
     status: number;
   }): void;
+  rateLimit?(event: {
+    method: string;
+    path: string;
+    requestId: string;
+    retryAfterSeconds: number;
+  }): void;
 }
 
 export const consoleLogger: ApiLogger = {
@@ -21,5 +27,8 @@ export const consoleLogger: ApiLogger = {
   },
   error(event) {
     console.error(JSON.stringify({ event: 'api.error', ...event }));
+  },
+  rateLimit(event) {
+    console.warn(JSON.stringify({ event: 'api.rate_limit', ...event }));
   },
 };

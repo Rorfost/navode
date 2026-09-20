@@ -4,6 +4,8 @@ import { createAuthRuntime, RejectingAuthenticator, type Authenticator } from '.
 import { createCloudBackupRepository } from './db/backups';
 import { createDatabase, verifyDatabaseConnection } from './db/database';
 import { createDeviceRepository } from './db/devices';
+import { createSecurityEventRepository } from './db/security-events';
+import { createServerSyncRepository } from './db/sync';
 import { parseEnvironment, type ApiEnvironment } from './environment';
 import { ApiError } from './errors';
 import { consoleLogger, type ApiLogger } from './logging';
@@ -42,6 +44,12 @@ const cloudBackupSchema = z.object({
   snapshot: z.record(z.string(), z.unknown()),
 });
 const restoreSchema = z.object({ confirmation: z.literal('REPLACE_LOCAL_DATA') });
+const syncOperationSchema = z.object({
+  baseRevision: z.number().int().nonnegative(),
+  deviceId: z.uuid(),
+  operationId: z.uuid(),
+  payload: z.record(z.string(), z.unknown()),
+});
 
 function requestIdFrom(request: Request): string {
   const suppliedId = request.headers.get('x-request-id');
@@ -150,6 +158,12 @@ export function createApp(dependencies: ApiDependencies = {}) {
     });
 
     if (!decision.allowed) {
+      logger.rateLimit?.({
+        method: context.req.method,
+        path: context.req.path,
+        requestId,
+        retryAfterSeconds: decision.retryAfterSeconds,
+      });
       const headers = new Headers({
         'retry-after': String(decision.retryAfterSeconds),
         'x-request-id': requestId,
@@ -293,6 +307,38 @@ export function createApp(dependencies: ApiDependencies = {}) {
     });
   });
 
+  v1.get('/sync/settings', async (context) => {
+    const actor = await authenticate(context);
+    return withDatabase(context, async (database) => {
+      const document = await createServerSyncRepository(database).getSettings(actor.userId);
+      return context.json(
+        document
+          ? { payload: document.payload, revision: document.currentRevision }
+          : { payload: null, revision: 0 },
+      );
+    });
+  });
+
+  v1.post('/sync/settings', async (context) => {
+    const actor = await authenticate(context);
+    const parsed = syncOperationSchema.safeParse(await context.req.json());
+    if (!parsed.success) throw new ApiError('invalid_request', 'Sync operation is invalid.', 400);
+    return withDatabase(context, async (database) => {
+      const result = await createServerSyncRepository(database).applySettingsOperation({
+        ...parsed.data,
+        documentId: crypto.randomUUID(),
+        revisionId: crypto.randomUUID(),
+        userId: actor.userId,
+      });
+      if (result.kind === 'conflict') {
+        throw new ApiError('conflict', 'A newer sync revision exists.', 409, {
+          currentRevision: String(result.currentRevision),
+        });
+      }
+      return context.json(result, result.kind === 'applied' ? 201 : 200);
+    });
+  });
+
   v1.get('/devices', async (context) => {
     const actor = await authenticate(context);
     return withDatabase(context, async (database) => {
@@ -344,7 +390,30 @@ export function createApp(dependencies: ApiDependencies = {}) {
         context.req.param('deviceId'),
       );
       if (!device) throw new ApiError('not_found', 'Active device was not found.', 404);
+      await createSecurityEventRepository(database).record({
+        deviceId: device.id,
+        eventType: 'device_revoked',
+        id: crypto.randomUUID(),
+        metadata: { source: 'device-management' },
+        requestId: context.get('requestId'),
+        userId: actor.userId,
+      });
       return context.body(null, 204);
+    });
+  });
+
+  v1.get('/security-events', async (context) => {
+    const actor = await authenticate(context);
+    return withDatabase(context, async (database) => {
+      const events = await createSecurityEventRepository(database).listForUser(actor.userId);
+      return context.json(
+        events.map(({ metadata, ...event }) => ({
+          ...event,
+          // Metadata is deliberately an allowlisted operational marker, not
+          // request content, credentials, IP addresses, or user agent data.
+          metadata,
+        })),
+      );
     });
   });
 

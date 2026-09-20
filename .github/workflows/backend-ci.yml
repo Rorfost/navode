@@ -38,6 +38,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm --filter @navode/api typecheck
+      - run: pnpm --filter @navode/api db:check
       - run: pnpm --filter @navode/api test
       - run: pnpm build:api
       - run: pnpm --filter @navode/api exec wrangler deploy --dry-run

@@ -1,4 +1,4 @@
-# V3 account authentication
+# V2 release: V3 account authentication
 
 Navode uses Better Auth's Hono handler at `/api/auth/*` with its official
 Drizzle adapter and PostgreSQL-backed sessions. V3.3 enables email/password

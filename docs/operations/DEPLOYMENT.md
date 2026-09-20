@@ -24,7 +24,8 @@ production Hyperdrive configuration as `HYPERDRIVE`, configure explicit
 `CORS_ALLOWED_ORIGINS`, apply reviewed database migrations from an authorized
 runner, then deploy. Verify both `GET /health` and `GET /ready`; the latter must
 not pass without PostgreSQL. Store credentials in GitHub Secrets—not source
-control. See [DATABASE_MIGRATIONS.md](DATABASE_MIGRATIONS.md).
+control. See [DATABASE_MIGRATIONS.md](DATABASE_MIGRATIONS.md),
+[OBSERVABILITY.md](OBSERVABILITY.md), and [V2_SYNC_MIGRATION.md](V2_SYNC_MIGRATION.md).
 
 ## Chrome extension
 

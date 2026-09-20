@@ -1,9 +1,12 @@
 import { z } from 'zod';
 import { isSafeExternalUrl } from './command-engine';
-import { NAVODE_STORAGE_SCHEMA_VERSION, parseNavodeSettings, type NavodeSettings } from './index';
+import type { NavodeSettings } from './index';
 
 export const NAVODE_BACKUP_SCHEMA_VERSION = 1;
 const MAX_BACKUP_BYTES = 1_000_000;
+// `parseNavodeBackup` receives the current parser from the public core entry
+// point. Keeping this static limit here avoids a runtime cycle back to index.
+const MAX_SUPPORTED_SETTINGS_SCHEMA_VERSION = 9;
 
 export interface NavodeBackup {
   data: NavodeSettings;
@@ -18,7 +21,7 @@ export type BackupImportResult =
 const safeUrl = z.string().refine(isSafeExternalUrl, 'must use an http or https URL');
 const settingsDataSchema = z
   .object({
-    schemaVersion: z.number().int().min(1).max(NAVODE_STORAGE_SCHEMA_VERSION),
+    schemaVersion: z.number().int().min(1).max(MAX_SUPPORTED_SETTINGS_SCHEMA_VERSION),
     theme: z.enum(['dark', 'light', 'system']).optional(),
     onboardingCompleted: z.boolean().optional(),
     defaultSearchProvider: z.enum(['google', 'youtube']).optional(),
@@ -162,7 +165,10 @@ export function serializeNavodeBackup(
   return JSON.stringify(createNavodeBackup(settings, exportedAt), null, 2);
 }
 
-export function parseNavodeBackup(value: string): BackupImportResult {
+export function parseNavodeBackup(
+  value: string,
+  parseSettings: (settings: unknown) => NavodeSettings = (settings) => settings as NavodeSettings,
+): BackupImportResult {
   if (new TextEncoder().encode(value).byteLength > MAX_BACKUP_BYTES) {
     return { errors: ['Backup files must be smaller than 1 MB.'], success: false };
   }
@@ -186,7 +192,7 @@ export function parseNavodeBackup(value: string): BackupImportResult {
 
   return {
     backup: {
-      data: parseNavodeSettings(validated.data.data),
+      data: parseSettings(validated.data.data),
       exportedAt: validated.data.exportedAt,
       schemaVersion: NAVODE_BACKUP_SCHEMA_VERSION,
     },
