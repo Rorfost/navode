@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { isSafeExternalUrl } from './command-engine';
-import { parseNavodeSettings, type NavodeSettings } from './index';
+import { NAVODE_STORAGE_SCHEMA_VERSION, parseNavodeSettings, type NavodeSettings } from './index';
 
 export const NAVODE_BACKUP_SCHEMA_VERSION = 1;
 const MAX_BACKUP_BYTES = 1_000_000;
@@ -18,7 +18,7 @@ export type BackupImportResult =
 const safeUrl = z.string().refine(isSafeExternalUrl, 'must use an http or https URL');
 const settingsDataSchema = z
   .object({
-    schemaVersion: z.number().int().min(1).max(4),
+    schemaVersion: z.number().int().min(1).max(NAVODE_STORAGE_SCHEMA_VERSION),
     theme: z.enum(['dark', 'light', 'system']).optional(),
     onboardingCompleted: z.boolean().optional(),
     defaultSearchProvider: z.enum(['google', 'youtube']).optional(),

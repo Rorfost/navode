@@ -66,6 +66,9 @@ importers:
       '@navode/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@navode/integrations':
+        specifier: workspace:*
+        version: link:../../packages/integrations
       '@navode/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -106,6 +109,9 @@ importers:
       '@navode/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@navode/integrations':
+        specifier: workspace:*
+        version: link:../../packages/integrations
       '@navode/ui':
         specifier: workspace:*
         version: link:../../packages/ui

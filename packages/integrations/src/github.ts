@@ -43,7 +43,10 @@ export function formatGitHubRepository(reference: GitHubRepositoryReference): st
   return `${reference.owner}/${reference.repository}`;
 }
 
-export function githubRepositoryUrl(reference: GitHubRepositoryReference, section?: 'actions' | 'issues' | 'prs'): string {
+export function githubRepositoryUrl(
+  reference: GitHubRepositoryReference,
+  section?: 'actions' | 'issues' | 'prs',
+): string {
   const root = `${GITHUB_WEB_ROOT}/${encodeURIComponent(reference.owner)}/${encodeURIComponent(reference.repository)}`;
   if (section === 'prs') return `${root}/pulls`;
   return section ? `${root}/${section}` : root;
@@ -64,7 +67,12 @@ export async function fetchGitHubRepositoryStatus(
 
   const repository = await getJson(request, base, headers, now);
   if (repository.kind === 'error') return repository;
-  const pullRequests = await getJson(request, `${base}/pulls?state=open&per_page=100`, headers, now);
+  const pullRequests = await getJson(
+    request,
+    `${base}/pulls?state=open&per_page=100`,
+    headers,
+    now,
+  );
   if (pullRequests.kind === 'error') return pullRequests;
   const issues = await getJson(request, `${base}/issues?state=open&per_page=100`, headers, now);
   if (issues.kind === 'error') return issues;
@@ -73,7 +81,10 @@ export async function fetchGitHubRepositoryStatus(
 
   const data = repository.value;
   if (!isRecord(data) || typeof data.full_name !== 'string' || typeof data.html_url !== 'string') {
-    return { kind: 'error', error: providerError('invalid-response', 'GitHub returned invalid repository data.', now()) };
+    return {
+      kind: 'error',
+      error: providerError('invalid-response', 'GitHub returned invalid repository data.', now()),
+    };
   }
   const workflow = parseWorkflow(workflows.value);
   return {
@@ -81,7 +92,9 @@ export async function fetchGitHubRepositoryStatus(
     status: {
       archived: data.archived === true,
       defaultBranch: typeof data.default_branch === 'string' ? data.default_branch : 'main',
-      ...(typeof data.description === 'string' ? { description: data.description.slice(0, 500) } : {}),
+      ...(typeof data.description === 'string'
+        ? { description: data.description.slice(0, 500) }
+        : {}),
       fullName: data.full_name,
       isPrivate: data.private === true,
       issueCount: countIssues(issues.value),
@@ -147,10 +160,14 @@ export function isGitHubCacheStale(
   return !Number.isFinite(cachedAt) || now.getTime() - cachedAt >= 10 * 60_000;
 }
 
-function asyncError(error: unknown, now: Date): GitHubStatusResult {
+function asyncError(_error: unknown, now: Date): { kind: 'error'; error: IntegrationError } {
   return {
     kind: 'error',
-    error: providerError('network-error', 'GitHub could not be reached. Cached data remains available.', now),
+    error: providerError(
+      'network-error',
+      'GitHub could not be reached. Cached data remains available.',
+      now,
+    ),
   };
 }
 
@@ -171,7 +188,11 @@ async function getJson(
     return {
       kind: 'error',
       error: {
-        ...providerError('rate-limited', 'GitHub rate limit reached. Cached data remains available.', now()),
+        ...providerError(
+          'rate-limited',
+          'GitHub rate limit reached. Cached data remains available.',
+          now(),
+        ),
         ...(retryAt ? { retryAt } : {}),
       },
     };
@@ -194,7 +215,8 @@ async function getJson(
 
 function getRetryAt(headers: Headers, now: Date): string | undefined {
   const retryAfter = Number(headers.get('retry-after'));
-  if (Number.isFinite(retryAfter) && retryAfter > 0) return new Date(now.getTime() + retryAfter * 1000).toISOString();
+  if (Number.isFinite(retryAfter) && retryAfter > 0)
+    return new Date(now.getTime() + retryAfter * 1000).toISOString();
   const reset = Number(headers.get('x-ratelimit-reset'));
   return Number.isFinite(reset) && reset > 0 ? new Date(reset * 1000).toISOString() : undefined;
 }
@@ -208,12 +230,29 @@ function countIssues(value: unknown): number {
 function parseWorkflow(value: unknown): GitHubRepositoryStatus['workflow'] | undefined {
   if (!isRecord(value) || !Array.isArray(value.workflow_runs)) return undefined;
   const run = value.workflow_runs[0];
-  if (!isRecord(run) || typeof run.name !== 'string' || typeof run.status !== 'string' || typeof run.html_url !== 'string') return undefined;
-  return { conclusion: typeof run.conclusion === 'string' ? run.conclusion : null, name: run.name, status: run.status, url: run.html_url };
+  if (
+    !isRecord(run) ||
+    typeof run.name !== 'string' ||
+    typeof run.status !== 'string' ||
+    typeof run.html_url !== 'string'
+  )
+    return undefined;
+  return {
+    conclusion: typeof run.conclusion === 'string' ? run.conclusion : null,
+    name: run.name,
+    status: run.status,
+    url: run.html_url,
+  };
 }
 
 function isGitHubRepositoryStatus(value: unknown): value is GitHubRepositoryStatus {
-  return isRecord(value) && typeof value.fullName === 'string' && typeof value.issueCount === 'number' && typeof value.openPullRequestCount === 'number' && typeof value.repositoryUrl === 'string';
+  return (
+    isRecord(value) &&
+    typeof value.fullName === 'string' &&
+    typeof value.issueCount === 'number' &&
+    typeof value.openPullRequestCount === 'number' &&
+    typeof value.repositoryUrl === 'string'
+  );
 }
 
 function providerError(code: string, message: string, now: Date): IntegrationError {

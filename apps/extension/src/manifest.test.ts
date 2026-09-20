@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import manifest from '../public/manifest.json';
 
 describe('extension manifest policy', () => {
-  it('keeps required permissions local-first and makes GitHub API access optional', () => {
+  it('keeps required permissions local-first and requests provider or saved-health origins only when needed', () => {
     const completeManifest: Record<string, unknown> = manifest;
     expect(manifest.manifest_version).toBe(3);
     expect(manifest.version).toBe('1.0.0');
@@ -14,6 +14,8 @@ describe('extension manifest policy', () => {
       'https://api.github.com/*',
       'https://www.googleapis.com/*',
       'https://codeforces.com/*',
+      'http://*/*',
+      'https://*/*',
     ]);
     expect(completeManifest.content_scripts).toBeUndefined();
     expect(manifest.content_security_policy.extension_pages).toBe(

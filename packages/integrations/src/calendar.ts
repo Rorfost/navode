@@ -34,7 +34,10 @@ export async function fetchGoogleCalendarContext(
 ): Promise<CalendarContextResult> {
   const now = options.now ?? (() => new Date());
   if (!options.accessToken) {
-    return { kind: 'error', error: error('authorization-required', 'Connect Google Calendar to load events.', now()) };
+    return {
+      kind: 'error',
+      error: error('authorization-required', 'Connect Google Calendar to load events.', now()),
+    };
   }
   const timezone = options.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
   const current = now();
@@ -55,26 +58,53 @@ export async function fetchGoogleCalendarContext(
       { headers: { Authorization: `Bearer ${options.accessToken}` } },
     );
   } catch {
-    return { kind: 'error', error: error('network-error', 'Google Calendar could not be reached. Cached events remain available.', current) };
+    return {
+      kind: 'error',
+      error: error(
+        'network-error',
+        'Google Calendar could not be reached. Cached events remain available.',
+        current,
+      ),
+    };
   }
   if (response.status === 401) {
-    return { kind: 'error', error: error('authorization-expired', 'Google Calendar authorization expired. Reconnect to refresh events.', current) };
+    return {
+      kind: 'error',
+      error: error(
+        'authorization-expired',
+        'Google Calendar authorization expired. Reconnect to refresh events.',
+        current,
+      ),
+    };
   }
   if (!response.ok) {
-    return { kind: 'error', error: error('calendar-api-error', 'Google Calendar could not load events. Cached events remain available.', current) };
+    return {
+      kind: 'error',
+      error: error(
+        'calendar-api-error',
+        'Google Calendar could not load events. Cached events remain available.',
+        current,
+      ),
+    };
   }
   try {
     const body = (await response.json()) as unknown;
-    const events = isRecord(body) && Array.isArray(body.items)
-      ? body.items.flatMap(mapCalendarEvent).sort(compareCalendarEvents)
-      : [];
+    const events =
+      isRecord(body) && Array.isArray(body.items)
+        ? body.items.flatMap(mapCalendarEvent).sort(compareCalendarEvents)
+        : [];
     return { kind: 'success', context: { events, generatedAt: current.toISOString(), timezone } };
   } catch {
-    return { kind: 'error', error: error('invalid-response', 'Google Calendar returned unreadable event data.', current) };
+    return {
+      kind: 'error',
+      error: error('invalid-response', 'Google Calendar returned unreadable event data.', current),
+    };
   }
 }
 
-export function readCalendarCachedContext(cache: IntegrationCacheState | undefined): CalendarContext | undefined {
+export function readCalendarCachedContext(
+  cache: IntegrationCacheState | undefined,
+): CalendarContext | undefined {
   const value = cache?.entries.context?.value;
   return isCalendarContext(value) ? value : undefined;
 }
@@ -83,11 +113,18 @@ export function saveCalendarCachedContext(
   cache: IntegrationCacheState,
   context: CalendarContext,
 ): IntegrationCacheState {
-  return { entries: { ...cache.entries, context: { cachedAt: context.generatedAt, value: context } } };
+  return {
+    entries: { ...cache.entries, context: { cachedAt: context.generatedAt, value: context } },
+  };
 }
 
-export function getNextCalendarEvent(context: CalendarContext, now = new Date()): CalendarEvent | undefined {
-  return context.events.find((event) => !event.allDay && event.startAt && Date.parse(event.startAt) >= now.getTime());
+export function getNextCalendarEvent(
+  context: CalendarContext,
+  now = new Date(),
+): CalendarEvent | undefined {
+  return context.events.find(
+    (event) => !event.allDay && event.startAt && Date.parse(event.startAt) >= now.getTime(),
+  );
 }
 
 export function getTodayCalendarEvents(context: CalendarContext): CalendarEvent[] {
@@ -96,20 +133,30 @@ export function getTodayCalendarEvents(context: CalendarContext): CalendarEvent[
 
 function mapCalendarEvent(value: unknown): CalendarEvent[] {
   if (!isRecord(value) || typeof value.id !== 'string') return [];
-  const start = isRecord(value.start) ? value.start : {};
-  const end = isRecord(value.end) ? value.end : {};
-  const allDay = typeof start.date === 'string';
-  const startAt = typeof start.dateTime === 'string' ? start.dateTime : allDay ? start.date : undefined;
-  const endAt = typeof end.dateTime === 'string' ? end.dateTime : allDay ? end.date : undefined;
+  const start: Record<string, unknown> = isRecord(value.start) ? value.start : {};
+  const end: Record<string, unknown> = isRecord(value.end) ? value.end : {};
+  const startDate = typeof start.date === 'string' ? start.date : undefined;
+  const endDate = typeof end.date === 'string' ? end.date : undefined;
+  const allDay = startDate !== undefined;
+  const startAt =
+    typeof start.dateTime === 'string' ? start.dateTime : allDay ? startDate : undefined;
+  const endAt = typeof end.dateTime === 'string' ? end.dateTime : allDay ? endDate : undefined;
   if (!startAt) return [];
-  return [{
-    allDay,
-    ...(endAt ? { endAt } : {}),
-    ...(typeof value.htmlLink === 'string' && isSafeUrl(value.htmlLink) ? { htmlLink: value.htmlLink } : {}),
-    id: value.id,
-    startAt,
-    title: typeof value.summary === 'string' && value.summary.trim() ? value.summary.trim().slice(0, 300) : 'Untitled event',
-  }];
+  return [
+    {
+      allDay,
+      ...(endAt ? { endAt } : {}),
+      ...(typeof value.htmlLink === 'string' && isSafeUrl(value.htmlLink)
+        ? { htmlLink: value.htmlLink }
+        : {}),
+      id: value.id,
+      startAt,
+      title:
+        typeof value.summary === 'string' && value.summary.trim()
+          ? value.summary.trim().slice(0, 300)
+          : 'Untitled event',
+    },
+  ];
 }
 
 function compareCalendarEvents(left: CalendarEvent, right: CalendarEvent): number {
@@ -143,7 +190,8 @@ function isCalendarEvent(value: unknown): value is CalendarEvent {
     typeof value.allDay === 'boolean' &&
     (value.startAt === undefined || typeof value.startAt === 'string') &&
     (value.endAt === undefined || typeof value.endAt === 'string') &&
-    (value.htmlLink === undefined || (typeof value.htmlLink === 'string' && isSafeUrl(value.htmlLink)))
+    (value.htmlLink === undefined ||
+      (typeof value.htmlLink === 'string' && isSafeUrl(value.htmlLink)))
   );
 }
 

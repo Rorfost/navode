@@ -2,6 +2,19 @@
 
 This document is the source of truth for the manual Chrome Web Store submission. Navode is not published until Chrome accepts and makes the item visible.
 
+> **V2.0.0 update:** Replace the V1 package/version values below before submission. The V2 listing must disclose optional GitHub, Google Calendar, Codeforces, and user-configured project-health access. The exact final manifest remains the source of truth.
+
+## V2 permission justification
+
+| Permission/origin              | Why it is needed                                                                               |
+| ------------------------------ | ---------------------------------------------------------------------------------------------- |
+| `storage`                      | Saves local-first Navode settings and user-created data.                                       |
+| `identity` (optional)          | Requests a short-lived Google Calendar read-only authorization only after Connect is selected. |
+| Optional provider origins      | Contact GitHub, Google Calendar, or Codeforces only after the respective connection action.    |
+| Optional project-health origin | Requests the exact user-configured service origin only when that health check is saved.        |
+
+V2 has no install-time host permissions, content scripts, history, top-sites, tabs, or scripting access. It has no accounts, analytics, telemetry, cloud sync, or Navode-hosted database. Provider and health responses stay in local caches and are removed on disconnect.
+
 ## Listing copy
 
 | Field              | Value                                                                                                 |

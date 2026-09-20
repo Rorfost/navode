@@ -1,8 +1,13 @@
 export * from './github';
 export * from './calendar';
 export * from './codeforces';
+export * from './project-health';
 
-export type IntegrationId = 'github' | 'google-calendar' | 'competitive-programming' | 'project-health';
+export type IntegrationId =
+  | 'github'
+  | 'google-calendar'
+  | 'competitive-programming'
+  | 'project-health';
 
 export type IntegrationConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error';
 export type IntegrationAvailability = 'planned' | 'available';
@@ -113,13 +118,21 @@ export const NAVODE_INTEGRATIONS = createIntegrationRegistry([
     description: 'Repository activity and pull-request status.',
     availability: 'available',
     capabilities: [
-      { id: 'repository-status', label: 'Repository status', description: 'Read repository activity and metadata.' },
+      {
+        id: 'repository-status',
+        label: 'Repository status',
+        description: 'Read repository activity and metadata.',
+      },
       { id: 'pull-requests', label: 'Pull requests', description: 'Read open pull requests.' },
       { id: 'issues', label: 'Issues', description: 'Read open issues.' },
       { id: 'workflow-runs', label: 'Workflow runs', description: 'Read recent workflow status.' },
     ],
     permissions: [
-      { id: 'github-api', label: 'GitHub API access', description: 'Read selected repository data from api.github.com.' },
+      {
+        id: 'github-api',
+        label: 'GitHub API access',
+        description: 'Read selected repository data from api.github.com.',
+      },
     ],
     actions: [
       { id: 'open-repository', label: 'Open repository', capabilityId: 'repository-status' },
@@ -128,7 +141,12 @@ export const NAVODE_INTEGRATIONS = createIntegrationRegistry([
       { id: 'open-actions', label: 'Open workflow runs', capabilityId: 'workflow-runs' },
     ],
     widgets: [
-      { id: 'repository-status', title: 'Repository status', capabilityId: 'repository-status', emptyMessage: 'No GitHub repository selected.' },
+      {
+        id: 'repository-status',
+        title: 'Repository status',
+        capabilityId: 'repository-status',
+        emptyMessage: 'No GitHub repository selected.',
+      },
     ],
     refreshPolicy: { ...DEFAULT_REFRESH_POLICY, staleAfterMs: 10 * 60_000 },
   },
@@ -137,10 +155,31 @@ export const NAVODE_INTEGRATIONS = createIntegrationRegistry([
     name: 'Google Calendar',
     description: 'Upcoming events from calendars you choose to connect.',
     availability: 'available',
-    capabilities: [{ id: 'upcoming-events', label: 'Upcoming events', description: 'Read today’s upcoming events.' }],
-    permissions: [{ id: 'calendar-events-readonly', label: 'Calendar events (read-only)', description: 'Read today’s events from your primary calendar.' }],
-    actions: [{ id: 'open-calendar', label: 'Open Google Calendar', capabilityId: 'upcoming-events' }],
-    widgets: [{ id: 'daily-context', title: 'Today', capabilityId: 'upcoming-events', emptyMessage: 'No upcoming events today.' }],
+    capabilities: [
+      {
+        id: 'upcoming-events',
+        label: 'Upcoming events',
+        description: 'Read today’s upcoming events.',
+      },
+    ],
+    permissions: [
+      {
+        id: 'calendar-events-readonly',
+        label: 'Calendar events (read-only)',
+        description: 'Read today’s events from your primary calendar.',
+      },
+    ],
+    actions: [
+      { id: 'open-calendar', label: 'Open Google Calendar', capabilityId: 'upcoming-events' },
+    ],
+    widgets: [
+      {
+        id: 'daily-context',
+        title: 'Today',
+        capabilityId: 'upcoming-events',
+        emptyMessage: 'No upcoming events today.',
+      },
+    ],
     refreshPolicy: { ...DEFAULT_REFRESH_POLICY, staleAfterMs: 5 * 60_000 },
   },
   {
@@ -149,27 +188,61 @@ export const NAVODE_INTEGRATIONS = createIntegrationRegistry([
     description: 'Public Codeforces contests and an optional public profile handle.',
     availability: 'available',
     capabilities: [
-      { id: 'contest-status', label: 'Upcoming contests', description: 'Read public Codeforces contest timing.' },
-      { id: 'public-profile', label: 'Public profile', description: 'Read an optional public Codeforces rating and recent submissions.' },
+      {
+        id: 'contest-status',
+        label: 'Upcoming contests',
+        description: 'Read public Codeforces contest timing.',
+      },
+      {
+        id: 'public-profile',
+        label: 'Public profile',
+        description: 'Read an optional public Codeforces rating and recent submissions.',
+      },
     ],
-    permissions: [{ id: 'codeforces-public-api', label: 'Codeforces public API', description: 'Read public contest and optional public-handle data from codeforces.com.' }],
+    permissions: [
+      {
+        id: 'codeforces-public-api',
+        label: 'Codeforces public API',
+        description: 'Read public contest and optional public-handle data from codeforces.com.',
+      },
+    ],
     actions: [
       { id: 'open-contests', label: 'Open Codeforces contests', capabilityId: 'contest-status' },
       { id: 'open-problemset', label: 'Open Codeforces practice', capabilityId: 'contest-status' },
     ],
-    widgets: [{ id: 'contest-context', title: 'Contests', capabilityId: 'contest-status', emptyMessage: 'No upcoming Codeforces contests.' }],
+    widgets: [
+      {
+        id: 'contest-context',
+        title: 'Contests',
+        capabilityId: 'contest-status',
+        emptyMessage: 'No upcoming Codeforces contests.',
+      },
+    ],
     refreshPolicy: { ...DEFAULT_REFRESH_POLICY, staleAfterMs: 15 * 60_000 },
   },
   {
     id: 'project-health',
     name: 'Project health',
     description: 'Service and deployment health for projects you configure.',
-    availability: 'planned',
-    capabilities: [{ id: 'service-status', label: 'Service status', description: 'Read configured service health.' }],
+    availability: 'available',
+    capabilities: [
+      {
+        id: 'service-status',
+        label: 'Service status',
+        description: 'Read configured service health.',
+      },
+    ],
     permissions: [],
-    actions: [],
-    widgets: [],
-    refreshPolicy: DEFAULT_REFRESH_POLICY,
+    actions: [{ id: 'open-health', label: 'Open project health', capabilityId: 'service-status' }],
+    widgets: [
+      {
+        id: 'project-health',
+        title: 'Project health',
+        capabilityId: 'service-status',
+        emptyMessage: 'No service checks configured.',
+      },
+    ],
+    refreshPolicy: { ...DEFAULT_REFRESH_POLICY, staleAfterMs: 10 * 60_000 },
   },
 ]);
 
@@ -201,9 +274,7 @@ export interface RefreshRequest {
   now?: Date;
 }
 
-export type ProviderRefresh = (
-  cached: IntegrationCacheState,
-) => Promise<IntegrationCacheState>;
+export type ProviderRefresh = (cached: IntegrationCacheState) => Promise<IntegrationCacheState>;
 
 export interface RefreshCoordinator {
   refresh(
@@ -237,7 +308,10 @@ export function createRefreshCoordinator(registry: IntegrationRegistry): Refresh
 
 /** Host adapters implement this with a user-initiated provider or browser permission prompt. */
 export interface IntegrationPermissionRequester {
-  request(provider: IntegrationDefinition, permissions: readonly IntegrationPermission[]): Promise<boolean>;
+  request(
+    provider: IntegrationDefinition,
+    permissions: readonly IntegrationPermission[],
+  ): Promise<boolean>;
 }
 
 /** Requests only the provider permissions that have not already been granted. */
@@ -281,7 +355,9 @@ export async function requestIntegrationPermissions(
     ...withoutConnectionError(connection),
     enabled: true,
     status: 'connected',
-    grantedPermissionIds: [...new Set([...connection.grantedPermissionIds, ...missing.map(({ id }) => id)])],
+    grantedPermissionIds: [
+      ...new Set([...connection.grantedPermissionIds, ...missing.map(({ id }) => id)]),
+    ],
   };
 }
 
@@ -319,7 +395,11 @@ export async function refreshIntegration(
   }
 }
 
-export function isCacheStale(cache: IntegrationCacheState, policy: RefreshPolicy, now = new Date()): boolean {
+export function isCacheStale(
+  cache: IntegrationCacheState,
+  policy: RefreshPolicy,
+  now = new Date(),
+): boolean {
   const timestamps = Object.values(cache.entries)
     .map((entry) => Date.parse(entry.cachedAt))
     .filter(Number.isFinite);
@@ -336,7 +416,9 @@ function createRefreshError(
   policy: RefreshPolicy,
   now: Date,
 ): IntegrationError {
-  const previousDelay = previous?.retryAt ? Math.max(0, Date.parse(previous.retryAt) - Date.parse(previous.occurredAt)) : 0;
+  const previousDelay = previous?.retryAt
+    ? Math.max(0, Date.parse(previous.retryAt) - Date.parse(previous.occurredAt))
+    : 0;
   const delay = Math.min(
     previousDelay > 0 ? previousDelay * 2 : policy.baseBackoffMs,
     policy.maxBackoffMs,
@@ -349,7 +431,9 @@ function createRefreshError(
   };
 }
 
-function withoutConnectionError(connection: IntegrationConnection): Omit<IntegrationConnection, 'error'> {
+function withoutConnectionError(
+  connection: IntegrationConnection,
+): Omit<IntegrationConnection, 'error'> {
   const { error: _error, ...withoutError } = connection;
   return withoutError;
 }

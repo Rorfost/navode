@@ -16,9 +16,12 @@ import {
   isCodeforcesCacheStale,
   parseGitHubRepositoryReference,
   readCodeforcesCachedContext,
+  checkProjectHealth,
+  isProjectHealthCheckStale,
   refreshGitHubRepositoryCache,
   requestIntegrationPermissions,
   saveCodeforcesCachedContext,
+  saveProjectHealthCheck,
 } from '@navode/integrations';
 import { ErrorBoundary, NavodeShell } from '@navode/ui';
 import { PublicSite, type PublicPage } from './public-site';
@@ -29,7 +32,9 @@ function NavodeWebApp() {
   const [settings, setSettings] = useState(loadWebSettings);
   const catalog = useMemo<CommandCatalog>(
     () => ({
-      ...(settings.competitiveProgramming.codeforcesHandle ? { codeforcesHandle: settings.competitiveProgramming.codeforcesHandle } : {}),
+      ...(settings.competitiveProgramming.codeforcesHandle
+        ? { codeforcesHandle: settings.competitiveProgramming.codeforcesHandle }
+        : {}),
       customAliases: settings.customAliases,
       defaultSearchProvider: settings.defaultSearchProvider,
       projects: settings.projects.map((project) => ({
@@ -74,9 +79,11 @@ function NavodeWebApp() {
 
   useEffect(() => {
     const connection = settings.integrations.github;
-    const references = settings.projects.flatMap((project) =>
-      project.githubRepository ? [parseGitHubRepositoryReference(project.githubRepository)] : [],
-    ).filter((reference) => reference !== null);
+    const references = settings.projects
+      .flatMap((project) =>
+        project.githubRepository ? [parseGitHubRepositoryReference(project.githubRepository)] : [],
+      )
+      .filter((reference) => reference !== null);
     if (connection?.status !== 'connected' || !references.length) return;
     const cache = settings.integrationCache.github ?? { entries: {} };
     void refreshGitHubRepositoryCache(cache, references).then((result) => {
@@ -103,26 +110,98 @@ function NavodeWebApp() {
     const cachedContext = readCodeforcesCachedContext(cache);
     const hasCurrentProfile =
       !settings.competitiveProgramming.codeforcesHandle ||
-      cachedContext?.profile?.handle.toLowerCase() === settings.competitiveProgramming.codeforcesHandle.toLowerCase();
+      cachedContext?.profile?.handle.toLowerCase() ===
+        settings.competitiveProgramming.codeforcesHandle.toLowerCase();
     if (!isCodeforcesCacheStale(cache) && hasCurrentProfile) return;
     void fetchCodeforcesContext(settings.competitiveProgramming.codeforcesHandle).then((result) => {
       setSettings((current) => ({
         ...current,
         ...(result.kind === 'success'
-          ? { integrationCache: { ...current.integrationCache, 'competitive-programming': saveCodeforcesCachedContext(cache, result.context) } }
+          ? {
+              integrationCache: {
+                ...current.integrationCache,
+                'competitive-programming': saveCodeforcesCachedContext(cache, result.context),
+              },
+            }
           : {}),
         integrations: {
           ...current.integrations,
           'competitive-programming': {
             ...connection,
-            ...(result.kind === 'success' ? { lastRefreshAt: result.context.generatedAt } : { error: result.error, status: 'error' as const }),
+            ...(result.kind === 'success'
+              ? { lastRefreshAt: result.context.generatedAt }
+              : { error: result.error, status: 'error' as const }),
           },
         },
       }));
     });
-  }, [settings.competitiveProgramming.codeforcesHandle, settings.integrationCache['competitive-programming'], settings.integrations['competitive-programming']]);
+  }, [
+    settings.competitiveProgramming.codeforcesHandle,
+    settings.integrationCache['competitive-programming'],
+    settings.integrations['competitive-programming'],
+  ]);
 
-  function connectIntegration(providerId: 'github' | 'google-calendar' | 'competitive-programming') {
+  useEffect(() => {
+    const cache = settings.integrationCache['project-health'] ?? { entries: {} };
+    const targets = settings.projectHealthTargets.filter((target) =>
+      isProjectHealthCheckStale(cache, target.id),
+    );
+    if (!targets.length) return;
+    void Promise.all(
+      targets.map(async (target) => ({
+        target,
+        result: await checkProjectHealth(target, { online: navigator.onLine }),
+      })),
+    ).then((checks) => saveHealthChecks(checks));
+  }, [settings.integrationCache['project-health'], settings.projectHealthTargets]);
+
+  function saveHealthChecks(
+    checks: readonly {
+      target: NavodeSettings['projectHealthTargets'][number];
+      result: Awaited<ReturnType<typeof checkProjectHealth>>;
+    }[],
+  ) {
+    setSettings((current) => {
+      let cache = current.integrationCache['project-health'] ?? { entries: {} };
+      for (const { target, result } of checks) {
+        if (
+          current.projectHealthTargets.some(
+            (item) => item.id === target.id && item.url === target.url,
+          )
+        ) {
+          cache = saveProjectHealthCheck(cache, target.id, result.check);
+        }
+      }
+      return {
+        ...current,
+        integrationCache: { ...current.integrationCache, 'project-health': cache },
+      };
+    });
+  }
+
+  function refreshProjectHealth() {
+    void Promise.all(
+      settings.projectHealthTargets.map(async (target) => ({
+        target,
+        result: await checkProjectHealth(target, { online: navigator.onLine }),
+      })),
+    ).then((checks) => saveHealthChecks(checks));
+  }
+
+  function refreshIntegration(
+    providerId: 'github' | 'google-calendar' | 'competitive-programming',
+  ) {
+    setSettings((current) => ({
+      ...current,
+      integrationCache: Object.fromEntries(
+        Object.entries(current.integrationCache).filter(([id]) => id !== providerId),
+      ),
+    }));
+  }
+
+  function connectIntegration(
+    providerId: 'github' | 'google-calendar' | 'competitive-programming',
+  ) {
     const definition = NAVODE_INTEGRATIONS.get(providerId);
     if (!definition) return;
     const currentConnection = settings.integrations[providerId];
@@ -130,7 +209,11 @@ function NavodeWebApp() {
       definition,
       currentConnection?.status === 'error'
         ? { ...currentConnection, grantedPermissionIds: [] }
-        : currentConnection ?? { enabled: false, status: 'disconnected', grantedPermissionIds: [] },
+        : (currentConnection ?? {
+            enabled: false,
+            status: 'disconnected',
+            grantedPermissionIds: [],
+          }),
       {
         request: async () => {
           if (providerId === 'github') return true;
@@ -193,6 +276,9 @@ function NavodeWebApp() {
     <NavodeShell
       onCommandResult={handleCommandResult}
       onIntegrationConnect={connectIntegration}
+      onIntegrationRefresh={refreshIntegration}
+      onProjectHealthRefresh={refreshProjectHealth}
+      onProjectHealthTargetSave={async () => true}
       onSettingsChange={updateSettings}
       onWorkspaceLaunch={launchWorkspace}
       resolveCommandResults={resolveResults}

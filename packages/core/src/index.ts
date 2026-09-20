@@ -30,11 +30,14 @@ import {
   type IntegrationCacheState,
   type IntegrationConnection,
   type IntegrationId,
+  createProjectHealthTarget,
+  MAX_PROJECT_HEALTH_TARGETS,
+  type ProjectHealthTarget,
 } from '@navode/integrations';
 
 export type CommandKind = 'url' | 'search' | 'project' | 'focus';
 
-export const NAVODE_STORAGE_SCHEMA_VERSION = 7;
+export const NAVODE_STORAGE_SCHEMA_VERSION = 9;
 export const NAVODE_SETTINGS_STORAGE_KEY = 'navode.settings';
 
 export type ThemePreference = 'dark' | 'light' | 'system';
@@ -66,6 +69,21 @@ export const DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS: CompetitiveProgrammingSet
   showWidget: true,
 };
 
+export interface IntegrationWidgetPreferences {
+  calendar: boolean;
+  competitiveProgramming: boolean;
+  github: boolean;
+  projectHealth: boolean;
+}
+
+/** Live data is opt-in on the home screen; local V1 content remains the default. */
+export const DEFAULT_INTEGRATION_WIDGET_PREFERENCES: IntegrationWidgetPreferences = {
+  calendar: false,
+  competitiveProgramming: false,
+  github: false,
+  projectHealth: false,
+};
+
 export interface StoredSettings {
   schemaVersion: typeof NAVODE_STORAGE_SCHEMA_VERSION;
 }
@@ -77,6 +95,8 @@ export interface NavodeSettings extends StoredSettings {
   initialQuickLinks: boolean;
   integrationCache: Partial<Record<IntegrationId, IntegrationCacheState>>;
   integrations: Partial<Record<IntegrationId, IntegrationConnection>>;
+  integrationWidgets: IntegrationWidgetPreferences;
+  projectHealthTargets: ProjectHealthTarget[];
   competitiveProgramming: CompetitiveProgrammingSettings;
   customAliases: CommandAlias[];
   projects: Project[];
@@ -101,6 +121,8 @@ export const DEFAULT_NAVODE_SETTINGS: NavodeSettings = {
   initialQuickLinks: true,
   integrationCache: {},
   integrations: {},
+  integrationWidgets: DEFAULT_INTEGRATION_WIDGET_PREFERENCES,
+  projectHealthTargets: [],
   competitiveProgramming: DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS,
   customAliases: [],
   projects: [],
@@ -126,6 +148,8 @@ export function parseNavodeSettings(value: unknown): NavodeSettings {
   if (value.schemaVersion === 4) return migrateV4Settings(value);
   if (value.schemaVersion === 5) return migrateV5Settings(value);
   if (value.schemaVersion === 6) return migrateV6Settings(value);
+  if (value.schemaVersion === 7) return migrateV7Settings(value);
+  if (value.schemaVersion === 8) return migrateV8Settings(value);
   if (value.schemaVersion !== NAVODE_STORAGE_SCHEMA_VERSION) return DEFAULT_NAVODE_SETTINGS;
 
   return {
@@ -144,6 +168,8 @@ export function parseNavodeSettings(value: unknown): NavodeSettings {
         : DEFAULT_NAVODE_SETTINGS.initialQuickLinks,
     integrationCache: parseIntegrationCache(value.integrationCache),
     integrations: parseIntegrationConnections(value.integrations),
+    integrationWidgets: parseIntegrationWidgetPreferences(value.integrationWidgets),
+    projectHealthTargets: parseProjectHealthTargets(value.projectHealthTargets),
     competitiveProgramming: parseCompetitiveProgrammingSettings(value.competitiveProgramming),
     customAliases: parseCustomAliases(value.customAliases),
     projects: parseProjects(value.projects),
@@ -179,6 +205,8 @@ export function migrateV1Settings(value: Record<string, unknown>): NavodeSetting
         : DEFAULT_NAVODE_SETTINGS.initialQuickLinks,
     integrationCache: {},
     integrations: {},
+    integrationWidgets: DEFAULT_INTEGRATION_WIDGET_PREFERENCES,
+    projectHealthTargets: [],
     competitiveProgramming: DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS,
     customAliases: parseCustomAliases(value.customAliases),
     projects: [],
@@ -202,6 +230,8 @@ export function migrateV2Settings(value: Record<string, unknown>): NavodeSetting
     schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
     integrationCache: {},
     integrations: {},
+    integrationWidgets: DEFAULT_INTEGRATION_WIDGET_PREFERENCES,
+    projectHealthTargets: [],
     competitiveProgramming: DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS,
     scratchpad: DEFAULT_SCRATCHPAD,
     snippets: [],
@@ -220,6 +250,8 @@ export function migrateV3Settings(value: Record<string, unknown>): NavodeSetting
     schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
     integrationCache: {},
     integrations: {},
+    integrationWidgets: DEFAULT_INTEGRATION_WIDGET_PREFERENCES,
+    projectHealthTargets: [],
     competitiveProgramming: DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS,
     focusPresets: DEFAULT_FOCUS_PRESETS,
     homeSections: DEFAULT_HOME_SECTIONS,
@@ -240,6 +272,8 @@ export function migrateV4Settings(value: Record<string, unknown>): NavodeSetting
     reducedMotion: isReducedMotionPreference(value.reducedMotion) ? value.reducedMotion : 'system',
     integrationCache: {},
     integrations: {},
+    integrationWidgets: DEFAULT_INTEGRATION_WIDGET_PREFERENCES,
+    projectHealthTargets: [],
     competitiveProgramming: DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS,
   };
 }
@@ -254,6 +288,16 @@ export function migrateV6Settings(value: Record<string, unknown>): NavodeSetting
   return parseNavodeSettings({ ...value, schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION });
 }
 
+/** V2.5 adds local project-health target configuration; no remote data is introduced. */
+export function migrateV7Settings(value: Record<string, unknown>): NavodeSettings {
+  return parseNavodeSettings({ ...value, schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION });
+}
+
+/** V2.6 keeps live home widgets opt-in so existing local-first layouts stay quiet. */
+export function migrateV8Settings(value: Record<string, unknown>): NavodeSettings {
+  return parseNavodeSettings({ ...value, schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION });
+}
+
 function parseV2Base(
   value: Record<string, unknown>,
 ): Omit<
@@ -261,6 +305,8 @@ function parseV2Base(
   | 'schemaVersion'
   | 'integrationCache'
   | 'integrations'
+  | 'integrationWidgets'
+  | 'projectHealthTargets'
   | 'competitiveProgramming'
   | 'scratchpad'
   | 'snippets'
@@ -299,6 +345,8 @@ function parseV3Base(
   | 'schemaVersion'
   | 'integrationCache'
   | 'integrations'
+  | 'integrationWidgets'
+  | 'projectHealthTargets'
   | 'competitiveProgramming'
   | 'focusPresets'
   | 'homeSections'
@@ -344,6 +392,16 @@ function isDefaultSearchProvider(value: unknown): value is DefaultSearchProvider
 
 function isReducedMotionPreference(value: unknown): value is ReducedMotionPreference {
   return value === 'system' || value === 'reduce';
+}
+
+function parseIntegrationWidgetPreferences(value: unknown): IntegrationWidgetPreferences {
+  if (!isRecord(value)) return DEFAULT_INTEGRATION_WIDGET_PREFERENCES;
+  return {
+    calendar: value.calendar === true,
+    competitiveProgramming: value.competitiveProgramming === true,
+    github: value.github === true,
+    projectHealth: value.projectHealth === true,
+  };
 }
 
 function parseCustomAliases(value: unknown): CommandAlias[] {
@@ -463,6 +521,20 @@ function parseProjects(value: unknown): Project[] {
       : [];
     return [{ ...project, actions }];
   });
+}
+
+function parseProjectHealthTargets(value: unknown): ProjectHealthTarget[] {
+  if (!Array.isArray(value)) return [];
+  const ids = new Set<string>();
+  const targets: ProjectHealthTarget[] = [];
+  for (const candidate of value) {
+    const target = createProjectHealthTarget(candidate);
+    if (!target || ids.has(target.id)) continue;
+    ids.add(target.id);
+    targets.push(target);
+    if (targets.length === MAX_PROJECT_HEALTH_TARGETS) break;
+  }
+  return targets;
 }
 
 function parseWorkspaces(value: unknown): Workspace[] {
@@ -590,7 +662,8 @@ function parseHomeSections(value: unknown): HomeSections {
 function parseCompetitiveProgrammingSettings(value: unknown): CompetitiveProgrammingSettings {
   if (!isRecord(value)) return DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS;
   const codeforcesHandle =
-    typeof value.codeforcesHandle === 'string' && /^[A-Za-z0-9][A-Za-z0-9_.-]{0,23}$/.test(value.codeforcesHandle.trim())
+    typeof value.codeforcesHandle === 'string' &&
+    /^[A-Za-z0-9][A-Za-z0-9_.-]{0,23}$/.test(value.codeforcesHandle.trim())
       ? value.codeforcesHandle.trim()
       : undefined;
   return {
@@ -628,7 +701,10 @@ function parseIntegrationConnections(
     const status = candidate.status;
     if (
       typeof candidate.enabled !== 'boolean' ||
-      (status !== 'disconnected' && status !== 'connecting' && status !== 'connected' && status !== 'error')
+      (status !== 'disconnected' &&
+        status !== 'connecting' &&
+        status !== 'connected' &&
+        status !== 'error')
     )
       continue;
     const grantedPermissionIds = Array.isArray(candidate.grantedPermissionIds)
@@ -694,8 +770,13 @@ function isCacheValue(value: unknown, depth = 0): boolean {
   }
   if (typeof value === 'number') return Number.isFinite(value);
   if (depth >= 4) return false;
-  if (Array.isArray(value)) return value.length <= 100 && value.every((item) => isCacheValue(item, depth + 1));
-  return isRecord(value) && Object.keys(value).length <= 100 && Object.values(value).every((item) => isCacheValue(item, depth + 1));
+  if (Array.isArray(value))
+    return value.length <= 100 && value.every((item) => isCacheValue(item, depth + 1));
+  return (
+    isRecord(value) &&
+    Object.keys(value).length <= 100 &&
+    Object.values(value).every((item) => isCacheValue(item, depth + 1))
+  );
 }
 
 function isSafeRecordKey(value: string): boolean {

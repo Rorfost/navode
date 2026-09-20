@@ -20,9 +20,12 @@ import {
   isCacheStale,
   parseGitHubRepositoryReference,
   readCodeforcesCachedContext,
+  checkProjectHealth,
+  isProjectHealthCheckStale,
   refreshGitHubRepositoryCache,
   requestIntegrationPermissions,
   saveCodeforcesCachedContext,
+  saveProjectHealthCheck,
 } from '@navode/integrations';
 import { ErrorBoundary, NavodeShell } from '@navode/ui';
 import { loadExtensionSettings, saveExtensionSettings } from './settings';
@@ -39,7 +42,9 @@ function NavodeExtensionApp() {
   const [calendarAccessToken, setCalendarAccessToken] = useState<string | null>(null);
   const catalog = useMemo<CommandCatalog>(
     () => ({
-      ...(settings.competitiveProgramming.codeforcesHandle ? { codeforcesHandle: settings.competitiveProgramming.codeforcesHandle } : {}),
+      ...(settings.competitiveProgramming.codeforcesHandle
+        ? { codeforcesHandle: settings.competitiveProgramming.codeforcesHandle }
+        : {}),
       customAliases: settings.customAliases,
       defaultSearchProvider: settings.defaultSearchProvider,
       projects: settings.projects.map((project) => ({
@@ -109,9 +114,11 @@ function NavodeExtensionApp() {
 
   useEffect(() => {
     const connection = settings.integrations.github;
-    const references = settings.projects.flatMap((project) =>
-      project.githubRepository ? [parseGitHubRepositoryReference(project.githubRepository)] : [],
-    ).filter((reference) => reference !== null);
+    const references = settings.projects
+      .flatMap((project) =>
+        project.githubRepository ? [parseGitHubRepositoryReference(project.githubRepository)] : [],
+      )
+      .filter((reference) => reference !== null);
     if (connection?.status !== 'connected' || !references.length) return;
     const cache = settings.integrationCache.github ?? { entries: {} };
     void refreshGitHubRepositoryCache(cache, references).then((result) => {
@@ -138,24 +145,111 @@ function NavodeExtensionApp() {
     const cachedContext = readCodeforcesCachedContext(cache);
     const hasCurrentProfile =
       !settings.competitiveProgramming.codeforcesHandle ||
-      cachedContext?.profile?.handle.toLowerCase() === settings.competitiveProgramming.codeforcesHandle.toLowerCase();
+      cachedContext?.profile?.handle.toLowerCase() ===
+        settings.competitiveProgramming.codeforcesHandle.toLowerCase();
     if (!isCodeforcesCacheStale(cache) && hasCurrentProfile) return;
     void fetchCodeforcesContext(settings.competitiveProgramming.codeforcesHandle).then((result) => {
       setSettings((current) => ({
         ...current,
         ...(result.kind === 'success'
-          ? { integrationCache: { ...current.integrationCache, 'competitive-programming': saveCodeforcesCachedContext(cache, result.context) } }
+          ? {
+              integrationCache: {
+                ...current.integrationCache,
+                'competitive-programming': saveCodeforcesCachedContext(cache, result.context),
+              },
+            }
           : {}),
         integrations: {
           ...current.integrations,
           'competitive-programming': {
             ...connection,
-            ...(result.kind === 'success' ? { lastRefreshAt: result.context.generatedAt } : { error: result.error, status: 'error' as const }),
+            ...(result.kind === 'success'
+              ? { lastRefreshAt: result.context.generatedAt }
+              : { error: result.error, status: 'error' as const }),
           },
         },
       }));
     });
-  }, [settings.competitiveProgramming.codeforcesHandle, settings.integrationCache['competitive-programming'], settings.integrations['competitive-programming']]);
+  }, [
+    settings.competitiveProgramming.codeforcesHandle,
+    settings.integrationCache['competitive-programming'],
+    settings.integrations['competitive-programming'],
+  ]);
+
+  useEffect(() => {
+    const cache = settings.integrationCache['project-health'] ?? { entries: {} };
+    const targets = settings.projectHealthTargets.filter((target) =>
+      isProjectHealthCheckStale(cache, target.id),
+    );
+    if (!targets.length) return;
+    void Promise.all(
+      targets.map(async (target) => ({
+        target,
+        result: await checkProjectHealth(target, { online: navigator.onLine }),
+      })),
+    ).then((checks) => saveHealthChecks(checks));
+  }, [settings.integrationCache['project-health'], settings.projectHealthTargets]);
+
+  function saveHealthChecks(
+    checks: readonly {
+      target: NavodeSettings['projectHealthTargets'][number];
+      result: Awaited<ReturnType<typeof checkProjectHealth>>;
+    }[],
+  ) {
+    setSettings((current) => {
+      let cache = current.integrationCache['project-health'] ?? { entries: {} };
+      for (const { target, result } of checks) {
+        if (
+          current.projectHealthTargets.some(
+            (item) => item.id === target.id && item.url === target.url,
+          )
+        ) {
+          cache = saveProjectHealthCheck(cache, target.id, result.check);
+        }
+      }
+      return {
+        ...current,
+        integrationCache: { ...current.integrationCache, 'project-health': cache },
+      };
+    });
+  }
+
+  function refreshProjectHealth() {
+    void Promise.all(
+      settings.projectHealthTargets.map(async (target) => ({
+        target,
+        result: await checkProjectHealth(target, { online: navigator.onLine }),
+      })),
+    ).then((checks) => saveHealthChecks(checks));
+  }
+
+  function refreshIntegration(
+    providerId: 'github' | 'google-calendar' | 'competitive-programming',
+  ) {
+    setSettings((current) => ({
+      ...current,
+      integrationCache: Object.fromEntries(
+        Object.entries(current.integrationCache).filter(([id]) => id !== providerId),
+      ),
+    }));
+  }
+
+  function disconnectIntegration(
+    providerId: 'github' | 'google-calendar' | 'competitive-programming',
+  ) {
+    if (providerId !== 'google-calendar') return;
+    const token = calendarAccessToken;
+    setCalendarAccessToken(null);
+    if (token) void chrome.identity.removeCachedAuthToken({ token }).catch(() => undefined);
+  }
+
+  async function requestProjectHealthHost(target: NavodeSettings['projectHealthTargets'][number]) {
+    try {
+      return await chrome.permissions.request({ origins: [`${new URL(target.url).origin}/*`] });
+    } catch {
+      return false;
+    }
+  }
 
   useEffect(() => {
     const connection = settings.integrations['google-calendar'];
@@ -179,7 +273,10 @@ function NavodeExtensionApp() {
         integrationCache: {
           ...current.integrationCache,
           'google-calendar': {
-            entries: { ...cache.entries, context: { cachedAt: result.context.generatedAt, value: result.context } },
+            entries: {
+              ...cache.entries,
+              context: { cachedAt: result.context.generatedAt, value: result.context },
+            },
           },
         },
         integrations: {
@@ -188,7 +285,11 @@ function NavodeExtensionApp() {
         },
       }));
     });
-  }, [calendarAccessToken, settings.integrationCache['google-calendar'], settings.integrations['google-calendar']]);
+  }, [
+    calendarAccessToken,
+    settings.integrationCache['google-calendar'],
+    settings.integrations['google-calendar'],
+  ]);
 
   useEffect(() => {
     const connection = settings.integrations['google-calendar'];
@@ -235,7 +336,9 @@ function NavodeExtensionApp() {
       });
   }, [calendarAccessToken, settings.integrations['google-calendar']]);
 
-  function connectIntegration(providerId: 'github' | 'google-calendar' | 'competitive-programming') {
+  function connectIntegration(
+    providerId: 'github' | 'google-calendar' | 'competitive-programming',
+  ) {
     const definition = NAVODE_INTEGRATIONS.get(providerId);
     if (!definition) return;
     const currentConnection = settings.integrations[providerId];
@@ -243,11 +346,17 @@ function NavodeExtensionApp() {
       definition,
       currentConnection?.status === 'error'
         ? { ...currentConnection, grantedPermissionIds: [] }
-        : currentConnection ?? { enabled: false, status: 'disconnected', grantedPermissionIds: [] },
+        : (currentConnection ?? {
+            enabled: false,
+            status: 'disconnected',
+            grantedPermissionIds: [],
+          }),
       {
         request: async () => {
-          if (providerId === 'github') return chrome.permissions.request({ origins: ['https://api.github.com/*'] });
-          if (providerId === 'competitive-programming') return chrome.permissions.request({ origins: ['https://codeforces.com/*'] });
+          if (providerId === 'github')
+            return chrome.permissions.request({ origins: ['https://api.github.com/*'] });
+          if (providerId === 'competitive-programming')
+            return chrome.permissions.request({ origins: ['https://codeforces.com/*'] });
           const allowed = await chrome.permissions.request({
             permissions: ['identity'],
             origins: ['https://www.googleapis.com/*'],
@@ -321,6 +430,10 @@ function NavodeExtensionApp() {
     <NavodeShell
       onCommandResult={handleCommandResult}
       onIntegrationConnect={connectIntegration}
+      onIntegrationDisconnect={disconnectIntegration}
+      onIntegrationRefresh={refreshIntegration}
+      onProjectHealthRefresh={refreshProjectHealth}
+      onProjectHealthTargetSave={requestProjectHealthHost}
       onSettingsChange={updateSettings}
       onWorkspaceLaunch={launchWorkspace}
       resolveCommandResults={resolveResults}

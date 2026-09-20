@@ -121,8 +121,58 @@ describe('parseNavodeSettings', () => {
 
   it('migrates v6 settings with a safe empty Codeforces configuration', () => {
     const settings = parseNavodeSettings({ ...DEFAULT_NAVODE_SETTINGS, schemaVersion: 6 });
-    expect(settings).toMatchObject({ schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION, competitiveProgramming: { showWidget: true } });
+    expect(settings).toMatchObject({
+      schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
+      competitiveProgramming: { showWidget: true },
+    });
     expect(settings.competitiveProgramming.codeforcesHandle).toBeUndefined();
+  });
+
+  it('migrates v7 settings and validates bounded project health targets', () => {
+    const settings = parseNavodeSettings({
+      ...DEFAULT_NAVODE_SETTINGS,
+      schemaVersion: 7,
+      projectHealthTargets: [
+        {
+          id: 'api',
+          label: 'API',
+          projectId: 'navode',
+          url: 'https://example.com/health',
+          expectedStatus: 200,
+        },
+        { id: 'unsafe', label: 'Unsafe', url: 'data:text/plain,no', expectedStatus: 200 },
+      ],
+    });
+    expect(settings).toMatchObject({
+      schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
+      projectHealthTargets: [{ id: 'api', expectedStatus: 200 }],
+    });
+  });
+
+  it('migrates V2.5 settings with all live widgets disabled until the user opts in', () => {
+    const settings = parseNavodeSettings({ ...DEFAULT_NAVODE_SETTINGS, schemaVersion: 8 });
+    expect(settings).toMatchObject({
+      schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
+      integrationWidgets: {
+        calendar: false,
+        competitiveProgramming: false,
+        github: false,
+        projectHealth: false,
+      },
+    });
+  });
+
+  it('retains only explicit boolean live-widget preferences', () => {
+    const settings = parseNavodeSettings({
+      ...DEFAULT_NAVODE_SETTINGS,
+      integrationWidgets: { calendar: true, github: true, projectHealth: 'yes' },
+    });
+    expect(settings.integrationWidgets).toEqual({
+      calendar: true,
+      competitiveProgramming: false,
+      github: true,
+      projectHealth: false,
+    });
   });
 
   it('drops malformed integration cache entries and unknown providers', () => {

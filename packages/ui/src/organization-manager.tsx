@@ -291,7 +291,9 @@ function ProjectsEditor({
           return project ? [...settings.projects, project] : null;
         })();
     if (!next) {
-      setError('A project needs a name and an optional GitHub repository in owner/repository format.');
+      setError(
+        'A project needs a name and an optional GitHub repository in owner/repository format.',
+      );
       return;
     }
     onSettingsChange({ ...settings, projects: next });

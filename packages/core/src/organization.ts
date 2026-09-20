@@ -347,7 +347,8 @@ function normalizeAlias(value: string | undefined): string | undefined {
 
 function normalizeGitHubRepository(value: string | undefined): string | undefined {
   const normalized = normalizeText(value);
-  return normalized && /^([A-Za-z0-9](?:[A-Za-z0-9-]{0,38}[A-Za-z0-9])?)\/([A-Za-z0-9_.-]+)$/.test(normalized)
+  return normalized &&
+    /^([A-Za-z0-9](?:[A-Za-z0-9-]{0,38}[A-Za-z0-9])?)\/([A-Za-z0-9_.-]+)$/.test(normalized)
     ? normalized
     : undefined;
 }
