@@ -1,14 +1,22 @@
 import {
   DEFAULT_NAVODE_SETTINGS,
+  appendWorkflowExecutionLog,
   clearRecentExecutions,
+  clearWorkflowHistoryLog,
   createCommandAlias,
+  generateContextSuggestions,
   removeCommandAlias,
+  requiresUserApproval,
+  runWorkflowExecution,
   startFocusTimer,
   type CommandAction,
   type CommandResult,
+  type ContextInputData,
+  type ContextSuggestion,
   type DefaultSearchProvider,
   type NavodeSettings,
   type SyncStatus,
+  type Workflow,
   type Workspace,
 } from '@navode/core';
 import {
@@ -51,6 +59,9 @@ import {
 import type { OrganizationScreen } from './organization-manager';
 import type { ProductivityScreen } from './productivity-manager';
 import { IntegrationSettings } from './integration-settings';
+import { ContextSuggestionsBanner } from './context-suggestions-banner';
+import { WorkflowManager } from './workflow-manager';
+import { WorkflowPreviewDialog } from './workflow-preview-dialog';
 
 const OrganizationManager = lazy(() =>
   import('./organization-manager').then((module) => ({ default: module.OrganizationManager })),
@@ -133,6 +144,69 @@ export function NavodeShell({
   const [productivityScreen, setProductivityScreen] = useState<ProductivityScreen | null>(null);
   const [healthProjectId, setHealthProjectId] = useState<string | undefined>();
   const [isHealthOpen, setIsHealthOpen] = useState(false);
+  const [isWorkflowManagerOpen, setIsWorkflowManagerOpen] = useState(false);
+  const [pendingWorkflowExecution, setPendingWorkflowExecution] = useState<{
+    workflow: Workflow;
+    reason?: string;
+  } | null>(null);
+  const [dismissedSuggestions, setDismissedSuggestions] = useState<string[]>([]);
+
+  const contextSuggestions = useMemo(() => {
+    if (!settings.enableContextSuggestions) return [];
+    const input: ContextInputData = {
+      activeFocusTimer: settings.focusTimer,
+      ...(settings.projects.length > 0 && settings.projects[0]
+        ? { currentProject: settings.projects[0] }
+        : {}),
+    };
+    const raw = generateContextSuggestions(input, now);
+    return raw.filter((s) => !dismissedSuggestions.includes(s.id));
+  }, [
+    settings.enableContextSuggestions,
+    settings.focusTimer,
+    settings.projects,
+    now,
+    dismissedSuggestions,
+  ]);
+
+  const executeWorkflowWithApproval = async (workflow: Workflow, userApproved = false) => {
+    const approvalCheck = requiresUserApproval(workflow, { userApproved });
+    if (approvalCheck.requiresApproval && !userApproved) {
+      setPendingWorkflowExecution({
+        workflow,
+        ...(approvalCheck.reason ? { reason: approvalCheck.reason } : {}),
+      });
+      return;
+    }
+
+    setPendingWorkflowExecution(null);
+    const result = await runWorkflowExecution(workflow, 'manual', {
+      userApproved: true,
+      openUrl: (url) => {
+        window.open(url, '_blank');
+      },
+      startFocusTimer: (minutes) => {
+        const timer = startFocusTimer(minutes);
+        if (timer) updateSettings({ focusTimer: timer });
+      },
+      notify: (title, message) => {
+        setCommandFeedback(`${title}: ${message}`);
+      },
+      refreshIntegration: (providerId) => {
+        if (
+          providerId === 'github' ||
+          providerId === 'google-calendar' ||
+          providerId === 'competitive-programming'
+        ) {
+          onIntegrationRefresh?.(providerId);
+        }
+      },
+    });
+
+    const updatedLog = appendWorkflowExecutionLog(settings.workflowHistory, result);
+    updateSettings({ workflowHistory: updatedLog });
+    setCommandFeedback(`Executed workflow "${workflow.name}" (${result.status})`);
+  };
   const commandInput = useRef<HTMLInputElement>(null);
   const provider = searchProviders[settings.defaultSearchProvider];
   const results = useMemo(() => {
@@ -342,6 +416,13 @@ export function NavodeShell({
                   : 'Sync error'}
         </p>
         <Button
+          aria-label="Open workflows"
+          onClick={() => setIsWorkflowManagerOpen(true)}
+          variant="quiet"
+        >
+          Workflows
+        </Button>
+        <Button
           aria-label="Open settings"
           onClick={(event) => {
             event.currentTarget.focus();
@@ -352,6 +433,22 @@ export function NavodeShell({
           Settings
         </Button>
       </header>
+
+      <ContextSuggestionsBanner
+        suggestions={contextSuggestions}
+        onAction={(sugg) => {
+          if (sugg.actionKind === 'run-workflow') {
+            const wf = settings.workflows.find((w) => w.id === sugg.actionTarget);
+            if (wf) executeWorkflowWithApproval(wf);
+          } else if (sugg.actionKind === 'open-url') {
+            window.open(sugg.actionTarget, '_blank');
+          } else if (sugg.actionKind === 'focus-timer') {
+            const timer = startFocusTimer(25);
+            if (timer) updateSettings({ focusTimer: timer });
+          }
+        }}
+        onDismiss={(id) => setDismissedSuggestions((prev) => [...prev, id])}
+      />
 
       <section className="command-area" aria-labelledby="command-title">
         <h2 className="sr-only" id="command-title">
@@ -937,6 +1034,55 @@ export function NavodeShell({
           </Button>
         </div>
       </Dialog>
+
+      <Dialog
+        label="Workflow Manager"
+        onClose={() => setIsWorkflowManagerOpen(false)}
+        open={isWorkflowManagerOpen}
+      >
+        <p className="eyebrow">AUTOMATE</p>
+        <h2>Workflows & Automation</h2>
+        <WorkflowManager
+          workflows={settings.workflows}
+          historyLog={settings.workflowHistory}
+          onSaveWorkflow={(wf) => {
+            const exists = settings.workflows.some((w) => w.id === wf.id);
+            const nextWorkflows = exists
+              ? settings.workflows.map((w) => (w.id === wf.id ? wf : w))
+              : [...settings.workflows, wf];
+            updateSettings({ workflows: nextWorkflows });
+          }}
+          onDeleteWorkflow={(id) => {
+            updateSettings({
+              workflows: settings.workflows.filter((w) => w.id !== id),
+            });
+          }}
+          onRunWorkflow={(wf) => {
+            setIsWorkflowManagerOpen(false);
+            executeWorkflowWithApproval(wf);
+          }}
+          onClearHistory={() => {
+            updateSettings({ workflowHistory: clearWorkflowHistoryLog() });
+          }}
+        />
+        <div className="dialog-actions">
+          <Button onClick={() => setIsWorkflowManagerOpen(false)} variant="primary">
+            Done
+          </Button>
+        </div>
+      </Dialog>
+
+      <WorkflowPreviewDialog
+        workflow={pendingWorkflowExecution?.workflow || null}
+        {...(pendingWorkflowExecution?.reason ? { reason: pendingWorkflowExecution.reason } : {})}
+        isOpen={Boolean(pendingWorkflowExecution)}
+        onApprove={() => {
+          if (pendingWorkflowExecution) {
+            executeWorkflowWithApproval(pendingWorkflowExecution.workflow, true);
+          }
+        }}
+        onCancel={() => setPendingWorkflowExecution(null)}
+      />
     </main>
   );
 }

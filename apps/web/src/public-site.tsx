@@ -67,22 +67,25 @@ function LandingPage() {
             </p>
           </article>
           <article>
-            <h3>Keep useful context</h3>
+            <h3>Visual Workflows & Automation</h3>
             <p>
-              Store quick links, projects, snippets, a scratchpad, and up to three daily priorities
-              locally.
+              Build multi-step routines with bounded actions, approval safety checks, and template
+              schedules.
             </p>
           </article>
           <article>
-            <h3>Protect your focus</h3>
+            <h3>Smart Context Engine</h3>
             <p>
-              Run a resumable focus timer, pick your presets, and keep control over motion and home
-              layout.
+              Receive non-intrusive actionable recommendations based on time of day, active
+              projects, and calendars.
             </p>
           </article>
           <article>
-            <h3>Own your data</h3>
-            <p>Back up and restore your Navode configuration with a validated local JSON file.</p>
+            <h3>AI Proposal Assistant</h3>
+            <p>
+              Generate custom workflows from natural language prompts with interactive preview &
+              user approval.
+            </p>
           </article>
         </div>
       </section>

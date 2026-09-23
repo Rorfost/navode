@@ -18,6 +18,9 @@ New tabs often become a detour through bookmarks, menus, and forgotten URLs. Nav
 ## Features
 
 - Command palette with safe URL handling, built-in search aliases, custom aliases, and keyboard navigation.
+- Visual Workflow Builder with drag-and-drop step ordering, pre-built templates, and multi-action automation.
+- Smart Context Engine generating non-intrusive actionable suggestions based on active projects, calendars, and focus timers.
+- Optional AI Assistant generating natural language workflow & command proposals with explicit approval preview.
 - Quick links, projects, and confirmation-based workspace launches.
 - Scratchpad, reusable snippets, a resumable focus timer, and up to three Today priorities.
 - Theme, reduced-motion, onboarding, home-layout, search-provider, and focus-preset preferences.
