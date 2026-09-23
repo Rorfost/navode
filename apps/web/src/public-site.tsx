@@ -16,6 +16,7 @@ export function PublicSite({ page }: PublicSiteProps) {
           <a href="/#features">Features</a>
           <a href="/privacy">Privacy</a>
           <a href="/support">Support</a>
+          <a href="/docs/platform">Platform</a>
           <a className="public-nav-cta" href="/app">
             Open companion
           </a>
@@ -81,10 +82,10 @@ function LandingPage() {
             </p>
           </article>
           <article>
-            <h3>AI Proposal Assistant</h3>
+            <h3>Developer Platform</h3>
             <p>
-              Generate custom workflows from natural language prompts with interactive preview &
-              user approval.
+              Extend Navode securely with community plugins. Add commands, visual themes, and
+              workflows using the new declarative manifest system.
             </p>
           </article>
         </div>
@@ -110,7 +111,7 @@ function PrivacyPage() {
     <article className="public-prose" aria-labelledby="privacy-title">
       <p className="eyebrow">PRIVACY POLICY · V2.0</p>
       <h1 id="privacy-title">Your Navode data stays local.</h1>
-      <p>Last updated: September 19, 2026.</p>
+      <p>Last updated: September 23, 2026.</p>
       <h2>What Navode stores</h2>
       <p>
         Navode stores the settings and content you create: theme and motion preferences, search
@@ -118,8 +119,9 @@ function PrivacyPage() {
         state, Today priorities, a bounded recent-action list, non-secret integration status, and a
         configured GitHub repository reference, short-lived Google Calendar daily context, an
         optional public Codeforces handle with short-lived public contest and profile context, and
-        configured project-health URLs with short-lived local check results. Recent actions contain
-        labels and timestamps, not search queries or snippet contents.
+        configured project-health URLs with short-lived local check results. The Platform SDK adds
+        an installed plugin registry and theme token state. Recent actions contain labels and
+        timestamps, not search queries or snippet contents.
       </p>
       <h2>Where it is stored</h2>
       <p>

@@ -1,0 +1,23 @@
+{
+  "id": "com.navode.sample.hello-command",
+  "name": "Hello Command",
+  "publisher": "Navode Sample",
+  "version": "1.0.0",
+  "description": "A sample command extension that adds a 'hello' command to the Navode command bar.",
+  "platformApiVersion": "1",
+  "capabilities": ["commands"],
+  "commands": [
+    {
+      "alias": "hello",
+      "label": "Hello, Navode!",
+      "description": "Open the Navode project page.",
+      "url": "https://navode.rorfost.com"
+    },
+    {
+      "alias": "hello docs",
+      "label": "Navode Developer Docs",
+      "description": "Open the Navode platform developer documentation.",
+      "url": "https://navode.rorfost.com/docs"
+    }
+  ]
+}

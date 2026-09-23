@@ -9,6 +9,9 @@ import {
   requiresUserApproval,
   runWorkflowExecution,
   startFocusTimer,
+  enablePlugin,
+  disablePlugin,
+  uninstallPlugin,
   type CommandAction,
   type CommandResult,
   type ContextInputData,
@@ -62,6 +65,7 @@ import { IntegrationSettings } from './integration-settings';
 import { ContextSuggestionsBanner } from './context-suggestions-banner';
 import { WorkflowManager } from './workflow-manager';
 import { WorkflowPreviewDialog } from './workflow-preview-dialog';
+import { PluginManagerPanel } from './plugin-manager-panel';
 
 const OrganizationManager = lazy(() =>
   import('./organization-manager').then((module) => ({ default: module.OrganizationManager })),
@@ -145,6 +149,7 @@ export function NavodeShell({
   const [healthProjectId, setHealthProjectId] = useState<string | undefined>();
   const [isHealthOpen, setIsHealthOpen] = useState(false);
   const [isWorkflowManagerOpen, setIsWorkflowManagerOpen] = useState(false);
+  const [isPluginManagerOpen, setIsPluginManagerOpen] = useState(false);
   const [pendingWorkflowExecution, setPendingWorkflowExecution] = useState<{
     workflow: Workflow;
     reason?: string;
@@ -390,8 +395,26 @@ export function NavodeShell({
     setEditingAliasId(null);
   }
 
+  const activeTheme = useMemo(() => {
+    if (!settings.activeThemePlugin) return null;
+    const plugin = settings.installedPlugins.find((p) => p.id === settings.activeThemePlugin);
+    if (!plugin || !plugin.enabled) return null;
+    return plugin.manifest.themes?.[0] || null;
+  }, [settings.activeThemePlugin, settings.installedPlugins]);
+
   return (
     <main className="navode-shell">
+      {activeTheme && (
+        <style>
+          {`
+            :root {
+              ${Object.entries(activeTheme.tokens)
+                .map(([key, value]) => `${key}: ${value};`)
+                .join('\n              ')}
+            }
+          `}
+        </style>
+      )}
       <header className="shell-header">
         <div className="shell-brand">
           <p className="eyebrow">YOUR CENTRAL NAVIGATION NODE</p>
@@ -953,6 +976,10 @@ export function NavodeShell({
                 setIsSettingsOpen(false);
                 setOrganizationScreen(screen);
               }}
+              onOpenPluginManager={() => {
+                setIsSettingsOpen(false);
+                setIsPluginManagerOpen(true);
+              }}
               onSettingsChange={(next) => onSettingsChange?.(next)}
               settings={settings}
             />
@@ -995,6 +1022,35 @@ export function NavodeShell({
           />
         </Suspense>
       )}
+
+      <Dialog
+        label="Plugin Manager"
+        onClose={() => setIsPluginManagerOpen(false)}
+        open={isPluginManagerOpen}
+      >
+        <PluginManagerPanel
+          settings={settings}
+          onEnablePlugin={(entry) => {
+            const result = enablePlugin(settings, entry);
+            if (result.success && result.settings) {
+              updateSettings(result.settings);
+            } else {
+              alert(result.error);
+            }
+          }}
+          onDisablePlugin={(id) => {
+            updateSettings(disablePlugin(settings, id));
+          }}
+          onUninstallPlugin={(id) => {
+            updateSettings(uninstallPlugin(settings, id));
+          }}
+        />
+        <div className="dialog-actions">
+          <Button onClick={() => setIsPluginManagerOpen(false)} variant="primary">
+            Done
+          </Button>
+        </div>
+      </Dialog>
 
       {productivityScreen && (
         <Suspense fallback={null}>

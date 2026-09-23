@@ -9,13 +9,16 @@ export { WorkflowBuilder } from './workflow-builder';
 export { WorkflowPreviewDialog } from './workflow-preview-dialog';
 export { ContextSuggestionsBanner } from './context-suggestions-banner';
 export { AIWorkflowAssistant } from './ai-workflow-assistant';
+export { PluginManagerPanel, type PluginManagerPanelProps } from './plugin-manager-panel';
 export {
+  Badge,
   Button,
   Card,
   CommandResult,
   Dialog,
   KeyboardShortcutHint,
   Menu,
+  PermissionTag,
   Tab,
   Tabs,
   TextInput,

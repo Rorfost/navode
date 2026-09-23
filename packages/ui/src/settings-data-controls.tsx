@@ -16,6 +16,7 @@ import type { OrganizationScreen } from './organization-manager';
 export interface SettingsDataControlsProps {
   onOpenOnboarding: () => void;
   onOpenOrganization: (screen: OrganizationScreen) => void;
+  onOpenPluginManager: () => void;
   onSettingsChange: (settings: NavodeSettings) => void;
   settings: NavodeSettings;
 }
@@ -23,6 +24,7 @@ export interface SettingsDataControlsProps {
 export function SettingsDataControls({
   onOpenOnboarding,
   onOpenOrganization,
+  onOpenPluginManager,
   onSettingsChange,
   settings,
 }: SettingsDataControlsProps) {
@@ -183,6 +185,14 @@ export function SettingsDataControls({
           >
             Clear recent actions
           </Button>
+        </div>
+      </section>
+
+      <section className="settings-section" aria-labelledby="platform-plugins-title">
+        <h3 id="platform-plugins-title">Platform & Plugins</h3>
+        <p className="muted">Extend Navode with community plugins and themes.</p>
+        <div className="form-actions">
+          <Button onClick={onOpenPluginManager}>Manage Plugins</Button>
         </div>
       </section>
 

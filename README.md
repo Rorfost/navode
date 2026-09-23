@@ -24,6 +24,7 @@ New tabs often become a detour through bookmarks, menus, and forgotten URLs. Nav
 - Quick links, projects, and confirmation-based workspace launches.
 - Scratchpad, reusable snippets, a resumable focus timer, and up to three Today priorities.
 - Theme, reduced-motion, onboarding, home-layout, search-provider, and focus-preset preferences.
+- Platform SDK with declarative JSON plugin manifests, capability-based sandboxing, and UI Plugin Manager.
 - Validated local JSON backup, import preview, targeted resets, and versioned storage migrations.
 
 ## Screenshots
@@ -102,7 +103,7 @@ V1 is the local-first core release. Future work is directional rather than commi
 - V2: expanded power-user workflows and developer utilities.
 - V3: opt-in integrations.
 - V4: carefully designed optional sync.
-- V5: broader public-product improvements.
+- V5: developer platform, plugin sandbox, and community ecosystem (Currently in 2.2).
 
 See the detailed [roadmap](docs/planning/ROADMAP.md).
 
