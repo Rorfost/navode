@@ -4,12 +4,15 @@ This directory is release-preparation material and is never included in the exte
 
 ## Required before submission
 
-- Provide final, production-quality Navode brand icons at 16, 32, 48, and 128 pixels in PNG format.
-- Record the approved icon source file, owner, and export date here.
+- The approved Navode source artwork is in [`assets/`](../assets/): `navode-icon.png`,
+  `navode-logo.png`, and `navode-banner.png`.
+- The extension packages PNG icon variants at 16, 32, 48, and 128 pixels from the approved icon.
+- Record the asset owner and export date here before submission.
 - Capture screenshots from the exact `apps/extension/dist` production build in a clean Chrome profile and place them in `store-assets/captures/`.
 - Add a short caption for each screenshot in `store-assets/CAPTIONS.md`.
 
-No icon or screenshot placeholder is included. The Chrome Web Store submission is blocked until these are real release assets.
+The submitted listing must use the approved icon variants and clean-profile screenshots. Screenshots
+are still required before Chrome Web Store submission.
 
 ## V2 captures
 

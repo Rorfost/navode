@@ -1,5 +1,7 @@
 # Product requirements document
 
+![Navode](../../assets/navode-banner.png)
+
 ## Overview and problem
 
 Navode is a personal browser command center. It reduces the friction between an intention and a digital action: users should not need to hunt through bookmarks, tabs, or service menus for repetitive work.

@@ -79,6 +79,7 @@ interface ShellCommandResult {
 }
 
 export interface NavodeShellProps {
+  brandIconSrc?: string;
   onCommand?: (command: string) => void;
   onCommandResult?: (result: CommandResult) => void;
   onWorkspaceLaunch?: (workspace: Workspace) => void;
@@ -101,6 +102,7 @@ export interface NavodeShellProps {
 }
 
 export function NavodeShell({
+  brandIconSrc = '/branding/icon-128.png',
   onCommand,
   onCommandResult,
   onWorkspaceLaunch,
@@ -317,9 +319,12 @@ export function NavodeShell({
   return (
     <main className="navode-shell">
       <header className="shell-header">
-        <div>
+        <div className="shell-brand">
           <p className="eyebrow">YOUR CENTRAL NAVIGATION NODE</p>
-          <h1>Navode</h1>
+          <div className="shell-brand-lockup">
+            <img alt="" className="shell-brand-icon" src={brandIconSrc} />
+            <h1>Navode</h1>
+          </div>
         </div>
         <div className="clock" aria-label="Current date and time">
           <time dateTime={now.toISOString()}>{formatDate(now)}</time>

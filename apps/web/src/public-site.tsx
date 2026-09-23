@@ -9,7 +9,8 @@ export function PublicSite({ page }: PublicSiteProps) {
     <main className="public-site">
       <header className="public-header">
         <a aria-label="Navode home" className="public-brand" href="/">
-          Navode
+          <img alt="" className="public-brand-icon" src="/branding/icon-128.png" />
+          <span>Navode</span>
         </a>
         <nav aria-label="Public navigation" className="public-nav">
           <a href="/#features">Features</a>
@@ -51,6 +52,7 @@ function LandingPage() {
             Read the privacy policy
           </a>
         </div>
+        <img alt="Navode" className="public-hero-branding" src="/branding/navode-banner.png" />
       </section>
 
       <section className="public-section" id="features" aria-labelledby="features-title">

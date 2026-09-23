@@ -1,5 +1,7 @@
 # Navode
 
+![Navode](assets/navode-banner.png)
+
 > Navode is a local-first personal browser command center that turns your Chrome New Tab into a fast
 > starting point for search, links, projects, workspaces, snippets, notes, and focus sessions.
 
