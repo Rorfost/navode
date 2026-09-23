@@ -3,6 +3,12 @@
   "name": "Navode",
   "version": "1.0.0",
   "description": "A personal browser command center.",
+  "icons": {
+    "16": "branding/icon-16.png",
+    "32": "branding/icon-32.png",
+    "48": "branding/icon-48.png",
+    "128": "branding/icon-128.png"
+  },
   "chrome_url_overrides": { "newtab": "index.html" },
   "permissions": ["storage"],
   "optional_permissions": ["identity"],

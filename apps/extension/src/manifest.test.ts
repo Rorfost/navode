@@ -7,6 +7,12 @@ describe('extension manifest policy', () => {
     expect(manifest.manifest_version).toBe(3);
     expect(manifest.version).toBe('1.0.0');
     expect(manifest.chrome_url_overrides.newtab).toBe('index.html');
+    expect(manifest.icons).toEqual({
+      '16': 'branding/icon-16.png',
+      '32': 'branding/icon-32.png',
+      '48': 'branding/icon-48.png',
+      '128': 'branding/icon-128.png',
+    });
     expect(manifest.permissions).toEqual(['storage']);
     expect(completeManifest.optional_permissions).toEqual(['identity']);
     expect(completeManifest.host_permissions).toBeUndefined();

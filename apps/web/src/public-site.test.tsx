@@ -7,6 +7,10 @@ describe('public web pages', () => {
     render(<PublicSite page="home" />);
 
     expect(screen.getByRole('heading', { name: /new tab that knows/i })).toBeVisible();
+    expect(screen.getByRole('img', { name: 'Navode' })).toHaveAttribute(
+      'src',
+      '/branding/navode-banner.png',
+    );
     expect(screen.getAllByRole('link', { name: 'Privacy' })[0]?.getAttribute('href')).toBe(
       '/privacy',
     );

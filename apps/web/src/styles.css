@@ -85,6 +85,19 @@ a:focus-visible {
   align-items: flex-start;
   margin-bottom: clamp(2.5rem, 9vh, 6.5rem);
 }
+.shell-brand-lockup {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+}
+.shell-brand-icon {
+  background: #fff;
+  border-radius: 0.9rem;
+  flex: 0 0 auto;
+  height: clamp(3.6rem, 8vw, 5.6rem);
+  object-fit: contain;
+  width: clamp(3.6rem, 8vw, 5.6rem);
+}
 .eyebrow,
 .section-kicker {
   color: var(--accent);
@@ -744,11 +757,21 @@ h2 {
   padding: 0.6rem 0;
 }
 .public-brand {
+  align-items: center;
   color: var(--text);
+  display: inline-flex;
+  gap: 0.55rem;
   font-size: 1.15rem;
   font-weight: 800;
   letter-spacing: -0.04em;
   text-decoration: none;
+}
+.public-brand-icon {
+  background: #fff;
+  border-radius: 0.45rem;
+  height: 1.8rem;
+  object-fit: contain;
+  width: 1.8rem;
 }
 .public-nav {
   align-items: center;
@@ -780,6 +803,14 @@ h2 {
 }
 .public-hero {
   padding: clamp(5rem, 16vh, 10rem) 0 clamp(4rem, 12vh, 7rem);
+}
+.public-hero-branding {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  display: block;
+  margin-top: clamp(3rem, 8vw, 5rem);
+  max-width: 100%;
 }
 .public-hero h1,
 .public-prose h1 {
