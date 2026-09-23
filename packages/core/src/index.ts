@@ -88,6 +88,9 @@ export interface StoredSettings {
   schemaVersion: typeof NAVODE_STORAGE_SCHEMA_VERSION;
 }
 
+import { DEFAULT_WORKFLOW_TEMPLATES, type Workflow } from './workflow';
+import { createEmptyWorkflowHistoryLog, type WorkflowHistoryLog } from './workflow-history';
+
 export interface NavodeSettings extends StoredSettings {
   theme: ThemePreference;
   onboardingCompleted: boolean;
@@ -111,6 +114,9 @@ export interface NavodeSettings extends StoredSettings {
   reducedMotion: ReducedMotionPreference;
   todayItems: TodayItem[];
   workspaces: Workspace[];
+  workflows: Workflow[];
+  workflowHistory: WorkflowHistoryLog;
+  enableContextSuggestions: boolean;
 }
 
 export const DEFAULT_NAVODE_SETTINGS: NavodeSettings = {
@@ -137,6 +143,9 @@ export const DEFAULT_NAVODE_SETTINGS: NavodeSettings = {
   reducedMotion: 'system',
   todayItems: [],
   workspaces: [],
+  workflows: DEFAULT_WORKFLOW_TEMPLATES,
+  workflowHistory: createEmptyWorkflowHistoryLog(),
+  enableContextSuggestions: true,
 };
 
 /** Migrates supported local schemas and returns safe defaults for malformed or unknown data. */
@@ -185,6 +194,14 @@ export function parseNavodeSettings(value: unknown): NavodeSettings {
     reducedMotion: isReducedMotionPreference(value.reducedMotion) ? value.reducedMotion : 'system',
     todayItems: parseTodayItems(value.todayItems),
     workspaces: parseWorkspaces(value.workspaces),
+    workflows: Array.isArray(value.workflows)
+      ? (value.workflows as Workflow[])
+      : DEFAULT_NAVODE_SETTINGS.workflows,
+    workflowHistory: isRecord(value.workflowHistory)
+      ? (value.workflowHistory as unknown as WorkflowHistoryLog)
+      : DEFAULT_NAVODE_SETTINGS.workflowHistory,
+    enableContextSuggestions:
+      typeof value.enableContextSuggestions === 'boolean' ? value.enableContextSuggestions : true,
   };
 }
 
@@ -221,6 +238,9 @@ export function migrateV1Settings(value: Record<string, unknown>): NavodeSetting
     reducedMotion: 'system',
     todayItems: [],
     workspaces: [],
+    workflows: DEFAULT_NAVODE_SETTINGS.workflows,
+    workflowHistory: DEFAULT_NAVODE_SETTINGS.workflowHistory,
+    enableContextSuggestions: true,
   };
 }
 
@@ -241,6 +261,9 @@ export function migrateV2Settings(value: Record<string, unknown>): NavodeSetting
     recordRecentActions: true,
     reducedMotion: 'system',
     todayItems: [],
+    workflows: DEFAULT_NAVODE_SETTINGS.workflows,
+    workflowHistory: DEFAULT_NAVODE_SETTINGS.workflowHistory,
+    enableContextSuggestions: true,
   };
 }
 
@@ -257,6 +280,9 @@ export function migrateV3Settings(value: Record<string, unknown>): NavodeSetting
     homeSections: DEFAULT_HOME_SECTIONS,
     recordRecentActions: true,
     reducedMotion: 'system',
+    workflows: DEFAULT_NAVODE_SETTINGS.workflows,
+    workflowHistory: DEFAULT_NAVODE_SETTINGS.workflowHistory,
+    enableContextSuggestions: true,
   };
 }
 
@@ -275,6 +301,9 @@ export function migrateV4Settings(value: Record<string, unknown>): NavodeSetting
     integrationWidgets: DEFAULT_INTEGRATION_WIDGET_PREFERENCES,
     projectHealthTargets: [],
     competitiveProgramming: DEFAULT_COMPETITIVE_PROGRAMMING_SETTINGS,
+    workflows: DEFAULT_NAVODE_SETTINGS.workflows,
+    workflowHistory: DEFAULT_NAVODE_SETTINGS.workflowHistory,
+    enableContextSuggestions: true,
   };
 }
 
@@ -316,6 +345,9 @@ function parseV2Base(
   | 'recordRecentActions'
   | 'reducedMotion'
   | 'todayItems'
+  | 'workflows'
+  | 'workflowHistory'
+  | 'enableContextSuggestions'
 > {
   return {
     theme: isThemePreference(value.theme) ? value.theme : DEFAULT_NAVODE_SETTINGS.theme,
@@ -352,6 +384,9 @@ function parseV3Base(
   | 'homeSections'
   | 'recordRecentActions'
   | 'reducedMotion'
+  | 'workflows'
+  | 'workflowHistory'
+  | 'enableContextSuggestions'
 > {
   return {
     theme: isThemePreference(value.theme) ? value.theme : DEFAULT_NAVODE_SETTINGS.theme,
@@ -956,3 +991,9 @@ export {
   type SyncEnrollmentStage,
   type SyncUploadPreview,
 } from './sync-enrollment';
+
+export * from './workflow';
+export * from './workflow-history';
+export * from './workflow-trigger-coordinator';
+export * from './context-engine';
+export * from './ai-assistant';
