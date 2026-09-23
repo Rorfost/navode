@@ -52,7 +52,7 @@ export function validateExtensionManifest(value: unknown): ValidationResult {
   }
 
   // id format: reverse-domain style
-  if (typeof value.id === 'string' && !/^[a-zA-Z][a-zA-Z0-9.\-]*$/.test(value.id)) {
+  if (typeof value.id === 'string' && !/^[a-zA-Z][a-zA-Z0-9.-]*$/.test(value.id)) {
     errors.push({
       field: 'id',
       message: 'id must start with a letter and contain only letters, digits, dots, or hyphens.',
