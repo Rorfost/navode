@@ -34,10 +34,11 @@ import {
   MAX_PROJECT_HEALTH_TARGETS,
   type ProjectHealthTarget,
 } from '@navode/integrations';
+import type { PluginRegistryEntry } from '@navode/platform-sdk';
 
 export type CommandKind = 'url' | 'search' | 'project' | 'focus';
 
-export const NAVODE_STORAGE_SCHEMA_VERSION = 9;
+export const NAVODE_STORAGE_SCHEMA_VERSION = 10;
 export const NAVODE_SETTINGS_STORAGE_KEY = 'navode.settings';
 
 export type ThemePreference = 'dark' | 'light' | 'system';
@@ -117,6 +118,10 @@ export interface NavodeSettings extends StoredSettings {
   workflows: Workflow[];
   workflowHistory: WorkflowHistoryLog;
   enableContextSuggestions: boolean;
+  /** Installed platform extensions (V5 platform SDK). Empty by default. */
+  installedPlugins: PluginRegistryEntry[];
+  /** The plugin id of the currently active theme extension, or null if default. */
+  activeThemePlugin: string | null;
 }
 
 export const DEFAULT_NAVODE_SETTINGS: NavodeSettings = {
@@ -146,6 +151,8 @@ export const DEFAULT_NAVODE_SETTINGS: NavodeSettings = {
   workflows: DEFAULT_WORKFLOW_TEMPLATES,
   workflowHistory: createEmptyWorkflowHistoryLog(),
   enableContextSuggestions: true,
+  installedPlugins: [],
+  activeThemePlugin: null,
 };
 
 /** Migrates supported local schemas and returns safe defaults for malformed or unknown data. */
@@ -159,6 +166,7 @@ export function parseNavodeSettings(value: unknown): NavodeSettings {
   if (value.schemaVersion === 6) return migrateV6Settings(value);
   if (value.schemaVersion === 7) return migrateV7Settings(value);
   if (value.schemaVersion === 8) return migrateV8Settings(value);
+  if (value.schemaVersion === 9) return migrateV9Settings(value);
   if (value.schemaVersion !== NAVODE_STORAGE_SCHEMA_VERSION) return DEFAULT_NAVODE_SETTINGS;
 
   return {
@@ -202,6 +210,10 @@ export function parseNavodeSettings(value: unknown): NavodeSettings {
       : DEFAULT_NAVODE_SETTINGS.workflowHistory,
     enableContextSuggestions:
       typeof value.enableContextSuggestions === 'boolean' ? value.enableContextSuggestions : true,
+    installedPlugins: Array.isArray(value.installedPlugins)
+      ? (value.installedPlugins as PluginRegistryEntry[])
+      : [],
+    activeThemePlugin: typeof value.activeThemePlugin === 'string' ? value.activeThemePlugin : null,
   };
 }
 
@@ -241,6 +253,8 @@ export function migrateV1Settings(value: Record<string, unknown>): NavodeSetting
     workflows: DEFAULT_NAVODE_SETTINGS.workflows,
     workflowHistory: DEFAULT_NAVODE_SETTINGS.workflowHistory,
     enableContextSuggestions: true,
+    installedPlugins: [],
+    activeThemePlugin: null,
   };
 }
 
@@ -264,6 +278,8 @@ export function migrateV2Settings(value: Record<string, unknown>): NavodeSetting
     workflows: DEFAULT_NAVODE_SETTINGS.workflows,
     workflowHistory: DEFAULT_NAVODE_SETTINGS.workflowHistory,
     enableContextSuggestions: true,
+    installedPlugins: [],
+    activeThemePlugin: null,
   };
 }
 
@@ -283,6 +299,8 @@ export function migrateV3Settings(value: Record<string, unknown>): NavodeSetting
     workflows: DEFAULT_NAVODE_SETTINGS.workflows,
     workflowHistory: DEFAULT_NAVODE_SETTINGS.workflowHistory,
     enableContextSuggestions: true,
+    installedPlugins: [],
+    activeThemePlugin: null,
   };
 }
 
@@ -304,6 +322,8 @@ export function migrateV4Settings(value: Record<string, unknown>): NavodeSetting
     workflows: DEFAULT_NAVODE_SETTINGS.workflows,
     workflowHistory: DEFAULT_NAVODE_SETTINGS.workflowHistory,
     enableContextSuggestions: true,
+    installedPlugins: [],
+    activeThemePlugin: null,
   };
 }
 
@@ -327,6 +347,16 @@ export function migrateV8Settings(value: Record<string, unknown>): NavodeSetting
   return parseNavodeSettings({ ...value, schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION });
 }
 
+/** V2.2 adds platform plugin registry fields; existing data stays untouched. */
+export function migrateV9Settings(value: Record<string, unknown>): NavodeSettings {
+  return parseNavodeSettings({
+    ...value,
+    schemaVersion: NAVODE_STORAGE_SCHEMA_VERSION,
+    installedPlugins: [],
+    activeThemePlugin: null,
+  });
+}
+
 function parseV2Base(
   value: Record<string, unknown>,
 ): Omit<
@@ -348,6 +378,8 @@ function parseV2Base(
   | 'workflows'
   | 'workflowHistory'
   | 'enableContextSuggestions'
+  | 'installedPlugins'
+  | 'activeThemePlugin'
 > {
   return {
     theme: isThemePreference(value.theme) ? value.theme : DEFAULT_NAVODE_SETTINGS.theme,
@@ -387,6 +419,8 @@ function parseV3Base(
   | 'workflows'
   | 'workflowHistory'
   | 'enableContextSuggestions'
+  | 'installedPlugins'
+  | 'activeThemePlugin'
 > {
   return {
     theme: isThemePreference(value.theme) ? value.theme : DEFAULT_NAVODE_SETTINGS.theme,
@@ -997,3 +1031,13 @@ export * from './workflow-history';
 export * from './workflow-trigger-coordinator';
 export * from './context-engine';
 export * from './ai-assistant';
+export { LocalStorageAdapter, type NavodeBrowserAdapter } from './browser-adapter';
+export {
+  disablePlugin,
+  enablePlugin,
+  getGrantedCapabilities,
+  hasCapability,
+  setActiveThemePlugin,
+  uninstallPlugin,
+  type PluginEnableResult,
+} from './plugin-manager';

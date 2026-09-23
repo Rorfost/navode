@@ -1,15 +1,10 @@
 {
-  "name": "@navode/core",
+  "name": "@navode/platform-sdk",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
-  },
-  "dependencies": {
-    "@navode/integrations": "workspace:*",
-    "@navode/platform-sdk": "workspace:*",
-    "zod": "3.25.67"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",

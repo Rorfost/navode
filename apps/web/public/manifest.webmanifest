@@ -1,0 +1,16 @@
+{
+  "name": "Navode",
+  "short_name": "Navode",
+  "description": "Your personal browser command center.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "icons": [
+    {
+      "src": "/branding/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    }
+  ]
+}

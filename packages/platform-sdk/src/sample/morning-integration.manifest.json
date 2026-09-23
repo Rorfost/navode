@@ -1,0 +1,44 @@
+{
+  "id": "com.navode.sample.morning-integration",
+  "name": "Morning Integration Sample",
+  "publisher": "Navode Sample",
+  "version": "1.0.0",
+  "description": "A sample integration extension that adds morning-routine commands, a home widget, and a workflow action.",
+  "platformApiVersion": "1",
+  "capabilities": ["commands", "widgets", "workflow-actions", "network:example.com"],
+  "commands": [
+    {
+      "alias": "morning",
+      "label": "Open Morning Dashboard",
+      "description": "Navigate to your configured morning dashboard.",
+      "url": "https://example.com/dashboard"
+    }
+  ],
+  "widgets": [
+    {
+      "id": "morning-widget",
+      "kicker": "MORNING ROUTINE",
+      "title": "Today's Kickoff",
+      "description": "Start your day with the morning dashboard.",
+      "actionUrl": "https://example.com/dashboard",
+      "actionLabel": "Open dashboard"
+    }
+  ],
+  "workflowActions": [
+    {
+      "kind": "com.navode.sample.morning-integration:open-dashboard",
+      "label": "Open Morning Dashboard",
+      "description": "Opens the configured morning dashboard URL.",
+      "urlTemplate": "https://example.com/dashboard"
+    }
+  ],
+  "settings": [
+    {
+      "key": "dashboardUrl",
+      "label": "Dashboard URL",
+      "description": "The URL to open for your morning dashboard.",
+      "type": "string",
+      "defaultValue": "https://example.com/dashboard"
+    }
+  ]
+}

@@ -6,7 +6,7 @@ export const NAVODE_BACKUP_SCHEMA_VERSION = 1;
 const MAX_BACKUP_BYTES = 1_000_000;
 // `parseNavodeBackup` receives the current parser from the public core entry
 // point. Keeping this static limit here avoids a runtime cycle back to index.
-const MAX_SUPPORTED_SETTINGS_SCHEMA_VERSION = 9;
+const MAX_SUPPORTED_SETTINGS_SCHEMA_VERSION = 10;
 
 export interface NavodeBackup {
   data: NavodeSettings;
