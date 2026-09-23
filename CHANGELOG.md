@@ -2,6 +2,15 @@
 
 All notable changes to Navode are documented here.
 
+## [2.2.0] - 2026-09-24
+
+### Added
+
+- **Platform SDK & Manifest System**: Declare custom commands, visual themes, and workflows using strict JSON manifests.
+- **Plugin Manager UI**: Browse, install, enable, disable, and uninstall plugins directly from Navode settings.
+- **Capability-based Sandboxing**: Zero remote execution security model strictly governed by capability requests.
+- **PWA Installation**: Install Navode as a standalone desktop application via standard PWA manifests.
+
 ## [2.1.0] - 2026-09-24
 
 ### Added

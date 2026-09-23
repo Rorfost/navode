@@ -16,7 +16,8 @@
       "@navode/core": ["packages/core/src/index.ts"],
       "@navode/integrations": ["packages/integrations/src/index.ts"],
       "@navode/ui": ["packages/ui/src/index.ts"],
-      "@navode/config": ["packages/config/src/index.ts"]
+      "@navode/config": ["packages/config/src/index.ts"],
+      "@navode/platform-sdk": ["packages/platform-sdk/src/index.ts"]
     }
   }
 }

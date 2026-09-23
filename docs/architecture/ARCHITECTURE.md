@@ -23,7 +23,8 @@ flowchart LR
 - `apps/api`: Hono Worker with liveness/readiness/version endpoints, a versioned
   API foundation, fail-closed auth boundary, typed PostgreSQL schema, and
   source-controlled migrations. V3.3 will add the account implementation.
-- `packages/core`: framework-free command resolver, URL-safety validation, alias/history and organizational CRUD domain logic, plus versioned storage-schema migrations.
+- `packages/platform-sdk`: Zero-dependency SDK containing the Plugin Manifest model, capability enumerations, and validation logic for declarative plugins.
+- `packages/core`: framework-free command resolver, URL-safety validation, alias/history, organizational CRUD domain logic, plugin-manager registry, plus versioned storage-schema migrations.
 - `packages/integrations`: framework-free provider definitions, connection and permission concepts, cache-first refresh coordination, and provider-local error/backoff handling. It does not hold credentials or access browser APIs.
 - `packages/ui`: reusable React presentation components shared by web and extension, including the app shell, dialogs, controls, and command-result affordances. It receives settings through props rather than reading browser APIs.
 - `packages/config`: shared non-secret application constants.

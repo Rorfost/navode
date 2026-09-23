@@ -179,3 +179,20 @@ export function Dialog({ children, label, onClose, open }: DialogProps) {
     </div>
   );
 }
+
+export interface BadgeProps {
+  children: ReactNode;
+  variant?: 'neutral' | 'success' | 'warning' | 'error';
+}
+
+export function Badge({ children, variant = 'neutral' }: BadgeProps) {
+  return <span className={`badge badge-${variant}`}>{children}</span>;
+}
+
+export interface PermissionTagProps {
+  capability: string;
+}
+
+export function PermissionTag({ capability }: PermissionTagProps) {
+  return <span className="permission-tag">{capability}</span>;
+}

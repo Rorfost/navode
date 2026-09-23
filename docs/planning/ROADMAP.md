@@ -22,6 +22,10 @@ GitHub, Codeforces, calendar, service health, and optional API-backed helpers.
 
 Optional account, carefully designed sync, cross-device settings, and migrations.
 
-## Phase 5 — Public product readiness
+## Phase 5 — Developer Platform
+
+Platform SDK, declarative JSON manifests, capability-based sandboxing, Plugin Manager, and theme tokens.
+
+## Phase 6 — Public product readiness
 
 Onboarding, Chrome Web Store preparation, privacy policy, public site, explicit telemetry decision, accessibility polish, and release process.
