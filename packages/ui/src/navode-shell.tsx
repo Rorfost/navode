@@ -416,45 +416,35 @@ export function NavodeShell({
         </style>
       )}
       <header className="shell-header">
-        <div className="shell-brand">
-          <p className="eyebrow">YOUR CENTRAL NAVIGATION NODE</p>
-          <div className="shell-brand-lockup">
-            <img alt="" className="shell-brand-icon" src={brandIconSrc} />
-            <h1>Navode</h1>
+        <div className="shell-brand-lockup">
+          <img alt="" className="shell-brand-icon" src={brandIconSrc} />
+          <h1>Navode</h1>
+        </div>
+        <div className="shell-header-right">
+          <div className="clock" aria-label="Current date and time">
+            <time dateTime={now.toISOString()}>{formatDate(now)}</time>
+            <span>{formatTime(now)}</span>
           </div>
+          <nav className="shell-nav" aria-label="Shell navigation">
+            <Button
+              aria-label="Open workflows"
+              onClick={() => setIsWorkflowManagerOpen(true)}
+              variant="quiet"
+            >
+              Workflows
+            </Button>
+            <Button
+              aria-label="Open settings"
+              onClick={(event) => {
+                event.currentTarget.focus();
+                setIsSettingsOpen(true);
+              }}
+              variant="quiet"
+            >
+              Settings
+            </Button>
+          </nav>
         </div>
-        <div className="clock" aria-label="Current date and time">
-          <time dateTime={now.toISOString()}>{formatDate(now)}</time>
-          <span>{formatTime(now)}</span>
-        </div>
-        <p aria-live="polite" className="muted sync-status">
-          {syncStatus === 'local-only'
-            ? 'Local only'
-            : syncStatus === 'synced'
-              ? 'Signed in / synced'
-              : syncStatus === 'syncing'
-                ? 'Syncing'
-                : syncStatus === 'paused'
-                  ? 'Sync paused'
-                  : 'Sync error'}
-        </p>
-        <Button
-          aria-label="Open workflows"
-          onClick={() => setIsWorkflowManagerOpen(true)}
-          variant="quiet"
-        >
-          Workflows
-        </Button>
-        <Button
-          aria-label="Open settings"
-          onClick={(event) => {
-            event.currentTarget.focus();
-            setIsSettingsOpen(true);
-          }}
-          variant="quiet"
-        >
-          Settings
-        </Button>
       </header>
 
       <ContextSuggestionsBanner
