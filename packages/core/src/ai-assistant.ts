@@ -32,7 +32,7 @@ export function generateAIProposal(request: AIProposalRequest): AIProposal {
   const prompt = request.userPrompt.toLowerCase().trim();
 
   if (prompt.includes('focus') || prompt.includes('study') || prompt.includes('pomodoro')) {
-    const minutesMatch = prompt.match(/(\d+)\s*(min|minutes|m)/);
+    const minutesMatch = prompt.match(/\b(\d{1,3})\s*(?:minutes?|min|m)\b/);
     const durationMinutes = minutesMatch && minutesMatch[1] ? parseInt(minutesMatch[1], 10) : 45;
 
     return {
