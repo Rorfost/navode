@@ -5,7 +5,7 @@ describe('extension manifest policy', () => {
   it('keeps required permissions local-first and requests provider or saved-health origins only when needed', () => {
     const completeManifest: Record<string, unknown> = manifest;
     expect(manifest.manifest_version).toBe(3);
-    expect(manifest.version).toBe('1.0.0');
+    expect(manifest.version).toBe('2.2.0');
     expect(manifest.chrome_url_overrides.newtab).toBe('index.html');
     expect(manifest.icons).toEqual({
       '16': 'branding/icon-16.png',
