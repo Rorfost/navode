@@ -33,7 +33,7 @@ Release screenshots are not committed yet. They must be captured from the final 
 
 ## How It Works
 
-The Chrome extension replaces the New Tab page and stores Navode settings in `chrome.storage.local`. The optional web companion stores its settings in that browser's local storage. V1 has no accounts, cloud sync, analytics, telemetry, or Navode-hosted database. Navode contacts an external site only when you intentionally open a link or run a search/command that navigates there.
+The Chrome extension replaces the New Tab page and stores Navode settings in `chrome.storage.local`. The optional web companion stores its settings in that browser's local storage. Navode is local-first by default, with optional cloud sync and accounts introduced in V2. Navode contacts an external site only when you intentionally open a link, run a search/command that navigates there, or enable an optional integration.
 
 ## Installation
 
@@ -90,7 +90,7 @@ store-assets/   Chrome Web Store asset instructions
 
 ## Privacy
 
-V1 is local-first. The extension requests only Chrome's `storage` permission, used to persist Navode data in `chrome.storage.local`. It has no host permissions, content scripts, history, tabs, or scripting access. Read the full [privacy policy](docs/product/PRIVACY.md).
+Navode is fundamentally local-first. The extension requires Chrome's `storage` permission to persist your data locally. By default, it has no host permissions, content scripts, history, or scripting access. Optional permissions are only requested when you enable specific integrations. Read the full [privacy policy](docs/product/PRIVACY.md).
 
 ## Documentation
 
@@ -98,12 +98,11 @@ Start with the [architecture overview](docs/architecture/ARCHITECTURE.md), [secu
 
 ## Roadmap
 
-V1 is the local-first core release. Future work is directional rather than committed:
+V2 is the current release family, featuring local-first workflows, integrations, sync foundations, and the Platform SDK. Future work includes:
 
-- V2: expanded power-user workflows and developer utilities.
-- V3: opt-in integrations.
-- V4: carefully designed optional sync.
-- V5: developer platform, plugin sandbox, and community ecosystem (Currently in 2.2).
+- Refining optional sync and cross-device states.
+- Expanding developer platform and plugin ecosystem.
+- Deepening optional integrations with external services.
 
 See the detailed [roadmap](docs/planning/ROADMAP.md).
 

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Navode",
-  "version": "1.0.0",
+  "version": "2.2.0",
   "description": "A personal browser command center.",
   "icons": {
     "16": "branding/icon-16.png",
