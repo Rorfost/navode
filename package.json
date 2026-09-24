@@ -1,6 +1,6 @@
 {
   "name": "navode",
-  "version": "1.0.0",
+  "version": "2.2.0",
   "private": true,
   "description": "A personal browser command center.",
   "packageManager": "pnpm@10.12.1",
