@@ -49,7 +49,7 @@ importers:
         version: link:../../packages/config
       better-auth:
         specifier: 1.7.5
-        version: 1.7.5(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20250617.0)(@electric-sql/pglite@0.5.8)(kysely@0.29.6)(postgres@3.4.9))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(vitest@3.2.4(@types/node@22.15.30)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.30.1)(tsx@4.23.15))
+        version: 1.7.5(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20250617.0)(@electric-sql/pglite@0.5.8)(kysely@0.29.6)(postgres@3.4.9))(react-dom@19.1.0(react@19.3.0))(react@19.3.0)(vitest@3.2.4(@types/node@22.15.30)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.30.1)(tsx@4.23.15))
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@cloudflare/workers-types@4.20250617.0)(@electric-sql/pglite@0.5.8)(kysely@0.29.6)(postgres@3.4.9)
@@ -91,11 +91,11 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       react:
-        specifier: 19.1.0
-        version: 19.1.0
+        specifier: 19.3.0
+        version: 19.3.0
       react-dom:
         specifier: 19.1.0
-        version: 19.1.0(react@19.1.0)
+        version: 19.1.0(react@19.3.0)
     devDependencies:
       '@tailwindcss/vite':
         specifier: 4.1.12
@@ -104,11 +104,11 @@ importers:
         specifier: 0.0.328
         version: 0.0.328
       '@types/react':
-        specifier: 19.1.8
-        version: 19.1.8
+        specifier: 19.3.0
+        version: 19.3.0
       '@types/react-dom':
         specifier: 19.1.6
-        version: 19.1.6(@types/react@19.1.8)
+        version: 19.1.6(@types/react@19.3.0)
       '@vitejs/plugin-react':
         specifier: 4.6.0
         version: 4.6.0(vite@6.3.5(@types/node@22.15.30)(jiti@2.7.0)(lightningcss@1.30.1)(tsx@4.23.15))
@@ -134,17 +134,17 @@ importers:
         specifier: workspace:*
         version: link:../../packages/ui
       react:
-        specifier: 19.1.0
-        version: 19.1.0
+        specifier: 19.3.0
+        version: 19.3.0
       react-dom:
         specifier: 19.1.0
-        version: 19.1.0(react@19.1.0)
+        version: 19.1.0(react@19.3.0)
       zod:
         specifier: 3.25.67
         version: 3.25.67
       zustand:
         specifier: 5.0.5
-        version: 5.0.5(@types/react@19.1.8)(react@19.1.0)
+        version: 5.0.5(@types/react@19.3.0)(react@19.3.0)
     devDependencies:
       '@playwright/test':
         specifier: 1.53.1
@@ -157,13 +157,13 @@ importers:
         version: 6.6.3
       '@testing-library/react':
         specifier: 16.3.0
-        version: 16.3.0(@testing-library/dom@10.4.2)(@types/react-dom@19.1.6(@types/react@19.1.8))(@types/react@19.1.8)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+        version: 16.3.0(@testing-library/dom@10.4.2)(@types/react-dom@19.1.6(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.1.0(react@19.3.0))(react@19.3.0)
       '@types/react':
-        specifier: 19.1.8
-        version: 19.1.8
+        specifier: 19.3.0
+        version: 19.3.0
       '@types/react-dom':
         specifier: 19.1.6
-        version: 19.1.6(@types/react@19.1.8)
+        version: 19.1.6(@types/react@19.3.0)
       '@vitejs/plugin-react':
         specifier: 4.6.0
         version: 4.6.0(vite@6.3.5(@types/node@22.15.30)(jiti@2.7.0)(lightningcss@1.30.1)(tsx@4.23.15))
@@ -223,8 +223,8 @@ importers:
         version: 19.1.0
     devDependencies:
       '@types/react':
-        specifier: 19.1.8
-        version: 19.1.8
+        specifier: 19.3.0
+        version: 19.3.0
 
 packages:
 
@@ -1609,8 +1609,8 @@ packages:
     peerDependencies:
       '@types/react': ^19.0.0
 
-  '@types/react@19.1.8':
-    resolution: {integrity: sha512-AwAfQ2Wa5bCx9WP8nZL2uMZWod7J7/JSplxbTmBQ5ms6QpqNYm672H0Vu9ZVKVngQ+ii4R/byguVEUZQyeg44g==}
+  '@types/react@19.3.0':
+    resolution: {integrity: sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==}
 
   '@typescript-eslint/eslint-plugin@8.36.0':
     resolution: {integrity: sha512-lZNihHUVB6ZZiPBNgOQGSxUASI7UJWhT8nHyUGCnaQ28XFCw98IfrMCG3rUl1uwUWoAvodJQby2KTs79UTcrAg==}
@@ -2642,6 +2642,10 @@ packages:
 
   react@19.1.0:
     resolution: {integrity: sha512-FS+XFBNvn3GTAWq26joslQgWNoFu08F4kl0J4CgdNKADkdSGXQyTCnKteIAJy96Br6YbpEU1LSzV5dYtjMkMDg==}
+    engines: {node: '>=0.10.0'}
+
+  react@19.3.0:
+    resolution: {integrity: sha512-E8LUcbtBWt20bbl2YoHfx4ZDBdxVTfOKtCZn9cDSJ4l6/nuoApcpIBcj47t2wZoVX8g2ZHuMHbiShgCR1T5Sog==}
     engines: {node: '>=0.10.0'}
 
   redent@3.0.0:
@@ -3965,15 +3969,15 @@ snapshots:
       lodash: 4.18.1
       redent: 3.0.0
 
-  '@testing-library/react@16.3.0(@testing-library/dom@10.4.2)(@types/react-dom@19.1.6(@types/react@19.1.8))(@types/react@19.1.8)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
+  '@testing-library/react@16.3.0(@testing-library/dom@10.4.2)(@types/react-dom@19.1.6(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.1.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@babel/runtime': 7.29.7
       '@testing-library/dom': 10.4.2
-      react: 19.1.0
-      react-dom: 19.1.0(react@19.1.0)
+      react: 19.3.0
+      react-dom: 19.1.0(react@19.3.0)
     optionalDependencies:
-      '@types/react': 19.1.8
-      '@types/react-dom': 19.1.6(@types/react@19.1.8)
+      '@types/react': 19.3.0
+      '@types/react-dom': 19.1.6(@types/react@19.3.0)
 
   '@types/aria-query@5.0.4': {}
 
@@ -4026,11 +4030,11 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
-  '@types/react-dom@19.1.6(@types/react@19.1.8)':
+  '@types/react-dom@19.1.6(@types/react@19.3.0)':
     dependencies:
-      '@types/react': 19.1.8
+      '@types/react': 19.3.0
 
-  '@types/react@19.1.8':
+  '@types/react@19.3.0':
     dependencies:
       csstype: 3.2.3
 
@@ -4229,7 +4233,7 @@ snapshots:
 
   baseline-browser-mapping@2.11.25: {}
 
-  better-auth@1.7.5(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20250617.0)(@electric-sql/pglite@0.5.8)(kysely@0.29.6)(postgres@3.4.9))(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(vitest@3.2.4(@types/node@22.15.30)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.30.1)(tsx@4.23.15)):
+  better-auth@1.7.5(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20250617.0)(@electric-sql/pglite@0.5.8)(kysely@0.29.6)(postgres@3.4.9))(react-dom@19.1.0(react@19.3.0))(react@19.3.0)(vitest@3.2.4(@types/node@22.15.30)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.30.1)(tsx@4.23.15)):
     dependencies:
       '@better-auth/core': 1.7.5(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.3)
       '@better-auth/drizzle-adapter': 1.7.5(@better-auth/core@1.7.5(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(better-call@1.4.0(zod@4.1.12))(jose@6.2.12)(kysely@0.29.6)(nanostores@1.5.3))(@better-auth/utils@0.4.2)(drizzle-orm@0.45.2(@cloudflare/workers-types@4.20250617.0)(@electric-sql/pglite@0.5.8)(kysely@0.29.6)(postgres@3.4.9))
@@ -4251,8 +4255,8 @@ snapshots:
     optionalDependencies:
       drizzle-kit: 0.31.10
       drizzle-orm: 0.45.2(@cloudflare/workers-types@4.20250617.0)(@electric-sql/pglite@0.5.8)(kysely@0.29.6)(postgres@3.4.9)
-      react: 19.1.0
-      react-dom: 19.1.0(react@19.1.0)
+      react: 19.3.0
+      react-dom: 19.1.0(react@19.3.0)
       vitest: 3.2.4(@types/node@22.15.30)(jiti@2.7.0)(jsdom@26.1.0)(lightningcss@1.30.1)(tsx@4.23.15)
     transitivePeerDependencies:
       - '@opentelemetry/api'
@@ -4995,9 +4999,9 @@ snapshots:
 
   queue-microtask@1.2.3: {}
 
-  react-dom@19.1.0(react@19.1.0):
+  react-dom@19.1.0(react@19.3.0):
     dependencies:
-      react: 19.1.0
+      react: 19.3.0
       scheduler: 0.26.0
 
   react-is@17.0.2: {}
@@ -5005,6 +5009,8 @@ snapshots:
   react-refresh@0.17.0: {}
 
   react@19.1.0: {}
+
+  react@19.3.0: {}
 
   redent@3.0.0:
     dependencies:
@@ -5394,7 +5400,7 @@ snapshots:
 
   zod@4.6.5: {}
 
-  zustand@5.0.5(@types/react@19.1.8)(react@19.1.0):
+  zustand@5.0.5(@types/react@19.3.0)(react@19.3.0):
     optionalDependencies:
-      '@types/react': 19.1.8
-      react: 19.1.0
+      '@types/react': 19.3.0
+      react: 19.3.0
